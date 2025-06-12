@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Plus, AlertTriangle, CreditCard, TrendingDown, X, Trash2 } from 'lucide-react';
+import { Plus, AlertTriangle, CreditCard, TrendingDown, X, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Debt } from '../../types';
 
 interface DebtsSectionProps {
   debts: Debt[];
-  onAddDebt: (amount: number, description: string, note: string) => void;
+  onAddDebt: (amount: number, description: string, note: string, type: 'owed_to_me' | 'i_owe') => void;
   onDeleteDebt: (id: string) => void;
 }
 
@@ -12,8 +12,14 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [note, setNote] = useState('');
+  const [debtType, setDebtType] = useState<'owed_to_me' | 'i_owe'>('i_owe');
 
-  const totalDebts = debts.reduce((sum, debt) => sum + debt.amount, 0);
+  // הפרדת החובות לשני סוגים
+  const debtsOwedToMe = debts.filter(debt => debt.type === 'owed_to_me');
+  const debtsIOwe = debts.filter(debt => debt.type === 'i_owe' || !debt.type); // תאימות לאחור
+
+  const totalDebtsOwedToMe = debtsOwedToMe.reduce((sum, debt) => sum + debt.amount, 0);
+  const totalDebtsIOwe = debtsIOwe.reduce((sum, debt) => sum + debt.amount, 0);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('he-IL', {
@@ -26,7 +32,7 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
 
   const handleAddDebt = () => {
     if (amount && description.trim()) {
-      onAddDebt(Number(amount), description.trim(), note.trim());
+      onAddDebt(Number(amount), description.trim(), note.trim(), debtType);
       setAmount('');
       setDescription('');
       setNote('');
@@ -40,72 +46,157 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
     }
   };
 
+  const DebtsList = ({ debts, type, emptyMessage }: { 
+    debts: Debt[], 
+    type: 'owed_to_me' | 'i_owe',
+    emptyMessage: string 
+  }) => (
+    <div className="space-y-1">
+      {debts.length > 0 ? (
+        debts.map(debt => (
+          <div key={debt.id} className={`p-1.5 bg-white rounded-lg shadow-sm border-r-2 hover:shadow-md transition-all duration-200 ${
+            type === 'owed_to_me' ? 'border-green-500 hover:border-green-600' : 'border-red-500 hover:border-red-600'
+          }`}>
+            <div className="flex justify-between items-center">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  {type === 'owed_to_me' ? (
+                    <ArrowLeft size={10} className="text-green-500 flex-shrink-0" />
+                  ) : (
+                    <ArrowRight size={10} className="text-red-500 flex-shrink-0" />
+                  )}
+                  <p className="text-xs font-medium text-gray-800 truncate">{debt.description}</p>
+                </div>
+                {debt.note && (
+                  <p className="text-xs text-gray-600 opacity-75 truncate mr-3 mt-0.5">{debt.note}</p>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                <div className="text-left">
+                  <span className={`text-xs font-bold block ${
+                    type === 'owed_to_me' ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {formatCurrency(debt.amount)}
+                  </span>
+                </div>
+                
+                <button
+                  onClick={() => onDeleteDebt(debt.id)}
+                  className={`transition-colors p-0.5 rounded-md ${
+                    type === 'owed_to_me' 
+                      ? 'text-green-500 hover:text-green-700 hover:bg-green-50' 
+                      : 'text-red-500 hover:text-red-700 hover:bg-red-50'
+                  }`}
+                  title="מחיקת חוב"
+                >
+                  <Trash2 size={10} />
+                </button>
+              </div>
+            </div>
+          </div>
+        ))
+      ) : (
+        <div className={`text-center py-3 rounded-lg border ${
+          type === 'owed_to_me' 
+            ? 'text-green-600 bg-green-50 border-green-200' 
+            : 'text-gray-600 bg-gray-50 border-gray-200'
+        }`}>
+          {type === 'owed_to_me' ? (
+            <ArrowLeft size={16} className="mx-auto mb-2 opacity-50 text-green-500" />
+          ) : (
+            <AlertTriangle size={16} className="mx-auto mb-2 opacity-50 text-green-500" />
+          )}
+          <p className="text-xs font-medium">{emptyMessage}</p>
+        </div>
+      )}
+    </div>
+  );
+
   return (
-    <div className="bg-white rounded-xl shadow-lg p-4 border-r-4 border-red-500 hover:shadow-xl transition-all duration-300 relative overflow-hidden">
-      {/* דגש עיצובי - פס אלכסוני עדין */}
-      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-red-100/60 to-transparent rounded-bl-full"></div>
-      <div className="absolute top-0 right-0 w-10 h-10 bg-gradient-to-bl from-red-200/40 to-transparent rounded-bl-full"></div>
+    <div className="bg-white rounded-xl shadow-lg p-4 border-r-4 border-orange-500 hover:shadow-xl transition-all duration-300 relative overflow-hidden">
+      {/* דגש עיצובי */}
+      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-orange-100/60 to-transparent rounded-bl-full"></div>
+      <div className="absolute top-0 right-0 w-10 h-10 bg-gradient-to-bl from-orange-200/40 to-transparent rounded-bl-full"></div>
       
       <div className="relative z-10">
         <div className="flex items-center justify-center gap-2 mb-4">
-          <AlertTriangle size={18} className="text-red-600" />
+          <CreditCard size={18} className="text-orange-600" />
           <h3 className="text-lg font-bold text-gray-800">חובות</h3>
         </div>
         
-        {/* רכיב סיכום נפרד - סה"כ חובות ללא רקע */}
-        <div className="mb-4 text-center p-2 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <CreditCard size={16} className="text-red-600" />
-            <p className="text-xs font-bold text-red-700">סה״כ חובות</p>
+        {/* סיכום כללי - רק שתי עמודות */}
+        <div className="mb-4 text-center p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg shadow-sm border border-orange-200">
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            <div>
+              <p className="font-bold text-green-700 mb-1">חייבים לי</p>
+              <p className="font-bold text-green-600">{formatCurrency(totalDebtsOwedToMe)}</p>
+            </div>
+            <div>
+              <p className="font-bold text-red-700 mb-1">אני חייבת</p>
+              <p className="font-bold text-red-600">{formatCurrency(totalDebtsIOwe)}</p>
+            </div>
           </div>
-          <p className="text-xl font-bold text-red-600">{formatCurrency(totalDebts)}</p>
-        </div>
-        
-        {/* רשימת החובות - עיצוב משופר וקומפקטי יותר */}
-        <div className="mb-4">
-          {debts.length > 0 ? (
-            <div className="space-y-1">
-              {debts.map(debt => (
-                <div key={debt.id} className="p-2 bg-white rounded-lg shadow-sm border-r-2 border-red-500 hover:shadow-md hover:border-red-600 transition-all duration-200">
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle size={10} className="text-red-500 flex-shrink-0" />
-                        <p className="text-xs font-medium text-gray-800 truncate">{debt.description}</p>
-                      </div>
-                      {debt.note && (
-                        <p className="text-xs text-gray-600 opacity-75 truncate mr-3 mt-0.5">{debt.note}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                      <div className="text-left">
-                        <span className="text-xs font-bold text-red-600 block">{formatCurrency(debt.amount)}</span>
-                      </div>
-                      
-                      {/* כפתור מחיקה - תמיד מוצג */}
-                      <button
-                        onClick={() => onDeleteDebt(debt.id)}
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded-md transition-colors"
-                        title="מחיקת חוב"
-                      >
-                        <Trash2 size={12} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-4 text-gray-600 bg-gray-50 rounded-lg border border-gray-200">
-              <AlertTriangle size={16} className="mx-auto mb-2 opacity-50 text-green-500" />
-              <p className="text-sm font-medium text-green-600">אין חובות רשומים</p>
-              <p className="text-xs text-green-500">מצב כלכלי טוב! 👍</p>
-            </div>
-          )}
         </div>
 
-        {/* שדות הוספה מהירים */}
+        {/* שתי עמודות של חובות */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          {/* עמודה שמאלית - חייבים לי */}
+          <div>
+            <div className="flex items-center gap-1 mb-2">
+              <ArrowLeft size={14} className="text-green-600" />
+              <h4 className="text-sm font-bold text-green-700">חייבים לי</h4>
+            </div>
+            <div>
+              <DebtsList 
+                debts={debtsOwedToMe} 
+                type="owed_to_me"
+                emptyMessage="אין חובות שחייבים לי"
+              />
+            </div>
+          </div>
+
+          {/* עמודה ימנית - אני חייבת */}
+          <div>
+            <div className="flex items-center gap-1 mb-2">
+              <ArrowRight size={14} className="text-red-600" />
+              <h4 className="text-sm font-bold text-red-700">אני חייבת</h4>
+            </div>
+            <div>
+              <DebtsList 
+                debts={debtsIOwe} 
+                type="i_owe"
+                emptyMessage="אין חובות שאני חייבת"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* שדות הוספה */}
         <div className="space-y-2">
+          {/* בחירת סוג חוב */}
+          <div className="flex gap-1">
+            <button
+              onClick={() => setDebtType('i_owe')}
+              className={`flex-1 py-1 px-2 rounded text-xs font-medium transition-all ${
+                debtType === 'i_owe'
+                  ? 'bg-red-500 text-white shadow-md'
+                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+              }`}
+            >
+              אני חייבת
+            </button>
+            <button
+              onClick={() => setDebtType('owed_to_me')}
+              className={`flex-1 py-1 px-2 rounded text-xs font-medium transition-all ${
+                debtType === 'owed_to_me'
+                  ? 'bg-green-500 text-white shadow-md'
+                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+              }`}
+            >
+              חייבים לי
+            </button>
+          </div>
+
           <div className="grid grid-cols-2 gap-2">
             <input
               type="number"
@@ -113,7 +204,11 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
               onChange={(e) => setAmount(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="סכום"
-              className="w-full p-2 border-2 border-gray-200 rounded text-xs focus:border-red-400 focus:ring-1 focus:ring-red-200 transition-all bg-white"
+              className={`w-full p-2 border-2 rounded text-xs transition-all bg-white ${
+                debtType === 'owed_to_me'
+                  ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
+                  : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
+              }`}
             />
             
             <input
@@ -122,7 +217,11 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
               onChange={(e) => setDescription(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="תיאור"
-              className="w-full p-2 border-2 border-gray-200 rounded text-xs focus:border-red-400 focus:ring-1 focus:ring-red-200 transition-all bg-white"
+              className={`w-full p-2 border-2 rounded text-xs transition-all bg-white ${
+                debtType === 'owed_to_me'
+                  ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
+                  : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
+              }`}
             />
           </div>
           
@@ -133,7 +232,11 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
               onChange={(e) => setNote(e.target.value)}
               onKeyDown={handleKeyPress}
               placeholder="הערה (אופציונלי)"
-              className="flex-1 p-2 border-2 border-gray-200 rounded text-xs focus:border-red-400 focus:ring-1 focus:ring-red-200 transition-all bg-white"
+              className={`flex-1 p-2 border-2 rounded text-xs transition-all bg-white ${
+                debtType === 'owed_to_me'
+                  ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
+                  : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
+              }`}
             />
             
             <button

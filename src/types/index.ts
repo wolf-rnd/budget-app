@@ -50,6 +50,7 @@ export interface Debt {
   description: string;
   amount: number;
   note: string;
+  type?: 'owed_to_me' | 'i_owe'; // הוספת שדה סוג חוב
 }
 
 export interface Task {

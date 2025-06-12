@@ -95,13 +95,14 @@ const Dashboard: React.FC = () => {
     setTitheGiven([...titheGiven, newTithe]);
   };
 
-  // הוספת חוב - עכשיו מהרכיב עצמו
-  const handleAddDebt = (amount: number, description: string, note: string = '') => {
+  // הוספת חוב - עכשיו מהרכיב עצמו עם סוג חוב
+  const handleAddDebt = (amount: number, description: string, note: string = '', type: 'owed_to_me' | 'i_owe' = 'i_owe') => {
     const newDebt: Debt = {
       id: Date.now().toString(),
       description,
       amount,
-      note
+      note,
+      type
     };
     setDebts([...debts, newDebt]);
   };
