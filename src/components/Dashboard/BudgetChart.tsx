@@ -117,7 +117,7 @@ const BudgetChart: React.FC<BudgetChartProps> = ({
               cursor={{ fill: 'rgba(0,0,0,0.05)' }}
             />
             
-            {/* קווי ייחוס עם תוויות חודש */}
+            {/* קווי ייחוס עם תוויות חודש בלבד */}
             {Array.from({ length: 12 }, (_, index) => {
               const monthNumber = index + 1;
               const value = monthlyAmount * monthNumber;
@@ -132,7 +132,7 @@ const BudgetChart: React.FC<BudgetChartProps> = ({
                   strokeWidth={1}
                   strokeOpacity={0.7}
                   label={{ 
-                    value: `${formatCurrency(value)} חודש ${monthStr}`, 
+                    value: `חודש ${monthStr}`, 
                     position: "insideTopLeft", 
                     fill: "#6366f1", 
                     fontSize: 12,
