@@ -106,6 +106,11 @@ const Dashboard: React.FC = () => {
     setDebts([...debts, newDebt]);
   };
 
+  // מחיקת חוב - פונקציה חדשה
+  const handleDeleteDebt = (id: string) => {
+    setDebts(debts.filter(debt => debt.id !== id));
+  };
+
   const handleAddTask = (description: string, important: boolean = false) => {
     const newTask: Task = {
       id: Date.now().toString(),
@@ -189,6 +194,7 @@ const Dashboard: React.FC = () => {
           <DebtsSection
             debts={debts}
             onAddDebt={handleAddDebt}
+            onDeleteDebt={handleDeleteDebt}
           />
           
           <TasksSection
