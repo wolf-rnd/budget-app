@@ -12,7 +12,6 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [note, setNote] = useState('');
-  const [deletingDebtId, setDeletingDebtId] = useState<string | null>(null);
 
   const totalDebts = debts.reduce((sum, debt) => sum + debt.amount, 0);
 
@@ -32,21 +31,6 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
       setDescription('');
       setNote('');
     }
-  };
-
-  const handleDeleteDebt = (debtId: string) => {
-    setDeletingDebtId(debtId);
-  };
-
-  const confirmDeleteDebt = () => {
-    if (deletingDebtId) {
-      onDeleteDebt(deletingDebtId);
-      setDeletingDebtId(null);
-    }
-  };
-
-  const cancelDeleteDebt = () => {
-    setDeletingDebtId(null);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -82,7 +66,7 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
           {debts.length > 0 ? (
             <div className="space-y-1">
               {debts.map(debt => (
-                <div key={debt.id} className="p-2 bg-white rounded-lg shadow-sm border-r-2 border-red-500 hover:shadow-md hover:border-red-600 transition-all duration-200 group">
+                <div key={debt.id} className="p-2 bg-white rounded-lg shadow-sm border-r-2 border-red-500 hover:shadow-md hover:border-red-600 transition-all duration-200">
                   <div className="flex justify-between items-center">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
@@ -98,10 +82,10 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
                         <span className="text-xs font-bold text-red-600 block">{formatCurrency(debt.amount)}</span>
                       </div>
                       
-                      {/* כפתור מחיקה - מופיע בהובר */}
+                      {/* כפתור מחיקה - תמיד מוצג */}
                       <button
-                        onClick={() => handleDeleteDebt(debt.id)}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded-md"
+                        onClick={() => onDeleteDebt(debt.id)}
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded-md transition-colors"
                         title="מחיקת חוב"
                       >
                         <Trash2 size={12} />
@@ -166,43 +150,6 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
           </div>
         </div>
       </div>
-
-      {/* מודל אישור מחיקה */}
-      {deletingDebtId && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4">
-            <div className="text-center">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
-              </div>
-              
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                מחיקת חוב
-              </h3>
-              
-              <p className="text-sm text-gray-500 mb-6">
-                האם אתה בטוח שברצונך למחוק את החוב? פעולה זו לא ניתנת לביטול.
-              </p>
-              
-              <div className="flex gap-3 justify-center">
-                <button
-                  onClick={cancelDeleteDebt}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  ביטול
-                </button>
-                <button
-                  onClick={confirmDeleteDebt}
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors flex items-center gap-2"
-                >
-                  <Trash2 size={14} />
-                  מחיקה
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
