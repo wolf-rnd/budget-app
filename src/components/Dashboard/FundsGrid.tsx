@@ -1,0 +1,153 @@
+import React from 'react';
+import { Fund } from '../../types';
+import { PlusCircle, Calendar, Wallet, TrendingUp, Gift, Coins, DollarSign, Target } from 'lucide-react';
+
+interface FundsGridProps {
+  funds: Fund[];
+  onCloseDailyFund: () => void;
+  onAddMoneyToEnvelope: () => void;
+}
+
+const FundsGrid: React.FC<FundsGridProps> = ({ funds, onCloseDailyFund, onAddMoneyToEnvelope }) => {
+  const level1Funds = funds.filter(fund => fund.level === 1);
+  const level2Funds = funds.filter(fund => fund.level === 2);
+  const level3Funds = funds.filter(fund => fund.level === 3);
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('he-IL', {
+      style: 'currency',
+      currency: 'ILS',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const getFundIcon = (fundName: string) => {
+    if (fundName.includes('שוטף')) return <Wallet size={20} className="text-emerald-600" />;
+    if (fundName.includes('שנתי')) return <Target size={18} className="text-indigo-600" />;
+    if (fundName.includes('מורחב')) return <Target size={18} className="text-indigo-600" />;
+    if (fundName.includes('בונוס')) return <Gift size={18} className="text-orange-600" />;
+    if (fundName.includes('עודפים')) return <Coins size={18} className="text-yellow-600" />;
+    return <DollarSign size={18} className="text-gray-600" />;
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* שורה ראשונה - קופת שוטף */}
+      {level1Funds.map(fund => (
+        <div key={fund.id} className="relative bg-gradient-to-br from-emerald-50 via-green-50 to-emerald-100 rounded-xl shadow-lg p-6 border-2 border-emerald-300 hover:shadow-xl transition-all duration-300 overflow-hidden">
+          {/* חצי עיגול עדין בפינה הימנית העליונה */}
+          <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-emerald-200/40 to-transparent rounded-bl-full"></div>
+          <div className="absolute top-0 right-0 w-14 h-14 bg-gradient-to-bl from-emerald-300/30 to-transparent rounded-bl-full"></div>
+          <div className="absolute top-0 right-0 w-8 h-8 bg-gradient-to-bl from-emerald-400/20 to-transparent rounded-bl-full"></div>
+          
+          <div className="flex justify-between items-start mb-6 relative z-10">
+            <div className="flex items-center gap-3">
+              {getFundIcon(fund.name)}
+              <h3 className="text-lg font-bold text-emerald-800">{fund.name}</h3>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={onAddMoneyToEnvelope}
+                className="bg-gray-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-600 transition-colors flex items-center gap-2 shadow-md"
+              >
+                <PlusCircle size={16} />
+                הוספה למעטפה
+              </button>
+              <button
+                onClick={onCloseDailyFund}
+                className="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors flex items-center gap-2 shadow-md"
+              >
+                <Calendar size={16} />
+                סגירת חודש
+              </button>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-6 relative z-10">
+            <div className="text-center p-4 bg-white/80 rounded-lg border-2 border-emerald-200 shadow-sm">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Target size={16} className="text-emerald-600" />
+                <p className="text-sm text-emerald-700 font-bold">תקציב</p>
+              </div>
+              <p className="text-lg font-bold text-gray-800 text-center">{formatCurrency(fund.amount)}</p>
+            </div>
+            <div className="text-center p-4 bg-white/80 rounded-lg border-2 border-green-200 shadow-sm">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <TrendingUp size={16} className="text-green-600" />
+                <p className="text-sm text-green-700 font-bold">ניתן בפועל</p>
+              </div>
+              <p className="text-lg font-bold text-green-600 text-center">{formatCurrency(fund.amountGiven || 0)}</p>
+            </div>
+            <div className="text-center p-4 bg-white/80 rounded-lg border-2 border-amber-200 shadow-sm">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Coins size={16} className="text-amber-600" />
+                <p className="text-sm text-amber-700 font-bold">נותר לתת</p>
+              </div>
+              <p className="text-lg font-bold text-amber-600 text-center">{formatCurrency(fund.amount - (fund.amountGiven || 0))}</p>
+            </div>
+          </div>
+        </div>
+      ))}
+
+      {/* שורה שנייה - קופות שנתיות */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {level2Funds.map(fund => (
+          <div key={fund.id} className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-200 hover:shadow-xl hover:border-indigo-300 transition-all duration-300">
+            <div className="flex items-center gap-3 mb-6 pb-3 border-b border-gray-100">
+              {getFundIcon(fund.name)}
+              <h3 className="text-lg font-bold text-gray-800">{fund.name}</h3>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              {/* תקציב */}
+              <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-center gap-1 mb-2">
+                  <Target size={14} className="text-indigo-600" />
+                  <p className="text-xs text-gray-600 font-medium">תקציב</p>
+                </div>
+                <p className="font-bold text-gray-800 text-center">{formatCurrency(fund.amount)}</p>
+              </div>
+              
+              {/* מומש */}
+              <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-center gap-1 mb-2">
+                  <TrendingUp size={14} className="text-orange-600 rotate-180" />
+                  <p className="text-xs text-gray-600 font-medium">מומש</p>
+                </div>
+                <p className="font-bold text-orange-600 text-center">{formatCurrency(fund.spent || 0)}</p>
+              </div>
+              
+              {/* נותר */}
+              <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-center gap-1 mb-2">
+                  <Coins size={14} className="text-green-600" />
+                  <p className="text-xs text-gray-600 font-medium">נותר</p>
+                </div>
+                <p className="font-bold text-green-600 text-center">{formatCurrency(fund.amount - (fund.spent || 0))}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* שורה שלישית - קופות עודפים */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {level3Funds.map(fund => (
+          <div key={fund.id} className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-200 hover:shadow-xl hover:border-yellow-300 transition-all duration-300">
+            <div className="flex items-center gap-3 mb-3">
+              {getFundIcon(fund.name)}
+              <h3 className="text-lg font-bold text-gray-800">{fund.name}</h3>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <DollarSign size={20} className="text-yellow-600" />
+              <p className="text-xl font-bold text-gray-800 text-center">{formatCurrency(fund.amount)}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default FundsGrid;

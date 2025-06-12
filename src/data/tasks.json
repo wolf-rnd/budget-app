@@ -1,0 +1,22 @@
+{
+  "tasks": [
+    {
+      "id": "1",
+      "description": "לבדוק ביטוח רכב",
+      "completed": false,
+      "important": true
+    },
+    {
+      "id": "2",
+      "description": "לתזמן פגישה עם רואה חשבון",
+      "completed": false,
+      "important": false
+    },
+    {
+      "id": "3",
+      "description": "לעדכן פרטי בנק",
+      "completed": true,
+      "important": false
+    }
+  ]
+}

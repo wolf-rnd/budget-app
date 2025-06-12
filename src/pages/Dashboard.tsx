@@ -1,0 +1,228 @@
+import React, { useState, useEffect } from 'react';
+import { Fund, Income, Expense, TitheGiven, Debt, Task, AssetSnapshot } from '../types';
+import TopActions from '../components/Dashboard/TopActions';
+import SummaryCards from '../components/Dashboard/SummaryCards';
+import BudgetChart from '../components/Dashboard/BudgetChart';
+import FundsGrid from '../components/Dashboard/FundsGrid';
+import TitheSection from '../components/Dashboard/TitheSection';
+import DebtsSection from '../components/Dashboard/DebtsSection';
+import TasksSection from '../components/Dashboard/TasksSection';
+import AssetsSection from '../components/Dashboard/AssetsSection';
+import QuickAddButtons from '../components/Dashboard/QuickAddButtons';
+import IncomeModal from '../components/Modals/IncomeModal';
+
+// Import JSON data
+import budgetData from '../data/budget.json';
+import incomeData from '../data/income.json';
+import expensesData from '../data/expenses.json';
+import titheData from '../data/tithe.json';
+import debtsData from '../data/debts.json';
+import tasksData from '../data/tasks.json';
+import assetsData from '../data/assets.json';
+
+const Dashboard: React.FC = () => {
+  const [selectedYear, setSelectedYear] = useState(budgetData.budgetYear);
+  const [funds, setFunds] = useState<Fund[]>(budgetData.funds);
+  const [incomes, setIncomes] = useState<Income[]>(incomeData.incomes);
+  const [expenses, setExpenses] = useState<Expense[]>(expensesData.expenses);
+  const [titheGiven, setTitheGiven] = useState<TitheGiven[]>(titheData.titheGiven);
+  const [debts, setDebts] = useState<Debt[]>(debtsData.debts);
+  const [tasks, setTasks] = useState<Task[]>(tasksData.tasks);
+  const [assetSnapshots, setAssetSnapshots] = useState<AssetSnapshot[]>(assetsData.assetsSnapshot);
+  const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
+
+  // חישוב סכומים
+  const totalBudget = funds
+    .filter(fund => fund.includeInBudget)
+    .reduce((sum, fund) => sum + (fund.type === 'monthly' ? fund.amount * 12 : fund.amount), 0);
+  
+  const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);
+  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const expectedIncome = incomeData.expectedIncomes.reduce((sum, income) => sum + income.amount, 0);
+
+  // Handlers
+  const handleAddExpense = () => {
+    console.log('הוספת הוצאה');
+  };
+
+  const handleAddIncome = () => {
+    setIsIncomeModalOpen(true);
+  };
+
+  const handleIncomeModalSubmit = (newIncome: {
+    name: string;
+    amount: number;
+    month: number;
+    year: number;
+    date: string;
+    source: string;
+    note?: string;
+  }) => {
+    const income: Income = {
+      id: Date.now().toString(),
+      name: newIncome.name,
+      amount: newIncome.amount,
+      month: newIncome.month,
+      year: newIncome.year,
+      date: newIncome.date
+    };
+    
+    setIncomes([...incomes, income]);
+    console.log('הכנסה חדשה נוספה:', newIncome);
+  };
+
+  const handleOpenSettings = () => {
+    console.log('פתיחת הגדרות');
+  };
+
+  const handleCloseDailyFund = () => {
+    console.log('סגירת קופת שוטף');
+  };
+
+  const handleAddMoneyToEnvelope = () => {
+    console.log('הוספת כסף למעטפה');
+  };
+
+  // הוספת מעשר - עכשיו מהרכיב עצמו
+  const handleAddTithe = (amount: number, description: string) => {
+    const newTithe: TitheGiven = {
+      id: Date.now().toString(),
+      description,
+      amount,
+      note: '',
+      date: new Date().toISOString().split('T')[0]
+    };
+    setTitheGiven([...titheGiven, newTithe]);
+  };
+
+  // הוספת חוב - עכשיו מהרכיב עצמו
+  const handleAddDebt = (amount: number, description: string, note: string = '') => {
+    const newDebt: Debt = {
+      id: Date.now().toString(),
+      description,
+      amount,
+      note
+    };
+    setDebts([...debts, newDebt]);
+  };
+
+  const handleAddTask = (description: string, important: boolean = false) => {
+    const newTask: Task = {
+      id: Date.now().toString(),
+      description,
+      important,
+      completed: false
+    };
+    setTasks([...tasks, newTask]);
+  };
+
+  const handleUpdateTask = (id: string, updates: Partial<Task>) => {
+    setTasks(tasks.map(task => task.id === id ? { ...task, ...updates } : task));
+  };
+
+  const handleDeleteTask = (id: string) => {
+    setTasks(tasks.filter(task => task.id !== id));
+  };
+
+  const handleAddAssetSnapshot = (savings: number, liabilities: number, note: string) => {
+    const newSnapshot: AssetSnapshot = {
+      id: Date.now().toString(),
+      totalSavings: savings,
+      totalLiabilities: liabilities,
+      date: new Date().toISOString().split('T')[0],
+      note
+    };
+    setAssetSnapshots([newSnapshot, ...assetSnapshots]);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-4">
+      <div className="max-w-7xl mx-auto">
+        <TopActions
+          selectedYear={selectedYear}
+          onYearChange={setSelectedYear}
+          onAddExpense={handleAddExpense}
+          onAddIncome={handleAddIncome}
+          onOpenSettings={handleOpenSettings}
+        />
+
+        <SummaryCards
+          totalBudget={totalBudget}
+          totalIncome={totalIncome}
+          totalExpenses={totalExpenses}
+          totalDebts={debts.reduce((sum, debt) => sum + debt.amount, 0)}
+          expectedIncome={expectedIncome}
+        />
+
+        {/* שורה ראשונה - מצב קופות ותרשים */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* מצב קופות */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">מצב קופות</h2>
+            <FundsGrid
+              funds={funds}
+              onCloseDailyFund={handleCloseDailyFund}
+              onAddMoneyToEnvelope={handleAddMoneyToEnvelope}
+            />
+          </div>
+
+          {/* תרשים */}
+          <div>
+            <BudgetChart
+              totalBudget={totalBudget}
+              totalIncome={totalIncome}
+              totalExpenses={totalExpenses}
+              currentMonth={budgetData.currentMonth}
+            />
+          </div>
+        </div>
+
+        {/* שורה שנייה - מעשרות, חובות ותזכורות */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <TitheSection
+            totalIncome={totalIncome}
+            tithePercentage={budgetData.tithePercentage}
+            titheGiven={titheGiven}
+            onAddTithe={handleAddTithe}
+          />
+          
+          <DebtsSection
+            debts={debts}
+            onAddDebt={handleAddDebt}
+          />
+          
+          <TasksSection
+            tasks={tasks}
+            onAddTask={handleAddTask}
+            onUpdateTask={handleUpdateTask}
+            onDeleteTask={handleDeleteTask}
+          />
+        </div>
+
+        {/* תמונת מצב נכסים - תחתית */}
+        <div className="max-w-md mx-auto">
+          <AssetsSection
+            snapshots={assetSnapshots}
+            onAddSnapshot={handleAddAssetSnapshot}
+          />
+        </div>
+
+        {/* כפתורי הוספה מהירה */}
+        <QuickAddButtons
+          onAddTithe={handleAddTithe}
+          onAddDebt={handleAddDebt}
+          onAddTask={handleAddTask}
+        />
+
+        {/* מודל הוספת הכנסה */}
+        <IncomeModal
+          isOpen={isIncomeModalOpen}
+          onClose={() => setIsIncomeModalOpen(false)}
+          onAddIncome={handleIncomeModalSubmit}
+        />
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;
