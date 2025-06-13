@@ -25,7 +25,9 @@ const Dashboard: React.FC = () => {
 
 const [funds, setFunds] = useState<Fund[]>(
   budgetData.funds
-    .filter((item) => allowedTypes.includes(item.type))
+    .filter((item): item is typeof item & { type: "monthly" | "annual" | "savings" } => 
+      allowedTypes.includes(item.type as "monthly" | "annual" | "savings")
+    )
     .map((item) => ({
       ...item,
       type: item.type as "monthly" | "annual" | "savings",
@@ -261,10 +263,6 @@ const [funds, setFunds] = useState<Fund[]>(
               totalBudget={totalBudget}
               totalIncome={totalIncome}
               totalExpenses={totalExpenses}
-              // eslint-disable-next-line @typescript-eslint/no-unused-vars
-              currentMonth={currentMonth}
-              totalDebts={debts.reduce((sum, debt) => sum + debt.amount, 0)}
-              expectedIncome={expectedIncome}
             />
           </div>
         </div>
