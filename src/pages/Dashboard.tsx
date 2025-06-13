@@ -99,9 +99,6 @@ const Dashboard: React.FC = () => {
           // חישוב הסכום שנותר לתת
           const remainingToGive = fund.amount - (fund.amountGiven || 0);
           
-          // הסכום שיעבור לעודפים = נותר במעטפה + נותר לתת
-          const amountToSurplus = remainingAmount + remainingToGive;
-          
           // איפוס הקופה לחודש הבא עם הסכום שנותר במעטפה כניתן בפועל
           return {
             ...fund,
