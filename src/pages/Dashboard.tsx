@@ -53,7 +53,6 @@ const [funds, setFunds] = useState<Fund[]>(
   
   const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);
   const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const expectedIncome = incomeData.expectedIncomes.reduce((sum, income) => sum + income.amount, 0);
 
   // Handlers
   const handleAddExpense = () => {
