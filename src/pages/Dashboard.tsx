@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Fund, Income, Expense, TitheGiven, Debt, Task, AssetSnapshot } from '../types';
 import TopActions from '../components/Dashboard/TopActions';
-import SummaryCards from '../components/Dashboard/SummaryCards';
 import BudgetChart from '../components/Dashboard/BudgetChart';
 import FundsGrid from '../components/Dashboard/FundsGrid';
 import TitheSection from '../components/Dashboard/TitheSection';
@@ -229,25 +228,16 @@ const Dashboard: React.FC = () => {
             />
           </div>
 
-          {/* תרשים עם סיכום */}
-          <div className="space-y-4">
+          {/* תרשים עם סיכום מובנה */}
+          <div>
             <BudgetChart
               totalBudget={totalBudget}
               totalIncome={totalIncome}
               totalExpenses={totalExpenses}
               currentMonth={budgetData.currentMonth}
+              totalDebts={debts.reduce((sum, debt) => sum + debt.amount, 0)}
+              expectedIncome={expectedIncome}
             />
-            
-            {/* סיכום תקציב מתחת לגרף */}
-            <div className="bg-white rounded-lg shadow-md p-4">
-              <SummaryCards
-                totalBudget={totalBudget}
-                totalIncome={totalIncome}
-                totalExpenses={totalExpenses}
-                totalDebts={debts.reduce((sum, debt) => sum + debt.amount, 0)}
-                expectedIncome={expectedIncome}
-              />
-            </div>
           </div>
         </div>
 
