@@ -29,6 +29,10 @@ const Dashboard: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>(tasksData.tasks);
   const [assetSnapshots, setAssetSnapshots] = useState<AssetSnapshot[]>(assetsData.assetsSnapshot);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date();
+    return now.getMonth() + 1;
+  });
 
   // חישוב סכומים
   const totalBudget = funds
@@ -74,7 +78,21 @@ const Dashboard: React.FC = () => {
     console.log('פתיחת הגדרות');
   };
 
+  const getMonthName = (monthNumber: number) => {
+    const months = [
+      'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+      'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+    ];
+    return months[monthNumber - 1];
+  };
+
+  const getNextMonth = (currentMonth: number) => {
+    return currentMonth === 12 ? 1 : currentMonth + 1;
+  };
+
   const handleCloseDailyFund = (remainingAmount: number) => {
+    const nextMonth = getNextMonth(currentMonth);
+    
     setFunds(prevFunds => {
       return prevFunds.map(fund => {
         if (fund.id === 'daily') {
@@ -109,7 +127,11 @@ const Dashboard: React.FC = () => {
       });
     });
     
-    console.log(`סגירת חודש: ${remainingAmount} ש"ח נותר במעטפה`);
+    // מעבר לחודש הבא
+    setCurrentMonth(nextMonth);
+    
+    console.log(`סגירת חודש ${getMonthName(currentMonth)}: ${remainingAmount} ש"ח נותר במעטפה`);
+    console.log(`מעבר לחודש ${getMonthName(nextMonth)}`);
   };
 
   const handleAddMoneyToEnvelope = (amount: number) => {
@@ -234,7 +256,7 @@ const Dashboard: React.FC = () => {
               totalBudget={totalBudget}
               totalIncome={totalIncome}
               totalExpenses={totalExpenses}
-              currentMonth={budgetData.currentMonth}
+              currentMonth={currentMonth}
               totalDebts={debts.reduce((sum, debt) => sum + debt.amount, 0)}
               expectedIncome={expectedIncome}
             />
