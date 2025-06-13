@@ -12,7 +12,7 @@ interface TasksSectionProps {
 interface UndoNotification {
   taskId: string;
   taskDescription: string;
-  timeoutId: NodeJS.Timeout;
+  timeoutId:  ReturnType<typeof setTimeout>;
 }
 
 const TasksSection: React.FC<TasksSectionProps> = ({ tasks, onAddTask, onUpdateTask, onDeleteTask }) => {
