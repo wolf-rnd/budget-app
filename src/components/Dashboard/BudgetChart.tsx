@@ -6,6 +6,8 @@ interface BudgetChartProps {
   totalBudget: number;
   totalIncome: number;
   totalExpenses: number;
+  currentMonth: number;
+
 }
 
 const BudgetChart: React.FC<BudgetChartProps> = ({ 
