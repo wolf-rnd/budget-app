@@ -30,11 +30,12 @@ export interface ExpectedIncome {
 
 export interface Expense {
   id: string;
-  description: string;
+  name: string; // שינוי מ-description ל-name
   amount: number;
   category: string;
   fund: string;
   date: string;
+  note?: string; // הוספת שדה הערה
 }
 
 export interface TitheGiven {
@@ -68,4 +69,9 @@ export interface AssetSnapshot {
   liabilities?: Record<string, number>; // פירוט התחייבויות חדש
   date: string;
   note: string;
+}
+
+export interface Category {
+  name: string;
+  fund: string;
 }

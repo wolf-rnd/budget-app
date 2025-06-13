@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Fund, Income, Expense, TitheGiven, Debt, Task, AssetSnapshot } from '../types';
+import { Fund, Income, Expense, TitheGiven, Debt, Task, AssetSnapshot, Category } from '../types';
 import TopActions from '../components/Dashboard/TopActions';
 import BudgetChart from '../components/Dashboard/BudgetChart';
 import FundsGrid from '../components/Dashboard/FundsGrid';
@@ -9,6 +9,7 @@ import TasksSection from '../components/Dashboard/TasksSection';
 import AssetsSection from '../components/Dashboard/AssetsSection';
 import QuickAddButtons from '../components/Dashboard/QuickAddButtons';
 import IncomeModal from '../components/Modals/IncomeModal';
+import ExpenseModal from '../components/Modals/ExpenseModal';
 
 // Import JSON data
 import budgetData from '../data/budget.json';
@@ -18,29 +19,32 @@ import titheData from '../data/tithe.json';
 import debtsData from '../data/debts.json';
 import tasksData from '../data/tasks.json';
 import assetsData from '../data/assets.json';
+import categoriesData from '../data/categories.json';
 
 const Dashboard: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState(budgetData.budgetYear);
   const allowedTypes = ["monthly", "annual", "savings"] as const;
 
-const [funds, setFunds] = useState<Fund[]>(
-  budgetData.funds
-    .filter((item): item is typeof item & { type: "monthly" | "annual" | "savings" } => 
-      allowedTypes.includes(item.type as "monthly" | "annual" | "savings")
-    )
-    .map((item) => ({
-      ...item,
-      type: item.type as "monthly" | "annual" | "savings",
-    })) as Fund[]
-);
+  const [funds, setFunds] = useState<Fund[]>(
+    budgetData.funds
+      .filter((item): item is typeof item & { type: "monthly" | "annual" | "savings" } => 
+        allowedTypes.includes(item.type as "monthly" | "annual" | "savings")
+      )
+      .map((item) => ({
+        ...item,
+        type: item.type as "monthly" | "annual" | "savings",
+      })) as Fund[]
+  );
 
   const [incomes, setIncomes] = useState<Income[]>(incomeData.incomes);
-  const [expenses] = useState<Expense[]>(expensesData.expenses);
+  const [expenses, setExpenses] = useState<Expense[]>(expensesData.expenses);
   const [titheGiven, setTitheGiven] = useState<TitheGiven[]>(titheData.titheGiven);
   const [debts, setDebts] = useState<Debt[]>(debtsData.debts);
   const [tasks, setTasks] = useState<Task[]>(tasksData.tasks);
   const [assetSnapshots, setAssetSnapshots] = useState<AssetSnapshot[]>(assetsData.assetsSnapshot);
+  const [categories] = useState<Category[]>(categoriesData.categories);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return now.getMonth() + 1;
@@ -56,7 +60,7 @@ const [funds, setFunds] = useState<Fund[]>(
 
   // Handlers
   const handleAddExpense = () => {
-    console.log('הוספת הוצאה');
+    setIsExpenseModalOpen(true);
   };
 
   const handleAddIncome = () => {
@@ -66,23 +70,66 @@ const [funds, setFunds] = useState<Fund[]>(
   const handleIncomeModalSubmit = (newIncome: {
     name: string;
     amount: number;
-    month: number;
-    year: number;
-    date: string;
-    source: string;
+    source?: string;
     note?: string;
   }) => {
     const income: Income = {
       id: Date.now().toString(),
       name: newIncome.name,
       amount: newIncome.amount,
-      month: newIncome.month,
-      year: newIncome.year,
-      date: newIncome.date
+      month: new Date().getMonth() + 1,
+      year: new Date().getFullYear(),
+      date: new Date().toISOString().split('T')[0],
+      source: newIncome.source,
+      note: newIncome.note
     };
     
     setIncomes([...incomes, income]);
     console.log('הכנסה חדשה נוספה:', newIncome);
+  };
+
+  const handleExpenseModalSubmit = (newExpense: {
+    name: string;
+    amount: number;
+    category: string;
+    fund: string;
+    note?: string;
+  }) => {
+    const expense: Expense = {
+      id: Date.now().toString(),
+      name: newExpense.name,
+      amount: newExpense.amount,
+      category: newExpense.category,
+      fund: newExpense.fund,
+      date: new Date().toISOString().split('T')[0],
+      note: newExpense.note
+    };
+    
+    setExpenses([...expenses, expense]);
+    
+    // חיסור הסכום מהקופה המתאימה
+    setFunds(prevFunds => 
+      prevFunds.map(fund => {
+        if (fund.name === newExpense.fund) {
+          if (fund.type === 'monthly') {
+            // עבור קופת שוטף - חיסור מהניתן בפועל
+            return { 
+              ...fund, 
+              amountGiven: (fund.amountGiven || 0) - newExpense.amount 
+            };
+          } else {
+            // עבור קופות שנתיות - הוספה לסכום שהוצא
+            return { 
+              ...fund, 
+              spent: (fund.spent || 0) + newExpense.amount 
+            };
+          }
+        }
+        return fund;
+      })
+    );
+    
+    console.log('הוצאה חדשה נוספה:', newExpense);
   };
 
   const handleOpenSettings = () => {
@@ -281,11 +328,18 @@ const [funds, setFunds] = useState<Fund[]>(
           onAddTask={handleAddTask}
         />
 
-        {/* מודל הוספת הכנסה */}
+        {/* מודלים */}
         <IncomeModal
           isOpen={isIncomeModalOpen}
           onClose={() => setIsIncomeModalOpen(false)}
           onAddIncome={handleIncomeModalSubmit}
+        />
+
+        <ExpenseModal
+          isOpen={isExpenseModalOpen}
+          onClose={() => setIsExpenseModalOpen(false)}
+          onAddExpense={handleExpenseModalSubmit}
+          categories={categories}
         />
       </div>
     </div>

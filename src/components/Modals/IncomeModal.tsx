@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, TrendingUp, Plus, Calendar, DollarSign, FileText, Hash } from 'lucide-react';
+import { X, TrendingUp, Plus, DollarSign, FileText, Building } from 'lucide-react';
 
 interface IncomeModalProps {
   isOpen: boolean;
@@ -7,10 +7,7 @@ interface IncomeModalProps {
   onAddIncome: (income: {
     name: string;
     amount: number;
-    month: number;
-    year: number;
-    date: string;
-    source: string;
+    source?: string;
     note?: string;
   }) => void;
 }
@@ -18,50 +15,40 @@ interface IncomeModalProps {
 const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome }) => {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const [year, setYear] = useState(new Date().getFullYear());
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [source, setSource] = useState('');
+  const [customSource, setCustomSource] = useState('');
   const [note, setNote] = useState('');
-  const [isRecurring, setIsRecurring] = useState(false);
 
-  const months = [
-    { value: 1, label: 'ינואר' },
-    { value: 2, label: 'פברואר' },
-    { value: 3, label: 'מרץ' },
-    { value: 4, label: 'אפריל' },
-    { value: 5, label: 'מאי' },
-    { value: 6, label: 'יוני' },
-    { value: 7, label: 'יולי' },
-    { value: 8, label: 'אוגוסט' },
-    { value: 9, label: 'ספטמבר' },
-    { value: 10, label: 'אוקטובר' },
-    { value: 11, label: 'נובמבר' },
-    { value: 12, label: 'דצמבר' }
+  // רשימת מקורות הכנסה נפוצים
+  const commonSources = [
+    'משכורת ראשית',
+    'משכורת שנייה', 
+    'פרילנס',
+    'בונוס',
+    'החזר מס',
+    'מתנה',
+    'השקעות',
+    'אחר'
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim() && amount && source.trim()) {
+    if (name.trim() && amount) {
+      const finalSource = source === 'אחר' ? customSource : source;
+      
       onAddIncome({
         name: name.trim(),
         amount: Number(amount),
-        month,
-        year,
-        date,
-        source: source.trim(),
+        source: finalSource.trim() || undefined,
         note: note.trim() || undefined
       });
       
       // איפוס הטופס
       setName('');
       setAmount('');
-      setMonth(new Date().getMonth() + 1);
-      setYear(new Date().getFullYear());
-      setDate(new Date().toISOString().split('T')[0]);
       setSource('');
+      setCustomSource('');
       setNote('');
-      setIsRecurring(false);
       onClose();
     }
   };
@@ -95,7 +82,7 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
 
         {/* תוכן הטופס */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* שורה ראשונה - שם ההכנסה */}
+          {/* שם ההכנסה */}
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">
               <FileText size={16} className="inline ml-2" />
@@ -106,13 +93,13 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="w-full p-3 border-2 border-emerald-200 rounded-lg text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
-              placeholder="לדוגמה: משכורת ראשית, פרילנס, בונוס..."
+              placeholder="לדוגמה: משכורת חודש מאי, בונוס שנתי..."
               required
               autoFocus
             />
           </div>
 
-          {/* שורה שנייה - סכום ומקור */}
+          {/* סכום ומקור */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -133,71 +120,39 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
 
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
-                <Hash size={16} className="inline ml-2" />
-                מקור ההכנסה *
+                <Building size={16} className="inline ml-2" />
+                מקור ההכנסה
               </label>
-              <input
-                type="text"
+              <select
                 value={source}
                 onChange={(e) => setSource(e.target.value)}
                 className="w-full p-3 border-2 border-emerald-200 rounded-lg text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
-                placeholder="לדוגמה: חברה, לקוח, פרויקט..."
-                required
-              />
-            </div>
-          </div>
-
-          {/* שורה שלישית - תאריך */}
-          <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              <Calendar size={16} className="inline ml-2" />
-              תאריך קבלת ההכנסה *
-            </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => {
-                setDate(e.target.value);
-                const selectedDate = new Date(e.target.value);
-                setMonth(selectedDate.getMonth() + 1);
-                setYear(selectedDate.getFullYear());
-              }}
-              className="w-full p-3 border-2 border-emerald-200 rounded-lg text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
-              required
-            />
-          </div>
-
-          {/* שורה רביעית - חודש ושנה */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                חודש
-              </label>
-              <select
-                value={month}
-                onChange={(e) => setMonth(Number(e.target.value))}
-                className="w-full p-3 border-2 border-emerald-200 rounded-lg text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
               >
-                {months.map(m => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
+                <option value="">בחר מקור (אופציונלי)</option>
+                {commonSources.map(sourceOption => (
+                  <option key={sourceOption} value={sourceOption}>
+                    {sourceOption}
+                  </option>
                 ))}
               </select>
             </div>
+          </div>
 
+          {/* מקור מותאם אישית */}
+          {source === 'אחר' && (
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
-                שנה
+                מקור מותאם אישית
               </label>
               <input
-                type="number"
-                value={year}
-                onChange={(e) => setYear(Number(e.target.value))}
+                type="text"
+                value={customSource}
+                onChange={(e) => setCustomSource(e.target.value)}
                 className="w-full p-3 border-2 border-emerald-200 rounded-lg text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
-                min="2020"
-                max="2030"
+                placeholder="הקלד את שם המקור..."
               />
             </div>
-          </div>
+          )}
 
           {/* הערות */}
           <div>
@@ -211,20 +166,6 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
               rows={3}
               placeholder="הערות נוספות על ההכנסה..."
             />
-          </div>
-
-          {/* אפשרות הכנסה חוזרת */}
-          <div className="flex items-center gap-3 p-4 bg-emerald-50 rounded-lg border border-emerald-200">
-            <input
-              type="checkbox"
-              id="recurring"
-              checked={isRecurring}
-              onChange={(e) => setIsRecurring(e.target.checked)}
-              className="w-4 h-4 text-emerald-600 border-emerald-300 rounded focus:ring-emerald-500"
-            />
-            <label htmlFor="recurring" className="text-sm font-medium text-emerald-800">
-              הכנסה חוזרת (תתווסף אוטומטית בחודש הבא)
-            </label>
           </div>
 
           {/* כפתורי פעולה */}
