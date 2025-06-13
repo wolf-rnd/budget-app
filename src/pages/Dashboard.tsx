@@ -24,8 +24,7 @@ const Dashboard: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [funds, setFunds] = useState<Fund[]>(budgetData.funds);
   const [incomes, setIncomes] = useState<Income[]>(incomeData.incomes);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [expenses, setExpenses] = useState<Expense[]>(expensesData.expenses);
+  const [expenses] = useState<Expense[]>(expensesData.expenses);
   const [titheGiven, setTitheGiven] = useState<TitheGiven[]>(titheData.titheGiven);
   const [debts, setDebts] = useState<Debt[]>(debtsData.debts);
   const [tasks, setTasks] = useState<Task[]>(tasksData.tasks);
