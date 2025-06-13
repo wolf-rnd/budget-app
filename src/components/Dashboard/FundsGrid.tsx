@@ -4,13 +4,15 @@ import { PlusCircle, Calendar, Wallet, TrendingUp, Gift, Coins, DollarSign, Targ
 
 interface FundsGridProps {
   funds: Fund[];
-  onCloseDailyFund: () => void;
+  onCloseDailyFund: (remainingAmount: number) => void;
   onAddMoneyToEnvelope: (amount: number) => void;
 }
 
 const FundsGrid: React.FC<FundsGridProps> = ({ funds, onCloseDailyFund, onAddMoneyToEnvelope }) => {
   const [showEnvelopeInput, setShowEnvelopeInput] = useState(false);
   const [envelopeAmount, setEnvelopeAmount] = useState('');
+  const [showClosureInput, setShowClosureInput] = useState(false);
+  const [remainingAmount, setRemainingAmount] = useState('');
 
   const level1Funds = funds.filter(fund => fund.level === 1);
   const level2Funds = funds.filter(fund => fund.level === 2);
@@ -23,6 +25,19 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, onCloseDailyFund, onAddMon
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(amount);
+  };
+
+  const getMonthName = (monthNumber: number) => {
+    const months = [
+      'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+      'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+    ];
+    return months[monthNumber - 1];
+  };
+
+  const getCurrentMonth = () => {
+    const currentDate = new Date();
+    return currentDate.getMonth() + 1;
   };
 
   const getFundIcon = (fundName: string) => {
@@ -47,11 +62,32 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, onCloseDailyFund, onAddMon
     setShowEnvelopeInput(false);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleClosureSubmit = () => {
+    if (remainingAmount && Number(remainingAmount) >= 0) {
+      onCloseDailyFund(Number(remainingAmount));
+      setRemainingAmount('');
+      setShowClosureInput(false);
+    }
+  };
+
+  const handleClosureCancel = () => {
+    setRemainingAmount('');
+    setShowClosureInput(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent, action: 'envelope' | 'closure') => {
     if (e.key === 'Enter') {
-      handleEnvelopeSubmit();
+      if (action === 'envelope') {
+        handleEnvelopeSubmit();
+      } else {
+        handleClosureSubmit();
+      }
     } else if (e.key === 'Escape') {
-      handleEnvelopeCancel();
+      if (action === 'envelope') {
+        handleEnvelopeCancel();
+      } else {
+        handleClosureCancel();
+      }
     }
   };
 
@@ -68,10 +104,15 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, onCloseDailyFund, onAddMon
           <div className="flex justify-between items-start mb-6 relative z-10">
             <div className="flex items-center gap-3">
               {getFundIcon(fund.name)}
-              <h3 className="text-lg font-bold text-emerald-800">{fund.name}</h3>
+              <div>
+                <h3 className="text-lg font-bold text-emerald-800">{fund.name}</h3>
+                <p className="text-sm text-emerald-600 font-medium">
+                  חודש {getMonthName(getCurrentMonth())} {String(getCurrentMonth()).padStart(2, '0')}
+                </p>
+              </div>
             </div>
             <div className="flex gap-3">
-              {!showEnvelopeInput ? (
+              {!showEnvelopeInput && !showClosureInput ? (
                 <>
                   <button
                     onClick={() => setShowEnvelopeInput(true)}
@@ -81,20 +122,20 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, onCloseDailyFund, onAddMon
                     הוספה למעטפה
                   </button>
                   <button
-                    onClick={onCloseDailyFund}
+                    onClick={() => setShowClosureInput(true)}
                     className="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors flex items-center gap-2 shadow-md"
                   >
                     <Calendar size={16} />
                     סגירת חודש
                   </button>
                 </>
-              ) : (
+              ) : showEnvelopeInput ? (
                 <div className="flex items-center gap-2 bg-white rounded-lg p-2 shadow-md border-2 border-emerald-300">
                   <input
                     type="number"
                     value={envelopeAmount}
                     onChange={(e) => setEnvelopeAmount(e.target.value)}
-                    onKeyDown={handleKeyPress}
+                    onKeyDown={(e) => handleKeyPress(e, 'envelope')}
                     placeholder="סכום"
                     className="w-24 p-1 border border-emerald-200 rounded text-sm focus:border-emerald-400 focus:ring-1 focus:ring-emerald-200"
                     autoFocus
@@ -108,6 +149,33 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, onCloseDailyFund, onAddMon
                   </button>
                   <button
                     onClick={handleEnvelopeCancel}
+                    className="bg-gray-400 text-white p-1 rounded hover:bg-gray-500 transition-colors"
+                    title="ביטול"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 bg-white rounded-lg p-2 shadow-md border-2 border-orange-300">
+                  <span className="text-xs text-gray-600 whitespace-nowrap">נותר במעטפה:</span>
+                  <input
+                    type="number"
+                    value={remainingAmount}
+                    onChange={(e) => setRemainingAmount(e.target.value)}
+                    onKeyDown={(e) => handleKeyPress(e, 'closure')}
+                    placeholder="0"
+                    className="w-20 p-1 border border-orange-200 rounded text-sm focus:border-orange-400 focus:ring-1 focus:ring-orange-200"
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleClosureSubmit}
+                    className="bg-orange-500 text-white p-1 rounded hover:bg-orange-600 transition-colors"
+                    title="סגירת חודש"
+                  >
+                    <Check size={14} />
+                  </button>
+                  <button
+                    onClick={handleClosureCancel}
                     className="bg-gray-400 text-white p-1 rounded hover:bg-gray-500 transition-colors"
                     title="ביטול"
                   >

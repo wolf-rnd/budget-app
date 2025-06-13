@@ -75,8 +75,42 @@ const Dashboard: React.FC = () => {
     console.log('פתיחת הגדרות');
   };
 
-  const handleCloseDailyFund = () => {
-    console.log('סגירת קופת שוטף');
+  const handleCloseDailyFund = (remainingAmount: number) => {
+    setFunds(prevFunds => {
+      return prevFunds.map(fund => {
+        if (fund.id === 'daily') {
+          // חישוב הסכום שנותר לתת
+          const remainingToGive = fund.amount - (fund.amountGiven || 0);
+          
+          // הסכום שיעבור לעודפים = נותר במעטפה + נותר לתת
+          const amountToSurplus = remainingAmount + remainingToGive;
+          
+          // איפוס הקופה לחודש הבא עם הסכום שנותר במעטפה כניתן בפועל
+          return {
+            ...fund,
+            amountGiven: remainingAmount
+          };
+        }
+        
+        // הוספת הסכום לקופת העודפים
+        if (fund.id === 'surplus') {
+          const dailyFund = prevFunds.find(f => f.id === 'daily');
+          if (dailyFund) {
+            const remainingToGive = dailyFund.amount - (dailyFund.amountGiven || 0);
+            const amountToAdd = remainingAmount + remainingToGive;
+            
+            return {
+              ...fund,
+              amount: fund.amount + amountToAdd
+            };
+          }
+        }
+        
+        return fund;
+      });
+    });
+    
+    console.log(`סגירת חודש: ${remainingAmount} ש"ח נותר במעטפה`);
   };
 
   const handleAddMoneyToEnvelope = (amount: number) => {
