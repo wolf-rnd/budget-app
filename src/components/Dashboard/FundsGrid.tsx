@@ -4,11 +4,12 @@ import { PlusCircle, Calendar, Wallet, TrendingUp, Gift, Coins, DollarSign, Targ
 
 interface FundsGridProps {
   funds: Fund[];
+  currentDisplayMonth: number;
   onCloseDailyFund: (remainingAmount: number) => void;
   onAddMoneyToEnvelope: (amount: number) => void;
 }
 
-const FundsGrid: React.FC<FundsGridProps> = ({ funds, onCloseDailyFund, onAddMoneyToEnvelope }) => {
+const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onCloseDailyFund, onAddMoneyToEnvelope }) => {
   const [showEnvelopeInput, setShowEnvelopeInput] = useState(false);
   const [envelopeAmount, setEnvelopeAmount] = useState('');
   const [showClosureInput, setShowClosureInput] = useState(false);
@@ -33,16 +34,6 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, onCloseDailyFund, onAddMon
       'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
     ];
     return months[monthNumber - 1];
-  };
-
-  const getCurrentMonth = () => {
-    const currentDate = new Date();
-    return currentDate.getMonth() + 1;
-  };
-
-  const getNextMonth = () => {
-    const currentMonth = getCurrentMonth();
-    return currentMonth === 12 ? 1 : currentMonth + 1;
   };
 
   const getFundIcon = (fundName: string) => {
@@ -112,7 +103,7 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, onCloseDailyFund, onAddMon
               <div>
                 <h3 className="text-lg font-bold text-emerald-800">{fund.name}</h3>
                 <p className="text-sm text-emerald-600 font-medium">
-                  חודש {getMonthName(getCurrentMonth())} {String(getCurrentMonth()).padStart(2, '0')}
+                  חודש {getMonthName(currentDisplayMonth)} {String(currentDisplayMonth).padStart(2, '0')}
                 </p>
               </div>
             </div>

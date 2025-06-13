@@ -29,10 +29,9 @@ const Dashboard: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>(tasksData.tasks);
   const [assetSnapshots, setAssetSnapshots] = useState<AssetSnapshot[]>(assetsData.assetsSnapshot);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const now = new Date();
-    return now.getMonth() + 1;
-  });
+  
+  // החודש המוצג - נפרד מהתאריך הנוכחי
+  const [currentDisplayMonth, setCurrentDisplayMonth] = useState(budgetData.currentMonth);
 
   // חישוב סכומים
   const totalBudget = funds
@@ -91,7 +90,7 @@ const Dashboard: React.FC = () => {
   };
 
   const handleCloseDailyFund = (remainingAmount: number) => {
-    const nextMonth = getNextMonth(currentMonth);
+    const nextMonth = getNextMonth(currentDisplayMonth);
     
     setFunds(prevFunds => {
       return prevFunds.map(fund => {
@@ -127,15 +126,16 @@ const Dashboard: React.FC = () => {
       });
     });
     
-    // מעבר לחודש הבא
-    setCurrentMonth(nextMonth);
+    // מעבר לחודש הבא - עכשיו מבוסס על state נפרד
+    setCurrentDisplayMonth(nextMonth);
     
-    console.log(`סגירת חודש ${getMonthName(currentMonth)}: ${remainingAmount} ש"ח נותר במעטפה`);
+    console.log(`סגירת חודש ${getMonthName(currentDisplayMonth)}: ${remainingAmount} ש"ח נותר במעטפה`);
     console.log(`מעבר לחודש ${getMonthName(nextMonth)}`);
   };
 
   const handleAddMoneyToEnvelope = (amount: number) => {
     // עדכון קופת השוטף - הוספה לניתן בפועל
+    // הסכום מתווסף לחודש הנוכחי המוצג
     setFunds(prevFunds => 
       prevFunds.map(fund => 
         fund.id === 'daily' 
@@ -143,7 +143,7 @@ const Dashboard: React.FC = () => {
           : fund
       )
     );
-    console.log(`נוסף ${amount} ש"ח למעטפה`);
+    console.log(`נוסף ${amount} ש"ח למעטפה בחודש ${getMonthName(currentDisplayMonth)}`);
   };
 
   // הוספת מעשר - עכשיו מהרכיב עצמו
@@ -245,6 +245,7 @@ const Dashboard: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">מצב קופות</h2>
             <FundsGrid
               funds={funds}
+              currentDisplayMonth={currentDisplayMonth}
               onCloseDailyFund={handleCloseDailyFund}
               onAddMoneyToEnvelope={handleAddMoneyToEnvelope}
             />
@@ -256,7 +257,7 @@ const Dashboard: React.FC = () => {
               totalBudget={totalBudget}
               totalIncome={totalIncome}
               totalExpenses={totalExpenses}
-              currentMonth={currentMonth}
+              currentMonth={currentDisplayMonth}
               totalDebts={debts.reduce((sum, debt) => sum + debt.amount, 0)}
               expectedIncome={expectedIncome}
             />
