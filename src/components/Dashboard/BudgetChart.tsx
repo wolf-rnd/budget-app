@@ -6,18 +6,12 @@ interface BudgetChartProps {
   totalBudget: number;
   totalIncome: number;
   totalExpenses: number;
-  currentMonth: number;
-  totalDebts: number;
-  expectedIncome: number;
 }
 
 const BudgetChart: React.FC<BudgetChartProps> = ({ 
   totalBudget, 
   totalIncome, 
-  totalExpenses, 
-  currentMonth,
-  totalDebts,
-  expectedIncome
+  totalExpenses
 }) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('he-IL', {
