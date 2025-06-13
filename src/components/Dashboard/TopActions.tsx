@@ -73,3 +73,5 @@ const TopActions: React.FC<TopActionsProps> = ({
     </div>
   );
 };
+
+export default TopActions
