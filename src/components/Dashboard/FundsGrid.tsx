@@ -1,14 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Fund } from '../../types';
-import { PlusCircle, Calendar, Wallet, TrendingUp, Gift, Coins, DollarSign, Target } from 'lucide-react';
+import { PlusCircle, Calendar, Wallet, TrendingUp, Gift, Coins, DollarSign, Target, Check, X } from 'lucide-react';
 
 interface FundsGridProps {
   funds: Fund[];
   onCloseDailyFund: () => void;
-  onAddMoneyToEnvelope: () => void;
+  onAddMoneyToEnvelope: (amount: number) => void;
 }
 
 const FundsGrid: React.FC<FundsGridProps> = ({ funds, onCloseDailyFund, onAddMoneyToEnvelope }) => {
+  const [showEnvelopeInput, setShowEnvelopeInput] = useState(false);
+  const [envelopeAmount, setEnvelopeAmount] = useState('');
+
   const level1Funds = funds.filter(fund => fund.level === 1);
   const level2Funds = funds.filter(fund => fund.level === 2);
   const level3Funds = funds.filter(fund => fund.level === 3);
@@ -31,6 +34,27 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, onCloseDailyFund, onAddMon
     return <DollarSign size={18} className="text-gray-600" />;
   };
 
+  const handleEnvelopeSubmit = () => {
+    if (envelopeAmount && Number(envelopeAmount) > 0) {
+      onAddMoneyToEnvelope(Number(envelopeAmount));
+      setEnvelopeAmount('');
+      setShowEnvelopeInput(false);
+    }
+  };
+
+  const handleEnvelopeCancel = () => {
+    setEnvelopeAmount('');
+    setShowEnvelopeInput(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleEnvelopeSubmit();
+    } else if (e.key === 'Escape') {
+      handleEnvelopeCancel();
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* שורה ראשונה - קופת שוטף */}
@@ -47,20 +71,50 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, onCloseDailyFund, onAddMon
               <h3 className="text-lg font-bold text-emerald-800">{fund.name}</h3>
             </div>
             <div className="flex gap-3">
-              <button
-                onClick={onAddMoneyToEnvelope}
-                className="bg-gray-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-600 transition-colors flex items-center gap-2 shadow-md"
-              >
-                <PlusCircle size={16} />
-                הוספה למעטפה
-              </button>
-              <button
-                onClick={onCloseDailyFund}
-                className="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors flex items-center gap-2 shadow-md"
-              >
-                <Calendar size={16} />
-                סגירת חודש
-              </button>
+              {!showEnvelopeInput ? (
+                <>
+                  <button
+                    onClick={() => setShowEnvelopeInput(true)}
+                    className="bg-gray-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-600 transition-colors flex items-center gap-2 shadow-md"
+                  >
+                    <PlusCircle size={16} />
+                    הוספה למעטפה
+                  </button>
+                  <button
+                    onClick={onCloseDailyFund}
+                    className="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors flex items-center gap-2 shadow-md"
+                  >
+                    <Calendar size={16} />
+                    סגירת חודש
+                  </button>
+                </>
+              ) : (
+                <div className="flex items-center gap-2 bg-white rounded-lg p-2 shadow-md border-2 border-emerald-300">
+                  <input
+                    type="number"
+                    value={envelopeAmount}
+                    onChange={(e) => setEnvelopeAmount(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    placeholder="סכום"
+                    className="w-24 p-1 border border-emerald-200 rounded text-sm focus:border-emerald-400 focus:ring-1 focus:ring-emerald-200"
+                    autoFocus
+                  />
+                  <button
+                    onClick={handleEnvelopeSubmit}
+                    className="bg-emerald-500 text-white p-1 rounded hover:bg-emerald-600 transition-colors"
+                    title="אישור"
+                  >
+                    <Check size={14} />
+                  </button>
+                  <button
+                    onClick={handleEnvelopeCancel}
+                    className="bg-gray-400 text-white p-1 rounded hover:bg-gray-500 transition-colors"
+                    title="ביטול"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
             </div>
           </div>
           

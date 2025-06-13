@@ -79,8 +79,16 @@ const Dashboard: React.FC = () => {
     console.log('סגירת קופת שוטף');
   };
 
-  const handleAddMoneyToEnvelope = () => {
-    console.log('הוספת כסף למעטפה');
+  const handleAddMoneyToEnvelope = (amount: number) => {
+    // עדכון קופת השוטף - הוספה לניתן בפועל
+    setFunds(prevFunds => 
+      prevFunds.map(fund => 
+        fund.id === 'daily' 
+          ? { ...fund, amountGiven: (fund.amountGiven || 0) + amount }
+          : fund
+      )
+    );
+    console.log(`נוסף ${amount} ש"ח למעטפה`);
   };
 
   // הוספת מעשר - עכשיו מהרכיב עצמו
