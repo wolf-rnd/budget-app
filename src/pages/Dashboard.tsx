@@ -125,8 +125,8 @@ const Dashboard: React.FC = () => {
     // מעבר לחודש הבא
     setCurrentMonth(nextMonth);
     
-    console.log(סגירת חודש ${getMonthName(currentMonth)}: ${remainingAmount} ש"ח נותר במעטפה);
-    console.log(מעבר לחודש ${getMonthName(nextMonth)});
+    console.log(`סגירת חודש ${getMonthName(currentMonth)}: ${remainingAmount} ש"ח נותר במעטפה`);
+    console.log(`מעבר לחודש ${getMonthName(nextMonth)}`);
   };
 
   const handleAddMoneyToEnvelope = (amount: number) => {
@@ -138,7 +138,7 @@ const Dashboard: React.FC = () => {
           : fund
       )
     );
-    console.log(נוסף ${amount} ש"ח למעטפה);
+    console.log(`נוסף ${amount} ש"ח למעטפה`);
   };
 
   // הוספת מעשר - עכשיו מהרכיב עצמו
