@@ -21,13 +21,12 @@ import assetsData from '../data/assets.json';
 
 const Dashboard: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState(budgetData.budgetYear);
- const [funds, setFunds] = useState<Fund[]>(
-  budgetData.funds.map((item) => ({
-    ...item,
-    type: item.type as "monthly" | "annual" | "savings",
-  }))
-);
-
+   const [funds, setFunds] = useState<Fund[]>(
+    budgetData.funds.map((item) => ({
+      ...item,
+      type: item.type as "monthly" | "annual" | "savings",
+    }))
+  );
   const [incomes, setIncomes] = useState<Income[]>(incomeData.incomes);
   const [expenses] = useState<Expense[]>(expensesData.expenses);
   const [titheGiven, setTitheGiven] = useState<TitheGiven[]>(titheData.titheGiven);
