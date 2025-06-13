@@ -8,6 +8,7 @@ export interface Fund {
   amountGiven?: number;
   spent?: number;
   categories: string[];
+  budgetYearId?: string; // קישור לשנת תקציב
 }
 
 export interface Income {
@@ -19,6 +20,7 @@ export interface Income {
   date: string;
   source?: string;
   note?: string;
+  budgetYearId?: string; // קישור לשנת תקציב
 }
 
 export interface ExpectedIncome {
@@ -30,12 +32,13 @@ export interface ExpectedIncome {
 
 export interface Expense {
   id: string;
-  name: string; // שינוי מ-description ל-name
+  name: string;
   amount: number;
   category: string;
   fund: string;
   date: string;
-  note?: string; // הוספת שדה הערה
+  note?: string;
+  budgetYearId?: string; // קישור לשנת תקציב
 }
 
 export interface TitheGiven {
@@ -51,7 +54,7 @@ export interface Debt {
   description: string;
   amount: number;
   note: string;
-  type?: 'owed_to_me' | 'i_owe'; // הוספת שדה סוג חוב
+  type?: 'owed_to_me' | 'i_owe';
 }
 
 export interface Task {
@@ -63,10 +66,10 @@ export interface Task {
 
 export interface AssetSnapshot {
   id: string;
-  totalSavings?: number; // תאימות לאחור
-  totalLiabilities?: number; // תאימות לאחור
-  assets?: Record<string, number>; // פירוט נכסים חדש
-  liabilities?: Record<string, number>; // פירוט התחייבויות חדש
+  totalSavings?: number;
+  totalLiabilities?: number;
+  assets?: Record<string, number>;
+  liabilities?: Record<string, number>;
   date: string;
   note: string;
 }
@@ -74,4 +77,21 @@ export interface AssetSnapshot {
 export interface Category {
   name: string;
   fund: string;
+}
+
+export interface BudgetYear {
+  id: string;
+  name: string; // פורמט: mm/yy - mm/yy
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+}
+
+export interface FundBudget {
+  id: string;
+  fundId: string;
+  budgetYearId: string;
+  amount: number;
+  amountGiven?: number;
+  spent?: number;
 }

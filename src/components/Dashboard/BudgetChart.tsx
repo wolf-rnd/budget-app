@@ -6,12 +6,14 @@ interface BudgetChartProps {
   totalBudget: number;
   totalIncome: number;
   totalExpenses: number;
+  budgetYearMonths?: number; // מספר החודשים בשנת התקציב
 }
 
 const BudgetChart: React.FC<BudgetChartProps> = ({ 
   totalBudget, 
   totalIncome, 
-  totalExpenses
+  totalExpenses,
+  budgetYearMonths = 12 // ברירת מחדל 12 חודשים
 }) => {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('he-IL', {
@@ -22,7 +24,6 @@ const BudgetChart: React.FC<BudgetChartProps> = ({
     }).format(value);
   };
 
-  // נתונים עבור שתי עמודות נפרדות
   const barsData = [
     {
       name: 'הכנסות',
@@ -36,8 +37,8 @@ const BudgetChart: React.FC<BudgetChartProps> = ({
     }
   ];
 
-  // יצירת 12 קווי רוחב במרחבים שווים עם תוויות חודש
-  const monthlyAmount = totalBudget / 12;
+  // חישוב סכום חודשי דינמי לפי מספר החודשים בשנת התקציב
+  const monthlyAmount = totalBudget / budgetYearMonths;
 
   const CustomBarsTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -91,7 +92,6 @@ const BudgetChart: React.FC<BudgetChartProps> = ({
               </linearGradient>
             </defs>
             
-            {/* רשת עם 12 קווי רוחב */}
             <CartesianGrid 
               strokeDasharray="2 2" 
               stroke="#cbd5e1" 
@@ -117,8 +117,8 @@ const BudgetChart: React.FC<BudgetChartProps> = ({
               cursor={{ fill: 'rgba(0,0,0,0.05)' }}
             />
             
-            {/* קווי ייחוס עם תוויות חודש בלבד */}
-            {Array.from({ length: 12 }, (_, index) => {
+            {/* קווי ייחוס דינמיים לפי מספר החודשים */}
+            {Array.from({ length: budgetYearMonths }, (_, index) => {
               const monthNumber = index + 1;
               const value = monthlyAmount * monthNumber;
               const monthStr = monthNumber < 10 ? `0${monthNumber}` : `${monthNumber}`;
@@ -142,7 +142,6 @@ const BudgetChart: React.FC<BudgetChartProps> = ({
               );
             })}
             
-            {/* עמודות עם צבעים דינמיים */}
             <Bar 
               dataKey="value" 
               radius={[8, 8, 0, 0]}
@@ -160,22 +159,20 @@ const BudgetChart: React.FC<BudgetChartProps> = ({
         </ResponsiveContainer>
       </div>
 
-      {/* כרטיסיות סיכום מתחת לגרף */}
       <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
         <h4 className="text-sm font-bold text-gray-700 mb-3 text-center">סיכום תקציב</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          {/* תקציב כולל */}
           <div className="bg-white rounded-lg shadow-sm p-3 border-r-4 border-blue-500">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-500">תקציב כולל</p>
                 <p className="text-sm font-semibold text-blue-600">{formatCurrency(totalBudget)}</p>
+                <p className="text-xs text-gray-400">{budgetYearMonths} חודשים</p>
               </div>
               <DollarSign className="text-blue-500" size={18} />
             </div>
           </div>
 
-          {/* הכנסות */}
           <div className="bg-white rounded-lg shadow-sm p-3 border-r-4 border-emerald-500">
             <div className="flex items-center justify-between">
               <div>
@@ -186,7 +183,6 @@ const BudgetChart: React.FC<BudgetChartProps> = ({
             </div>
           </div>
 
-          {/* הוצאות */}
           <div className="bg-white rounded-lg shadow-sm p-3 border-r-4 border-amber-500">
             <div className="flex items-center justify-between">
               <div>
@@ -197,7 +193,6 @@ const BudgetChart: React.FC<BudgetChartProps> = ({
             </div>
           </div>
 
-          {/* איזון */}
           <div className={`bg-white rounded-lg shadow-sm p-3 border-r-4 ${
             balance >= 0 ? 'border-gray-400' : 'border-red-500'
           }`}>

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Fund, Income, Expense, TitheGiven, Debt, Task, AssetSnapshot, Category } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Fund, Income, Expense, TitheGiven, Debt, Task, AssetSnapshot, Category, BudgetYear, FundBudget } from '../types';
 import TopActions from '../components/Dashboard/TopActions';
 import BudgetChart from '../components/Dashboard/BudgetChart';
 import FundsGrid from '../components/Dashboard/FundsGrid';
@@ -11,6 +11,16 @@ import QuickAddButtons from '../components/Dashboard/QuickAddButtons';
 import IncomeModal from '../components/Modals/IncomeModal';
 import ExpenseModal from '../components/Modals/ExpenseModal';
 
+import { 
+  getActiveBudgetYear, 
+  getLatestBudgetYear, 
+  filterIncomesByBudgetYear, 
+  filterExpensesByBudgetYear,
+  getAllIncomesForTithe,
+  calculateBudgetYearMonths,
+  getBudgetYearByDate
+} from '../utils/budgetUtils';
+
 // Import JSON data
 import budgetData from '../data/budget.json';
 import incomeData from '../data/income.json';
@@ -20,12 +30,17 @@ import debtsData from '../data/debts.json';
 import tasksData from '../data/tasks.json';
 import assetsData from '../data/assets.json';
 import categoriesData from '../data/categories.json';
+import budgetYearsData from '../data/budgetYears.json';
+import fundBudgetsData from '../data/fundBudgets.json';
 
 const Dashboard: React.FC = () => {
-  const [selectedYear, setSelectedYear] = useState(budgetData.budgetYear);
+  // State management
+  const [budgetYears] = useState<BudgetYear[]>(budgetYearsData.budgetYears);
+  const [selectedBudgetYear, setSelectedBudgetYear] = useState<BudgetYear | null>(null);
+  const [fundBudgets, setFundBudgets] = useState<FundBudget[]>(fundBudgetsData.fundBudgets);
+  
   const allowedTypes = ["monthly", "annual", "savings"] as const;
-
-  const [funds, setFunds] = useState<Fund[]>(
+  const [funds] = useState<Fund[]>(
     budgetData.funds
       .filter((item): item is typeof item & { type: "monthly" | "annual" | "savings" } => 
         allowedTypes.includes(item.type as "monthly" | "annual" | "savings")
@@ -45,20 +60,63 @@ const Dashboard: React.FC = () => {
   const [categories] = useState<Category[]>(categoriesData.categories);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
-  const [currentMonth, setCurrentMonth] = useState(() => {
-    const now = new Date();
-    return now.getMonth() + 1;
-  });
 
-  // חישוב סכומים
-  const totalBudget = funds
-    .filter(fund => fund.includeInBudget)
-    .reduce((sum, fund) => sum + (fund.type === 'monthly' ? fund.amount * 12 : fund.amount), 0);
+  // Initialize selected budget year
+  useEffect(() => {
+    const savedBudgetYearId = localStorage.getItem('selectedBudgetYearId');
+    let initialBudgetYear: BudgetYear | null = null;
+
+    if (savedBudgetYearId) {
+      initialBudgetYear = budgetYears.find(year => year.id === savedBudgetYearId) || null;
+    }
+
+    if (!initialBudgetYear) {
+      initialBudgetYear = getActiveBudgetYear(budgetYears) || getLatestBudgetYear(budgetYears);
+    }
+
+    setSelectedBudgetYear(initialBudgetYear);
+  }, [budgetYears]);
+
+  // Save selected budget year to localStorage
+  useEffect(() => {
+    if (selectedBudgetYear) {
+      localStorage.setItem('selectedBudgetYearId', selectedBudgetYear.id);
+    }
+  }, [selectedBudgetYear]);
+
+  // Calculate data based on selected budget year
+  const currentBudgetYearIncomes = selectedBudgetYear ? filterIncomesByBudgetYear(incomes, selectedBudgetYear) : [];
+  const currentBudgetYearExpenses = selectedBudgetYear ? filterExpensesByBudgetYear(expenses, selectedBudgetYear) : [];
+  const allIncomesForTithe = getAllIncomesForTithe(incomes);
+
+  // Get fund budgets for current year
+  const getCurrentFundBudgets = () => {
+    if (!selectedBudgetYear) return [];
+    return fundBudgets.filter(fb => fb.budgetYearId === selectedBudgetYear.id);
+  };
+
+  const currentFundBudgets = getCurrentFundBudgets();
+
+  // Calculate totals
+  const totalBudget = currentFundBudgets
+    .filter(fb => {
+      const fund = funds.find(f => f.id === fb.fundId);
+      return fund?.includeInBudget;
+    })
+    .reduce((sum, fb) => {
+      const fund = funds.find(f => f.id === fb.fundId);
+      return sum + (fund?.type === 'monthly' ? fb.amount * 12 : fb.amount);
+    }, 0);
   
-  const totalIncome = incomes.reduce((sum, income) => sum + income.amount, 0);
-  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalIncome = currentBudgetYearIncomes.reduce((sum, income) => sum + income.amount, 0);
+  const totalExpenses = currentBudgetYearExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+  const totalIncomesForTithe = allIncomesForTithe.reduce((sum, income) => sum + income.amount, 0);
 
   // Handlers
+  const handleBudgetYearChange = (budgetYear: BudgetYear) => {
+    setSelectedBudgetYear(budgetYear);
+  };
+
   const handleAddExpense = () => {
     setIsExpenseModalOpen(true);
   };
@@ -109,25 +167,24 @@ const Dashboard: React.FC = () => {
     
     setExpenses([...expenses, expense]);
     
-    // חיסור הסכום מהקופה המתאימה
-    setFunds(prevFunds => 
-      prevFunds.map(fund => {
-        if (fund.name === newExpense.fund) {
+    // Update fund budgets
+    setFundBudgets(prevFundBudgets => 
+      prevFundBudgets.map(fb => {
+        const fund = funds.find(f => f.id === fb.fundId && f.name === newExpense.fund);
+        if (fund && selectedBudgetYear && fb.budgetYearId === selectedBudgetYear.id) {
           if (fund.type === 'monthly') {
-            // עבור קופת שוטף - חיסור מהניתן בפועל
             return { 
-              ...fund, 
-              amountGiven: (fund.amountGiven || 0) - newExpense.amount 
+              ...fb, 
+              amountGiven: (fb.amountGiven || 0) - newExpense.amount 
             };
           } else {
-            // עבור קופות שנתיות - הוספה לסכום שהוצא
             return { 
-              ...fund, 
-              spent: (fund.spent || 0) + newExpense.amount 
+              ...fb, 
+              spent: (fb.spent || 0) + newExpense.amount 
             };
           }
         }
-        return fund;
+        return fb;
       })
     );
     
@@ -138,70 +195,59 @@ const Dashboard: React.FC = () => {
     console.log('פתיחת הגדרות');
   };
 
-  const getMonthName = (monthNumber: number) => {
-    const months = [
-      'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
-      'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
-    ];
-    return months[monthNumber - 1];
-  };
-
-  const getNextMonth = (currentMonth: number) => {
-    return currentMonth === 12 ? 1 : currentMonth + 1;
-  };
-
   const handleCloseDailyFund = (remainingAmount: number) => {
-    const nextMonth = getNextMonth(currentMonth);
-    
-    setFunds(prevFunds => {
-      return prevFunds.map(fund => {
-        if (fund.id === 'daily') {
-          
-          // איפוס הקופה לחודש הבא עם הסכום שנותר במעטפה כניתן בפועל
+    if (!selectedBudgetYear) return;
+
+    setFundBudgets(prevFundBudgets => {
+      return prevFundBudgets.map(fb => {
+        const fund = funds.find(f => f.id === fb.fundId);
+        
+        if (fund?.id === 'daily' && fb.budgetYearId === selectedBudgetYear.id) {
           return {
-            ...fund,
+            ...fb,
             amountGiven: remainingAmount
           };
         }
         
-        // הוספת הסכום לקופת העודפים
-        if (fund.id === 'surplus') {
-          const dailyFund = prevFunds.find(f => f.id === 'daily');
-          if (dailyFund) {
-            const remainingToGive = dailyFund.amount - (dailyFund.amountGiven || 0);
+        if (fund?.id === 'surplus' && fb.budgetYearId === selectedBudgetYear.id) {
+          const dailyFundBudget = prevFundBudgets.find(f => {
+            const dailyFund = funds.find(fund => fund.id === f.fundId && fund.id === 'daily');
+            return dailyFund && f.budgetYearId === selectedBudgetYear.id;
+          });
+          
+          if (dailyFundBudget) {
+            const remainingToGive = dailyFundBudget.amount - (dailyFundBudget.amountGiven || 0);
             const amountToAdd = remainingAmount + remainingToGive;
             
             return {
-              ...fund,
-              amount: fund.amount + amountToAdd
+              ...fb,
+              amount: fb.amount + amountToAdd
             };
           }
         }
         
-        return fund;
+        return fb;
       });
     });
     
-    // מעבר לחודש הבא
-    setCurrentMonth(nextMonth);
-    
-    console.log(`סגירת חודש ${getMonthName(currentMonth)}: ${remainingAmount} ש"ח נותר במעטפה`);
-    console.log(`מעבר לחודש ${getMonthName(nextMonth)}`);
+    console.log(`סגירת חודש: ${remainingAmount} ש"ח נותר במעטפה`);
   };
 
   const handleAddMoneyToEnvelope = (amount: number) => {
-    // עדכון קופת השוטף - הוספה לניתן בפועל
-    setFunds(prevFunds => 
-      prevFunds.map(fund => 
-        fund.id === 'daily' 
-          ? { ...fund, amountGiven: (fund.amountGiven || 0) + amount }
-          : fund
-      )
+    if (!selectedBudgetYear) return;
+
+    setFundBudgets(prevFundBudgets => 
+      prevFundBudgets.map(fb => {
+        const fund = funds.find(f => f.id === fb.fundId);
+        if (fund?.id === 'daily' && fb.budgetYearId === selectedBudgetYear.id) {
+          return { ...fb, amountGiven: (fb.amountGiven || 0) + amount };
+        }
+        return fb;
+      })
     );
     console.log(`נוסף ${amount} ש"ח למעטפה`);
   };
 
-  // הוספת מעשר - עכשיו מהרכיב עצמו
   const handleAddTithe = (amount: number, description: string) => {
     const newTithe: TitheGiven = {
       id: Date.now().toString(),
@@ -213,7 +259,6 @@ const Dashboard: React.FC = () => {
     setTitheGiven([...titheGiven, newTithe]);
   };
 
-  // הוספת חוב - עכשיו מהרכיב עצמו עם סוג חוב
   const handleAddDebt = (amount: number, description: string, note: string = '', type: 'owed_to_me' | 'i_owe' = 'i_owe') => {
     const newDebt: Debt = {
       id: Date.now().toString(),
@@ -225,7 +270,6 @@ const Dashboard: React.FC = () => {
     setDebts([...debts, newDebt]);
   };
 
-  // מחיקת חוב - פונקציה חדשה
   const handleDeleteDebt = (id: string) => {
     setDebts(debts.filter(debt => debt.id !== id));
   };
@@ -259,21 +303,43 @@ const Dashboard: React.FC = () => {
     setAssetSnapshots([newSnapshot, ...assetSnapshots]);
   };
 
+  // Convert fund budgets to display format
+  const displayFunds = funds.map(fund => {
+    const fundBudget = currentFundBudgets.find(fb => fb.fundId === fund.id);
+    return {
+      ...fund,
+      amount: fundBudget?.amount || 0,
+      amountGiven: fundBudget?.amountGiven,
+      spent: fundBudget?.spent
+    };
+  });
+
+  if (!selectedBudgetYear) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-gray-800 mb-2">אין שנות תקציב מוגדרות</h2>
+          <p className="text-gray-600">אנא הגדר שנת תקציב בהגדרות המערכת</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
         <TopActions
-          selectedYear={selectedYear}
-          onYearChange={setSelectedYear}
+          selectedBudgetYear={selectedBudgetYear}
+          budgetYears={budgetYears}
+          onBudgetYearChange={handleBudgetYearChange}
           onAddExpense={handleAddExpense}
           onAddIncome={handleAddIncome}
           onOpenSettings={handleOpenSettings}
         />
 
-        {/* שורה ראשונה - מעשרות, חובות ותזכורות */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <TitheSection
-            totalIncome={totalIncome}
+            totalIncome={totalIncomesForTithe}
             tithePercentage={budgetData.tithePercentage}
             titheGiven={titheGiven}
             onAddTithe={handleAddTithe}
@@ -293,29 +359,28 @@ const Dashboard: React.FC = () => {
           />
         </div>
 
-        {/* שורה שנייה - מצב קופות ותרשים עם סיכום */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* מצב קופות */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">מצב קופות</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
+              מצב קופות - {selectedBudgetYear.name}
+            </h2>
             <FundsGrid
-              funds={funds}
+              funds={displayFunds}
               onCloseDailyFund={handleCloseDailyFund}
               onAddMoneyToEnvelope={handleAddMoneyToEnvelope}
             />
           </div>
 
-          {/* תרשים עם סיכום מובנה */}
           <div>
             <BudgetChart
               totalBudget={totalBudget}
               totalIncome={totalIncome}
               totalExpenses={totalExpenses}
+              budgetYearMonths={calculateBudgetYearMonths(selectedBudgetYear)}
             />
           </div>
         </div>
 
-        {/* תמונת מצב נכסים - תחתית */}
         <div className="flex justify-center">
           <AssetsSection
             snapshots={assetSnapshots}
@@ -323,14 +388,12 @@ const Dashboard: React.FC = () => {
           />
         </div>
 
-        {/* כפתורי הוספה מהירה */}
         <QuickAddButtons
           onAddTithe={handleAddTithe}
           onAddDebt={handleAddDebt}
           onAddTask={handleAddTask}
         />
 
-        {/* מודלים */}
         <IncomeModal
           isOpen={isIncomeModalOpen}
           onClose={() => setIsIncomeModalOpen(false)}

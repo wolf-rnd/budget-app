@@ -1,10 +1,19 @@
 import React, { useState } from 'react';
 import { X, TrendingDown, Plus, DollarSign, FileText, Tag, Calendar } from 'lucide-react';
+import { Expense } from '../../types';
 
 interface ExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddExpense: (expense: {
+  onAddExpense?: (expense: {
+    name: string;
+    amount: number;
+    category: string;
+    fund: string;
+    date: string;
+    note?: string;
+  }) => void;
+  onEditExpense?: (id: string, expense: {
     name: string;
     amount: number;
     category: string;
@@ -13,33 +22,48 @@ interface ExpenseModalProps {
     note?: string;
   }) => void;
   categories: { name: string; fund: string }[];
+  editingExpense?: Expense | null;
 }
 
-const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpense, categories }) => {
-  const [name, setName] = useState('');
-  const [amount, setAmount] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [note, setNote] = useState('');
+const ExpenseModal: React.FC<ExpenseModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onAddExpense, 
+  onEditExpense,
+  categories, 
+  editingExpense 
+}) => {
+  const [name, setName] = useState(editingExpense?.name || '');
+  const [amount, setAmount] = useState(editingExpense?.amount.toString() || '');
+  const [selectedCategory, setSelectedCategory] = useState(editingExpense?.category || '');
+  const [date, setDate] = useState(editingExpense?.date || new Date().toISOString().split('T')[0]);
+  const [note, setNote] = useState(editingExpense?.note || '');
 
-  // עיצוב מספרים עם פסיקים
+  React.useEffect(() => {
+    if (editingExpense) {
+      setName(editingExpense.name);
+      setAmount(formatNumber(editingExpense.amount.toString()));
+      setSelectedCategory(editingExpense.category);
+      setDate(editingExpense.date);
+      setNote(editingExpense.note || '');
+    } else {
+      setName('');
+      setAmount('');
+      setSelectedCategory('');
+      setDate(new Date().toISOString().split('T')[0]);
+      setNote('');
+    }
+  }, [editingExpense, isOpen]);
+
   const formatNumber = (value: string) => {
-    // הסרת כל מה שאינו ספרה או נקודה
     const cleanValue = value.replace(/[^\d.]/g, '');
-    
-    // פיצול לחלק שלם ועשרוני
     const parts = cleanValue.split('.');
     const integerPart = parts[0];
     const decimalPart = parts[1];
-    
-    // הוספת פסיקים לחלק השלם
     const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    
-    // החזרת המספר המעוצב
     return decimalPart !== undefined ? `${formattedInteger}.${decimalPart}` : formattedInteger;
   };
 
-  // הסרת פסיקים למספר נקי
   const cleanNumber = (value: string) => {
     return value.replace(/,/g, '');
   };
@@ -54,21 +78,21 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
     if (name.trim() && amount && selectedCategory && date) {
       const category = categories.find(cat => cat.name === selectedCategory);
       if (category) {
-        onAddExpense({
+        const expenseData = {
           name: name.trim(),
           amount: Number(cleanNumber(amount)),
           category: selectedCategory,
           fund: category.fund,
           date,
           note: note.trim() || undefined
-        });
+        };
+
+        if (editingExpense && onEditExpense) {
+          onEditExpense(editingExpense.id, expenseData);
+        } else if (onAddExpense) {
+          onAddExpense(expenseData);
+        }
         
-        // איפוס הטופס
-        setName('');
-        setAmount('');
-        setSelectedCategory('');
-        setDate(new Date().toISOString().split('T')[0]);
-        setNote('');
         onClose();
       }
     }
@@ -80,7 +104,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
     }
   };
 
-  // סגירה בלחיצה על overlay
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -89,6 +112,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
 
   if (!isOpen) return null;
 
+  const isEditing = !!editingExpense;
+
   return (
     <div 
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" 
@@ -96,12 +121,13 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
       onClick={handleOverlayClick}
     >
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* כותרת */}
         <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6 rounded-t-xl">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <TrendingDown size={24} className="text-white" />
-              <h2 className="text-xl font-bold text-white">הוספת הוצאה חדשה</h2>
+              <h2 className="text-xl font-bold text-white">
+                {isEditing ? 'עריכת הוצאה' : 'הוספת הוצאה חדשה'}
+              </h2>
             </div>
             <button
               onClick={onClose}
@@ -112,9 +138,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
           </div>
         </div>
 
-        {/* תוכן הטופס */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
-          {/* שם ההוצאה */}
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">
               <FileText size={16} className="inline ml-2" />
@@ -131,7 +155,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
             />
           </div>
 
-          {/* סכום וקטגוריה */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -174,7 +197,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
             </div>
           </div>
 
-          {/* תאריך */}
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">
               <Calendar size={16} className="inline ml-2" />
@@ -189,7 +211,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
             />
           </div>
 
-          {/* הערות */}
           <div>
             <label className="block text-sm font-bold text-gray-700 mb-2">
               הערות
@@ -203,7 +224,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
             />
           </div>
 
-          {/* מידע על הקופה */}
           {selectedCategory && (
             <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
               <div className="flex items-center gap-2 mb-2">
@@ -215,7 +235,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
             </div>
           )}
 
-          {/* כפתורי פעולה */}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
             <button
               type="button"
@@ -229,7 +248,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
               className="bg-amber-600 text-white px-6 py-2 rounded-lg text-sm hover:bg-amber-700 transition-colors flex items-center gap-2 shadow-md"
             >
               <Plus size={16} />
-              הוספת הוצאה
+              {isEditing ? 'עדכון הוצאה' : 'הוספת הוצאה'}
             </button>
           </div>
         </form>

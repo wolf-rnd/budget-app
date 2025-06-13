@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { TrendingDown, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Undo2, X } from 'lucide-react';
-import { Expense, Category } from '../types';
+import { Expense, Category, BudgetYear } from '../types';
 import ExpenseModal from '../components/Modals/ExpenseModal';
+import { filterExpensesByBudgetYear } from '../utils/budgetUtils';
 
-// Import data
 import expensesData from '../data/expenses.json';
 import categoriesData from '../data/categories.json';
+import budgetYearsData from '../data/budgetYears.json';
 
 interface UndoNotification {
   expenseId: string;
@@ -13,21 +14,25 @@ interface UndoNotification {
   timeoutId: ReturnType<typeof setTimeout>;
 }
 
-const Expenses: React.FC = () => {
+interface ExpensesProps {
+  selectedBudgetYear?: BudgetYear | null;
+}
+
+const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
   const [expenses, setExpenses] = useState<Expense[]>(expensesData.expenses);
   const [categories] = useState<Category[]>(categoriesData.categories);
+  const [budgetYears] = useState<BudgetYear[]>(budgetYearsData.budgetYears);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [undoNotification, setUndoNotification] = useState<UndoNotification | null>(null);
   
-  // פילטורים
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedFund, setSelectedFund] = useState('');
-  
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // צבעים לקטגוריות וקופות
+  const currentBudgetYear = selectedBudgetYear || budgetYears.find(year => year.isActive) || budgetYears[0];
+
   const categoryColors: Record<string, string> = {
     'מזון': 'bg-green-100 text-green-800 border-green-300',
     'תחבורה': 'bg-blue-100 text-blue-800 border-blue-300',
@@ -53,30 +58,31 @@ const Expenses: React.FC = () => {
     'תקציב מורחב': 'bg-purple-100 text-purple-800 border-purple-300'
   };
 
-  // קבלת רשימת קופות ייחודיות
   const uniqueFunds = Array.from(new Set(categories.map(cat => cat.fund)));
 
-  // סינון הוצאות
+  // סינון הוצאות לפי שנת תקציב נוכחית
+  const budgetYearExpenses = useMemo(() => {
+    if (!currentBudgetYear) return expenses;
+    return filterExpensesByBudgetYear(expenses, currentBudgetYear);
+  }, [expenses, currentBudgetYear]);
+
   const filteredExpenses = useMemo(() => {
-    return expenses.filter(expense => {
+    return budgetYearExpenses.filter(expense => {
       const categoryMatch = !selectedCategory || expense.category === selectedCategory;
       const fundMatch = !selectedFund || expense.fund === selectedFund;
       return categoryMatch && fundMatch;
     });
-  }, [expenses, selectedCategory, selectedFund]);
+  }, [budgetYearExpenses, selectedCategory, selectedFund]);
 
-  // חישוב pagination
   const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentExpenses = filteredExpenses.slice(startIndex, endIndex);
 
-  // איפוס עמוד כשמשנים פילטר
   React.useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCategory, selectedFund]);
+  }, [selectedCategory, selectedFund, currentBudgetYear]);
 
-  // ניקוי טיימר בעת unmount
   React.useEffect(() => {
     return () => {
       if (undoNotification) {
@@ -99,6 +105,7 @@ const Expenses: React.FC = () => {
   };
 
   const handleAddExpense = () => {
+    setEditingExpense(null);
     setIsExpenseModalOpen(true);
   };
 
@@ -125,18 +132,35 @@ const Expenses: React.FC = () => {
   };
 
   const handleEditExpense = (id: string) => {
-    console.log('עריכת הוצאה:', id);
-    // TODO: פתיחת מודל עריכה
+    const expense = expenses.find(exp => exp.id === id);
+    if (expense) {
+      setEditingExpense(expense);
+      setIsExpenseModalOpen(true);
+    }
+  };
+
+  const handleExpenseEditSubmit = (id: string, updatedExpense: {
+    name: string;
+    amount: number;
+    category: string;
+    fund: string;
+    date: string;
+    note?: string;
+  }) => {
+    setExpenses(expenses.map(expense => 
+      expense.id === id 
+        ? { ...expense, ...updatedExpense }
+        : expense
+    ));
+    console.log('הוצאה עודכנה:', updatedExpense);
   };
 
   const handleDeleteExpense = (id: string) => {
     const expenseToDelete = expenses.find(expense => expense.id === id);
     if (!expenseToDelete) return;
 
-    // מחיקה מיידית
     setExpenses(expenses.filter(expense => expense.id !== id));
 
-    // יצירת טיימר של 3 שניות - אחרי זה המחיקה הופכת סופית
     const timeoutId = setTimeout(() => {
       setUndoNotification(null);
       console.log('מחיקה סופית של הוצאה:', expenseToDelete.name);
@@ -151,16 +175,12 @@ const Expenses: React.FC = () => {
 
   const handleUndo = () => {
     if (undoNotification) {
-      // החזרת ההוצאה למקומה
       const expenseToRestore = expensesData.expenses.find(expense => expense.id === undoNotification.expenseId);
       if (expenseToRestore) {
         setExpenses(prevExpenses => [expenseToRestore, ...prevExpenses]);
       }
       
-      // ביטול הטיימר
       clearTimeout(undoNotification.timeoutId);
-      
-      // הסתרת הנוטיפיקציה
       setUndoNotification(null);
     }
   };
@@ -184,19 +204,18 @@ const Expenses: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
-        {/* כותרת העמוד */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="flex items-center gap-3 mb-4">
             <TrendingDown size={28} className="text-amber-500" />
             <div>
               <h1 className="text-2xl font-bold text-gray-800">הוצאות</h1>
-              <p className="text-gray-600">ניהול וצפייה בכל ההוצאות</p>
+              <p className="text-gray-600">
+                ניהול וצפייה בהוצאות - {currentBudgetYear?.name}
+              </p>
             </div>
           </div>
 
-          {/* כלי סינון */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* פילטר קטגוריה */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">קטגוריה</label>
               <select 
@@ -213,7 +232,6 @@ const Expenses: React.FC = () => {
               </select>
             </div>
 
-            {/* פילטר קופה */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">קופה</label>
               <select 
@@ -230,7 +248,6 @@ const Expenses: React.FC = () => {
               </select>
             </div>
 
-            {/* כפתורים */}
             <div className="flex gap-2 items-end">
               <button
                 onClick={clearFilters}
@@ -248,7 +265,6 @@ const Expenses: React.FC = () => {
             </div>
           </div>
 
-          {/* מידע על פילטרים פעילים */}
           {(selectedCategory || selectedFund) && (
             <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
               <div className="flex items-center gap-2 text-sm text-amber-800">
@@ -271,7 +287,6 @@ const Expenses: React.FC = () => {
           )}
         </div>
 
-        {/* טבלת הוצאות */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="p-6 border-b border-gray-200">
             <div className="flex justify-between items-center">
@@ -359,7 +374,6 @@ const Expenses: React.FC = () => {
             </table>
           </div>
 
-          {/* Pagination */}
           {totalPages > 1 && (
             <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
               <div className="flex items-center justify-between">
@@ -380,7 +394,6 @@ const Expenses: React.FC = () => {
                     <ChevronRight size={16} />
                   </button>
                   
-                  {/* מספרי עמודים */}
                   <div className="flex gap-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                       <button
@@ -414,15 +427,18 @@ const Expenses: React.FC = () => {
           )}
         </div>
 
-        {/* מודל הוספת הוצאה */}
         <ExpenseModal
           isOpen={isExpenseModalOpen}
-          onClose={() => setIsExpenseModalOpen(false)}
+          onClose={() => {
+            setIsExpenseModalOpen(false);
+            setEditingExpense(null);
+          }}
           onAddExpense={handleExpenseModalSubmit}
+          onEditExpense={handleExpenseEditSubmit}
           categories={categories}
+          editingExpense={editingExpense}
         />
 
-        {/* נוטיפיקציה של ביטול מחיקה */}
         {undoNotification && (
           <div className="fixed bottom-6 right-6 bg-red-600 text-white p-4 rounded-lg shadow-lg border-2 border-red-500 animate-slide-up z-50 max-w-sm">
             <div className="flex items-center justify-between">
@@ -452,7 +468,6 @@ const Expenses: React.FC = () => {
               </div>
             </div>
             
-            {/* פס התקדמות */}
             <div className="mt-2 w-full bg-red-500 rounded-full h-1">
               <div className="bg-white h-1 rounded-full animate-progress-bar"></div>
             </div>
