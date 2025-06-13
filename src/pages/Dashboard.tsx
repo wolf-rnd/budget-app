@@ -23,7 +23,7 @@ const Dashboard: React.FC = () => {
   const [selectedYear, setSelectedYear] = useState(budgetData.budgetYear);
   const [funds, setFunds] = useState<Fund[]>(budgetData.funds);
   const [incomes, setIncomes] = useState<Income[]>(incomeData.incomes);
- // const [expenses, setExpenses] = useState<Expense[]>(expensesData.expenses);
+  const [expenses, setExpenses] = useState<Expense[]>(expensesData.expenses);
   const [titheGiven, setTitheGiven] = useState<TitheGiven[]>(titheData.titheGiven);
   const [debts, setDebts] = useState<Debt[]>(debtsData.debts);
   const [tasks, setTasks] = useState<Task[]>(tasksData.tasks);
