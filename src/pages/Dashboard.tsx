@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Fund, Income, Expense, TitheGiven, Debt, Task, AssetSnapshot } from '../types';
 import TopActions from '../components/Dashboard/TopActions';
 import BudgetChart from '../components/Dashboard/BudgetChart';
