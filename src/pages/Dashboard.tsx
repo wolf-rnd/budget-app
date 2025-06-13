@@ -194,38 +194,7 @@ const Dashboard: React.FC = () => {
           onOpenSettings={handleOpenSettings}
         />
 
-        <SummaryCards
-          totalBudget={totalBudget}
-          totalIncome={totalIncome}
-          totalExpenses={totalExpenses}
-          totalDebts={debts.reduce((sum, debt) => sum + debt.amount, 0)}
-          expectedIncome={expectedIncome}
-        />
-
-        {/* שורה ראשונה - מצב קופות ותרשים */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          {/* מצב קופות */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">מצב קופות</h2>
-            <FundsGrid
-              funds={funds}
-              onCloseDailyFund={handleCloseDailyFund}
-              onAddMoneyToEnvelope={handleAddMoneyToEnvelope}
-            />
-          </div>
-
-          {/* תרשים */}
-          <div>
-            <BudgetChart
-              totalBudget={totalBudget}
-              totalIncome={totalIncome}
-              totalExpenses={totalExpenses}
-              currentMonth={budgetData.currentMonth}
-            />
-          </div>
-        </div>
-
-        {/* שורה שנייה - מעשרות, חובות ותזכורות */}
+        {/* שורה ראשונה - מעשרות, חובות ותזכורות */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <TitheSection
             totalIncome={totalIncome}
@@ -246,6 +215,40 @@ const Dashboard: React.FC = () => {
             onUpdateTask={handleUpdateTask}
             onDeleteTask={handleDeleteTask}
           />
+        </div>
+
+        {/* שורה שנייה - מצב קופות ותרשים עם סיכום */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* מצב קופות */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">מצב קופות</h2>
+            <FundsGrid
+              funds={funds}
+              onCloseDailyFund={handleCloseDailyFund}
+              onAddMoneyToEnvelope={handleAddMoneyToEnvelope}
+            />
+          </div>
+
+          {/* תרשים עם סיכום */}
+          <div className="space-y-4">
+            <BudgetChart
+              totalBudget={totalBudget}
+              totalIncome={totalIncome}
+              totalExpenses={totalExpenses}
+              currentMonth={budgetData.currentMonth}
+            />
+            
+            {/* סיכום תקציב מתחת לגרף */}
+            <div className="bg-white rounded-lg shadow-md p-4">
+              <SummaryCards
+                totalBudget={totalBudget}
+                totalIncome={totalIncome}
+                totalExpenses={totalExpenses}
+                totalDebts={debts.reduce((sum, debt) => sum + debt.amount, 0)}
+                expectedIncome={expectedIncome}
+              />
+            </div>
+          </div>
         </div>
 
         {/* תמונת מצב נכסים - תחתית */}
