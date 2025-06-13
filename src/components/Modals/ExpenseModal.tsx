@@ -20,6 +20,33 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
   const [selectedCategory, setSelectedCategory] = useState('');
   const [note, setNote] = useState('');
 
+  // עיצוב מספרים עם פסיקים
+  const formatNumber = (value: string) => {
+    // הסרת כל מה שאינו ספרה או נקודה
+    const cleanValue = value.replace(/[^\d.]/g, '');
+    
+    // פיצול לחלק שלם ועשרוני
+    const parts = cleanValue.split('.');
+    const integerPart = parts[0];
+    const decimalPart = parts[1];
+    
+    // הוספת פסיקים לחלק השלם
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    // החזרת המספר המעוצב
+    return decimalPart !== undefined ? `${formattedInteger}.${decimalPart}` : formattedInteger;
+  };
+
+  // הסרת פסיקים למספר נקי
+  const cleanNumber = (value: string) => {
+    return value.replace(/,/g, '');
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatNumber(e.target.value);
+    setAmount(formatted);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim() && amount && selectedCategory) {
@@ -27,7 +54,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
       if (category) {
         onAddExpense({
           name: name.trim(),
-          amount: Number(amount),
+          amount: Number(cleanNumber(amount)),
           category: selectedCategory,
           fund: category.fund,
           note: note.trim() || undefined
@@ -97,15 +124,18 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
                 סכום *
               </label>
               <input
-                type="number"
+                type="text"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={handleAmountChange}
                 className="w-full p-3 border-2 border-amber-200 rounded-lg text-sm focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
                 placeholder="0"
-                min="0"
-                step="0.01"
                 required
               />
+              {amount && (
+                <p className="text-xs text-gray-500 mt-1">
+                  סכום: {amount} ש"ח
+                </p>
+              )}
             </div>
 
             <div>

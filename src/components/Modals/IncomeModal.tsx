@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, TrendingUp, Plus, DollarSign, FileText, Building } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { X, TrendingUp, Plus, DollarSign, FileText, Building, ChevronDown } from 'lucide-react';
 
 interface IncomeModalProps {
   isOpen: boolean;
@@ -16,11 +16,16 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [source, setSource] = useState('');
-  const [customSource, setCustomSource] = useState('');
   const [note, setNote] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [filteredSources, setFilteredSources] = useState<string[]>([]);
+  const [savedSources, setSavedSources] = useState<string[]>([]);
+  
+  const sourceInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // רשימת מקורות הכנסה נפוצים
-  const commonSources = [
+  const defaultSources = [
     'משכורת ראשית',
     'משכורת שנייה', 
     'פרילנס',
@@ -28,18 +33,105 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
     'החזר מס',
     'מתנה',
     'השקעות',
-    'אחר'
+    'שיעורים פרטיים',
+    'וולף',
+    'מלכי'
   ];
+
+  // טעינת מקורות שמורים מ-localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('incomeSources');
+    if (saved) {
+      setSavedSources(JSON.parse(saved));
+    }
+  }, []);
+
+  // שמירת מקורות ב-localStorage
+  const saveSource = (newSource: string) => {
+    if (newSource.trim() && !savedSources.includes(newSource.trim())) {
+      const updatedSources = [...savedSources, newSource.trim()];
+      setSavedSources(updatedSources);
+      localStorage.setItem('incomeSources', JSON.stringify(updatedSources));
+    }
+  };
+
+  // כל המקורות הזמינים
+  const allSources = [...defaultSources, ...savedSources];
+
+  // סינון מקורות לפי הטקסט שהוקלד
+  useEffect(() => {
+    if (source.trim()) {
+      const filtered = allSources.filter(s => 
+        s.toLowerCase().includes(source.toLowerCase())
+      );
+      setFilteredSources(filtered);
+    } else {
+      setFilteredSources(allSources);
+    }
+  }, [source, savedSources]);
+
+  // עיצוב מספרים עם פסיקים
+  const formatNumber = (value: string) => {
+    // הסרת כל מה שאינו ספרה או נקודה
+    const cleanValue = value.replace(/[^\d.]/g, '');
+    
+    // פיצול לחלק שלם ועשרוני
+    const parts = cleanValue.split('.');
+    const integerPart = parts[0];
+    const decimalPart = parts[1];
+    
+    // הוספת פסיקים לחלק השלם
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    // החזרת המספר המעוצב
+    return decimalPart !== undefined ? `${formattedInteger}.${decimalPart}` : formattedInteger;
+  };
+
+  // הסרת פסיקים למספר נקי
+  const cleanNumber = (value: string) => {
+    return value.replace(/,/g, '');
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatNumber(e.target.value);
+    setAmount(formatted);
+  };
+
+  const handleSourceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSource(e.target.value);
+    setShowSuggestions(true);
+  };
+
+  const handleSourceSelect = (selectedSource: string) => {
+    setSource(selectedSource);
+    setShowSuggestions(false);
+  };
+
+  const handleSourceFocus = () => {
+    setShowSuggestions(true);
+  };
+
+  const handleSourceBlur = (e: React.FocusEvent) => {
+    // עיכוב קטן כדי לאפשר לחיצה על הצעה
+    setTimeout(() => {
+      if (!suggestionsRef.current?.contains(e.relatedTarget as Node)) {
+        setShowSuggestions(false);
+      }
+    }, 150);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim() && amount) {
-      const finalSource = source === 'אחר' ? customSource : source;
+      // שמירת מקור חדש אם הוקלד
+      if (source.trim()) {
+        saveSource(source.trim());
+      }
       
       onAddIncome({
         name: name.trim(),
-        amount: Number(amount),
-        source: finalSource.trim() || undefined,
+        amount: Number(cleanNumber(amount)),
+        source: source.trim() || undefined,
         note: note.trim() || undefined
       });
       
@@ -47,14 +139,15 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
       setName('');
       setAmount('');
       setSource('');
-      setCustomSource('');
       setNote('');
+      setShowSuggestions(false);
       onClose();
     }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
+      setShowSuggestions(false);
       onClose();
     }
   };
@@ -107,52 +200,69 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
                 סכום *
               </label>
               <input
-                type="number"
+                type="text"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={handleAmountChange}
                 className="w-full p-3 border-2 border-emerald-200 rounded-lg text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
                 placeholder="0"
-                min="0"
-                step="0.01"
                 required
               />
+              {amount && (
+                <p className="text-xs text-gray-500 mt-1">
+                  סכום: {amount} ש"ח
+                </p>
+              )}
             </div>
 
-            <div>
+            <div className="relative">
               <label className="block text-sm font-bold text-gray-700 mb-2">
                 <Building size={16} className="inline ml-2" />
                 מקור ההכנסה
               </label>
-              <select
-                value={source}
-                onChange={(e) => setSource(e.target.value)}
-                className="w-full p-3 border-2 border-emerald-200 rounded-lg text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
-              >
-                <option value="">בחר מקור (אופציונלי)</option>
-                {commonSources.map(sourceOption => (
-                  <option key={sourceOption} value={sourceOption}>
-                    {sourceOption}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <input
+                  ref={sourceInputRef}
+                  type="text"
+                  value={source}
+                  onChange={handleSourceChange}
+                  onFocus={handleSourceFocus}
+                  onBlur={handleSourceBlur}
+                  className="w-full p-3 border-2 border-emerald-200 rounded-lg text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200 pl-10"
+                  placeholder="הקלד או בחר מקור..."
+                />
+                <ChevronDown 
+                  size={16} 
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none" 
+                />
+              </div>
+              
+              {/* רשימת הצעות */}
+              {showSuggestions && filteredSources.length > 0 && (
+                <div 
+                  ref={suggestionsRef}
+                  className="absolute top-full left-0 right-0 bg-white border-2 border-emerald-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto mt-1"
+                >
+                  {filteredSources.map((sourceOption, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleSourceSelect(sourceOption)}
+                      className="w-full text-right px-3 py-2 hover:bg-emerald-50 text-sm border-b border-emerald-100 last:border-b-0 transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span>{sourceOption}</span>
+                        {savedSources.includes(sourceOption) && (
+                          <span className="text-xs text-emerald-600 bg-emerald-100 px-2 py-1 rounded">
+                            שמור
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
-
-          {/* מקור מותאם אישית */}
-          {source === 'אחר' && (
-            <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
-                מקור מותאם אישית
-              </label>
-              <input
-                type="text"
-                value={customSource}
-                onChange={(e) => setCustomSource(e.target.value)}
-                className="w-full p-3 border-2 border-emerald-200 rounded-lg text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
-                placeholder="הקלד את שם המקור..."
-              />
-            </div>
-          )}
 
           {/* הערות */}
           <div>
