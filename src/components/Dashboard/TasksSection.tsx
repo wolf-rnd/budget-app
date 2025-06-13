@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Check, Star, X, CheckCircle2, Undo2, ListTodo } from 'lucide-react';
+import { Plus, Check, Star, X, CheckCircle2, Undo2 } from 'lucide-react';
 import { Task } from '../../types';
 
 interface TasksSectionProps {

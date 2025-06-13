@@ -40,11 +40,6 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, onCloseDailyFund, onAddMon
     return currentDate.getMonth() + 1;
   };
 
-  const getNextMonth = () => {
-    const currentMonth = getCurrentMonth();
-    return currentMonth === 12 ? 1 : currentMonth + 1;
-  };
-
   const getFundIcon = (fundName: string) => {
     if (fundName.includes('שוטף')) return <Wallet size={20} className="text-emerald-600" />;
     if (fundName.includes('שנתי')) return <Target size={18} className="text-indigo-600" />;
