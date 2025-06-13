@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Plus, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
+import { Settings, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
 
 interface TopActionsProps {
   selectedYear: number;
