@@ -29,7 +29,7 @@ const [funds, setFunds] = useState<Fund[]>(
     .map((item) => ({
       ...item,
       type: item.type as "monthly" | "annual" | "savings",
-    }))
+    })) as Fund[]
 );
 
   const [incomes, setIncomes] = useState<Income[]>(incomeData.incomes);
