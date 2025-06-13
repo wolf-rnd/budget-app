@@ -96,8 +96,6 @@ const Dashboard: React.FC = () => {
     setFunds(prevFunds => {
       return prevFunds.map(fund => {
         if (fund.id === 'daily') {
-          // חישוב הסכום שנותר לתת
-          const remainingToGive = fund.amount - (fund.amountGiven || 0);
           
           // איפוס הקופה לחודש הבא עם הסכום שנותר במעטפה כניתן בפועל
           return {
