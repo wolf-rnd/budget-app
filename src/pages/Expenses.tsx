@@ -1,5 +1,5 @@
 import React from 'react';
-import { TrendingDown, Filter, Search, Calendar } from 'lucide-react';
+import { TrendingDown, Search, Calendar } from 'lucide-react';
 
 const Expenses: React.FC = () => {
   return (
