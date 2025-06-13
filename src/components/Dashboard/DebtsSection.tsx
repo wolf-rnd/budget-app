@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, AlertTriangle, CreditCard, TrendingDown, X, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Plus, AlertTriangle, CreditCard, X, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Debt } from '../../types';
 
 interface DebtsSectionProps {
@@ -12,14 +12,10 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [note, setNote] = useState('');
-  const [debtType, setDebtType] = useState<'owed_to_me' | 'i_owe'>('i_owe');
 
   // הפרדת החובות לשני סוגים
   const debtsOwedToMe = debts.filter(debt => debt.type === 'owed_to_me');
   const debtsIOwe = debts.filter(debt => debt.type === 'i_owe' || !debt.type); // תאימות לאחור
-
-  const totalDebtsOwedToMe = debtsOwedToMe.reduce((sum, debt) => sum + debt.amount, 0);
-  const totalDebtsIOwe = debtsIOwe.reduce((sum, debt) => sum + debt.amount, 0);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('he-IL', {
@@ -30,19 +26,19 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
     }).format(amount);
   };
 
-  const handleAddDebt = () => {
+  const handleAddDebt = (type: 'owed_to_me' | 'i_owe') => {
     if (amount && description.trim()) {
-      onAddDebt(Number(amount), description.trim(), note.trim(), debtType);
+      onAddDebt(Number(amount), description.trim(), note.trim(), type);
       setAmount('');
       setDescription('');
       setNote('');
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = (e: React.KeyboardEvent, type: 'owed_to_me' | 'i_owe') => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      handleAddDebt();
+      handleAddDebt(type);
     }
   };
 
@@ -104,11 +100,72 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
           {type === 'owed_to_me' ? (
             <ArrowLeft size={16} className="mx-auto mb-2 opacity-50 text-green-500" />
           ) : (
-            <AlertTriangle size={16} className="mx-auto mb-2 opacity-50 text-green-500" />
+            <AlertTriangle size={16} className="mx-auto mb-2 opacity-50 text-gray-500" />
           )}
           <p className="text-xs font-medium">{emptyMessage}</p>
         </div>
       )}
+    </div>
+  );
+
+  const AddDebtForm = ({ type }: { type: 'owed_to_me' | 'i_owe' }) => (
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          onKeyDown={(e) => handleKeyPress(e, type)}
+          placeholder="סכום"
+          className={`w-full p-2 border-2 rounded text-xs transition-all bg-white ${
+            type === 'owed_to_me'
+              ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
+              : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
+          }`}
+        />
+        
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          onKeyDown={(e) => handleKeyPress(e, type)}
+          placeholder="תיאור"
+          className={`w-full p-2 border-2 rounded text-xs transition-all bg-white ${
+            type === 'owed_to_me'
+              ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
+              : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
+          }`}
+        />
+      </div>
+      
+      <div className="flex gap-2">
+        <input
+          type="text"
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          onKeyDown={(e) => handleKeyPress(e, type)}
+          placeholder="הערה (אופציונלי)"
+          className={`flex-1 p-2 border-2 rounded text-xs transition-all bg-white ${
+            type === 'owed_to_me'
+              ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
+              : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
+          }`}
+        />
+        
+        <button
+          onClick={() => handleAddDebt(type)}
+          disabled={!amount || !description.trim()}
+          className={`px-3 py-2 rounded text-xs font-medium transition-all flex items-center justify-center ${
+            amount && description.trim()
+              ? type === 'owed_to_me'
+                ? 'bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg'
+                : 'bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg'
+              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+          }`}
+        >
+          <Plus size={14} />
+        </button>
+      </div>
     </div>
   );
 
@@ -123,20 +180,6 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
           <CreditCard size={18} className="text-orange-600" />
           <h3 className="text-lg font-bold text-gray-800">חובות</h3>
         </div>
-        
-        {/* סיכום כללי - רק שתי עמודות */}
-        <div className="mb-4 text-center p-3 bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg shadow-sm border border-orange-200">
-          <div className="grid grid-cols-2 gap-4 text-xs">
-            <div>
-              <p className="font-bold text-green-700 mb-1">חייבים לי</p>
-              <p className="font-bold text-green-600">{formatCurrency(totalDebtsOwedToMe)}</p>
-            </div>
-            <div>
-              <p className="font-bold text-red-700 mb-1">אני חייבת</p>
-              <p className="font-bold text-red-600">{formatCurrency(totalDebtsIOwe)}</p>
-            </div>
-          </div>
-        </div>
 
         {/* שתי עמודות של חובות */}
         <div className="grid grid-cols-2 gap-3 mb-4">
@@ -146,13 +189,14 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
               <ArrowLeft size={14} className="text-green-600" />
               <h4 className="text-sm font-bold text-green-700">חייבים לי</h4>
             </div>
-            <div>
+            <div className="mb-3">
               <DebtsList 
                 debts={debtsOwedToMe} 
                 type="owed_to_me"
                 emptyMessage="אין חובות שחייבים לי"
               />
             </div>
+            <AddDebtForm type="owed_to_me" />
           </div>
 
           {/* עמודה ימנית - אני חייבת */}
@@ -161,95 +205,14 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
               <ArrowRight size={14} className="text-red-600" />
               <h4 className="text-sm font-bold text-red-700">אני חייבת</h4>
             </div>
-            <div>
+            <div className="mb-3">
               <DebtsList 
                 debts={debtsIOwe} 
                 type="i_owe"
                 emptyMessage="אין חובות שאני חייבת"
               />
             </div>
-          </div>
-        </div>
-
-        {/* שדות הוספה */}
-        <div className="space-y-2">
-          {/* בחירת סוג חוב */}
-          <div className="flex gap-1">
-            <button
-              onClick={() => setDebtType('i_owe')}
-              className={`flex-1 py-1 px-2 rounded text-xs font-medium transition-all ${
-                debtType === 'i_owe'
-                  ? 'bg-red-500 text-white shadow-md'
-                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-              }`}
-            >
-              אני חייבת
-            </button>
-            <button
-              onClick={() => setDebtType('owed_to_me')}
-              className={`flex-1 py-1 px-2 rounded text-xs font-medium transition-all ${
-                debtType === 'owed_to_me'
-                  ? 'bg-green-500 text-white shadow-md'
-                  : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-              }`}
-            >
-              חייבים לי
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="סכום"
-              className={`w-full p-2 border-2 rounded text-xs transition-all bg-white ${
-                debtType === 'owed_to_me'
-                  ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
-                  : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
-              }`}
-            />
-            
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="תיאור"
-              className={`w-full p-2 border-2 rounded text-xs transition-all bg-white ${
-                debtType === 'owed_to_me'
-                  ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
-                  : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
-              }`}
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="הערה (אופציונלי)"
-              className={`flex-1 p-2 border-2 rounded text-xs transition-all bg-white ${
-                debtType === 'owed_to_me'
-                  ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
-                  : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
-              }`}
-            />
-            
-            <button
-              onClick={handleAddDebt}
-              disabled={!amount || !description.trim()}
-              className={`px-3 py-2 rounded text-xs font-medium transition-all flex items-center justify-center ${
-                amount && description.trim()
-                  ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-md hover:shadow-lg'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              <Plus size={14} />
-            </button>
+            <AddDebtForm type="i_owe" />
           </div>
         </div>
       </div>
