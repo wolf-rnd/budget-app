@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { TrendingDown, Plus, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { TrendingDown, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Undo2, X } from 'lucide-react';
 import { Expense, Category } from '../types';
 import ExpenseModal from '../components/Modals/ExpenseModal';
 
@@ -7,10 +7,17 @@ import ExpenseModal from '../components/Modals/ExpenseModal';
 import expensesData from '../data/expenses.json';
 import categoriesData from '../data/categories.json';
 
+interface UndoNotification {
+  expenseId: string;
+  expenseName: string;
+  timeoutId: ReturnType<typeof setTimeout>;
+}
+
 const Expenses: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>(expensesData.expenses);
   const [categories] = useState<Category[]>(categoriesData.categories);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [undoNotification, setUndoNotification] = useState<UndoNotification | null>(null);
   
   // פילטורים
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -69,6 +76,15 @@ const Expenses: React.FC = () => {
     setCurrentPage(1);
   }, [selectedCategory, selectedFund]);
 
+  // ניקוי טיימר בעת unmount
+  React.useEffect(() => {
+    return () => {
+      if (undoNotification) {
+        clearTimeout(undoNotification.timeoutId);
+      }
+    };
+  }, [undoNotification]);
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('he-IL', {
       style: 'currency',
@@ -91,6 +107,7 @@ const Expenses: React.FC = () => {
     amount: number;
     category: string;
     fund: string;
+    date: string;
     note?: string;
   }) => {
     const expense: Expense = {
@@ -99,7 +116,7 @@ const Expenses: React.FC = () => {
       amount: newExpense.amount,
       category: newExpense.category,
       fund: newExpense.fund,
-      date: new Date().toISOString().split('T')[0],
+      date: newExpense.date,
       note: newExpense.note
     };
     
@@ -113,8 +130,45 @@ const Expenses: React.FC = () => {
   };
 
   const handleDeleteExpense = (id: string) => {
-    if (confirm('האם אתה בטוח שברצונך למחוק הוצאה זו?')) {
-      setExpenses(expenses.filter(expense => expense.id !== id));
+    const expenseToDelete = expenses.find(expense => expense.id === id);
+    if (!expenseToDelete) return;
+
+    // מחיקה מיידית
+    setExpenses(expenses.filter(expense => expense.id !== id));
+
+    // יצירת טיימר של 3 שניות - אחרי זה המחיקה הופכת סופית
+    const timeoutId = setTimeout(() => {
+      setUndoNotification(null);
+      console.log('מחיקה סופית של הוצאה:', expenseToDelete.name);
+    }, 3000);
+
+    setUndoNotification({
+      expenseId: id,
+      expenseName: expenseToDelete.name,
+      timeoutId
+    });
+  };
+
+  const handleUndo = () => {
+    if (undoNotification) {
+      // החזרת ההוצאה למקומה
+      const expenseToRestore = expensesData.expenses.find(expense => expense.id === undoNotification.expenseId);
+      if (expenseToRestore) {
+        setExpenses(prevExpenses => [expenseToRestore, ...prevExpenses]);
+      }
+      
+      // ביטול הטיימר
+      clearTimeout(undoNotification.timeoutId);
+      
+      // הסתרת הנוטיפיקציה
+      setUndoNotification(null);
+    }
+  };
+
+  const handleCloseNotification = () => {
+    if (undoNotification) {
+      clearTimeout(undoNotification.timeoutId);
+      setUndoNotification(null);
     }
   };
 
@@ -367,6 +421,43 @@ const Expenses: React.FC = () => {
           onAddExpense={handleExpenseModalSubmit}
           categories={categories}
         />
+
+        {/* נוטיפיקציה של ביטול מחיקה */}
+        {undoNotification && (
+          <div className="fixed bottom-6 right-6 bg-red-600 text-white p-4 rounded-lg shadow-lg border-2 border-red-500 animate-slide-up z-50 max-w-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <Trash2 size={16} className="flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium">הוצאה נמחקה!</p>
+                  <p className="text-xs opacity-90 break-words">"{undoNotification.expenseName}"</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={handleUndo}
+                  className="bg-white text-red-600 px-3 py-1 rounded-md text-xs font-medium hover:bg-gray-100 transition-colors flex items-center gap-1"
+                >
+                  <Undo2 size={12} />
+                  ביטול
+                </button>
+                
+                <button
+                  onClick={handleCloseNotification}
+                  className="text-white hover:text-red-200 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            </div>
+            
+            {/* פס התקדמות */}
+            <div className="mt-2 w-full bg-red-500 rounded-full h-1">
+              <div className="bg-white h-1 rounded-full animate-progress-bar"></div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

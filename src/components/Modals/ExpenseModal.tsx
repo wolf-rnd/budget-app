@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, TrendingDown, Plus, DollarSign, FileText, Tag } from 'lucide-react';
+import { X, TrendingDown, Plus, DollarSign, FileText, Tag, Calendar } from 'lucide-react';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -9,6 +9,7 @@ interface ExpenseModalProps {
     amount: number;
     category: string;
     fund: string;
+    date: string;
     note?: string;
   }) => void;
   categories: { name: string; fund: string }[];
@@ -18,6 +19,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState('');
 
   // עיצוב מספרים עם פסיקים
@@ -49,7 +51,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim() && amount && selectedCategory) {
+    if (name.trim() && amount && selectedCategory && date) {
       const category = categories.find(cat => cat.name === selectedCategory);
       if (category) {
         onAddExpense({
@@ -57,6 +59,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
           amount: Number(cleanNumber(amount)),
           category: selectedCategory,
           fund: category.fund,
+          date,
           note: note.trim() || undefined
         });
         
@@ -64,6 +67,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
         setName('');
         setAmount('');
         setSelectedCategory('');
+        setDate(new Date().toISOString().split('T')[0]);
         setNote('');
         onClose();
       }
@@ -76,10 +80,21 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
     }
   };
 
+  // סגירה בלחיצה על overlay
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onKeyDown={handleKeyPress}>
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" 
+      onKeyDown={handleKeyPress}
+      onClick={handleOverlayClick}
+    >
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* כותרת */}
         <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6 rounded-t-xl">
@@ -157,6 +172,21 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({ isOpen, onClose, onAddExpen
                 ))}
               </select>
             </div>
+          </div>
+
+          {/* תאריך */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              <Calendar size={16} className="inline ml-2" />
+              תאריך ההוצאה *
+            </label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full p-3 border-2 border-amber-200 rounded-lg text-sm focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+              required
+            />
           </div>
 
           {/* הערות */}

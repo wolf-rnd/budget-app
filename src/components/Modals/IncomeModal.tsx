@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, TrendingUp, Plus, DollarSign, FileText, Building, ChevronDown } from 'lucide-react';
+import { X, TrendingUp, Plus, DollarSign, FileText, Building, ChevronDown, Calendar } from 'lucide-react';
 
 interface IncomeModalProps {
   isOpen: boolean;
@@ -7,6 +7,7 @@ interface IncomeModalProps {
   onAddIncome: (income: {
     name: string;
     amount: number;
+    date: string;
     source?: string;
     note?: string;
   }) => void;
@@ -15,6 +16,7 @@ interface IncomeModalProps {
 const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome }) => {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [source, setSource] = useState('');
   const [note, setNote] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -122,7 +124,7 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim() && amount) {
+    if (name.trim() && amount && date) {
       // שמירת מקור חדש אם הוקלד
       if (source.trim()) {
         saveSource(source.trim());
@@ -131,6 +133,7 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
       onAddIncome({
         name: name.trim(),
         amount: Number(cleanNumber(amount)),
+        date,
         source: source.trim() || undefined,
         note: note.trim() || undefined
       });
@@ -138,6 +141,7 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
       // איפוס הטופס
       setName('');
       setAmount('');
+      setDate(new Date().toISOString().split('T')[0]);
       setSource('');
       setNote('');
       setShowSuggestions(false);
@@ -152,10 +156,21 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
     }
   };
 
+  // סגירה בלחיצה על overlay
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onKeyDown={handleKeyPress}>
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" 
+      onKeyDown={handleKeyPress}
+      onClick={handleOverlayClick}
+    >
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         {/* כותרת */}
         <div className="bg-gradient-to-r from-emerald-500 to-green-500 p-6 rounded-t-xl">
@@ -262,6 +277,21 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
                 </div>
               )}
             </div>
+          </div>
+
+          {/* תאריך */}
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-2">
+              <Calendar size={16} className="inline ml-2" />
+              תאריך קבלת ההכנסה *
+            </label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full p-3 border-2 border-emerald-200 rounded-lg text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
+              required
+            />
           </div>
 
           {/* הערות */}

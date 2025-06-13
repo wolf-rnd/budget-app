@@ -70,6 +70,7 @@ const Dashboard: React.FC = () => {
   const handleIncomeModalSubmit = (newIncome: {
     name: string;
     amount: number;
+    date: string;
     source?: string;
     note?: string;
   }) => {
@@ -77,9 +78,9 @@ const Dashboard: React.FC = () => {
       id: Date.now().toString(),
       name: newIncome.name,
       amount: newIncome.amount,
-      month: new Date().getMonth() + 1,
-      year: new Date().getFullYear(),
-      date: new Date().toISOString().split('T')[0],
+      month: new Date(newIncome.date).getMonth() + 1,
+      year: new Date(newIncome.date).getFullYear(),
+      date: newIncome.date,
       source: newIncome.source,
       note: newIncome.note
     };
@@ -93,6 +94,7 @@ const Dashboard: React.FC = () => {
     amount: number;
     category: string;
     fund: string;
+    date: string;
     note?: string;
   }) => {
     const expense: Expense = {
@@ -101,7 +103,7 @@ const Dashboard: React.FC = () => {
       amount: newExpense.amount,
       category: newExpense.category,
       fund: newExpense.fund,
-      date: new Date().toISOString().split('T')[0],
+      date: newExpense.date,
       note: newExpense.note
     };
     
