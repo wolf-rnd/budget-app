@@ -62,8 +62,10 @@ export interface Task {
 
 export interface AssetSnapshot {
   id: string;
-  totalSavings: number;
-  totalLiabilities: number;
+  totalSavings?: number; // תאימות לאחור
+  totalLiabilities?: number; // תאימות לאחור
+  assets?: Record<string, number>; // פירוט נכסים חדש
+  liabilities?: Record<string, number>; // פירוט התחייבויות חדש
   date: string;
   note: string;
 }

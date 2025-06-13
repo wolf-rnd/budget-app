@@ -172,11 +172,11 @@ const Dashboard: React.FC = () => {
     setTasks(tasks.filter(task => task.id !== id));
   };
 
-  const handleAddAssetSnapshot = (savings: number, liabilities: number, note: string) => {
+  const handleAddAssetSnapshot = (assets: Record<string, number>, liabilities: Record<string, number>, note: string) => {
     const newSnapshot: AssetSnapshot = {
       id: Date.now().toString(),
-      totalSavings: savings,
-      totalLiabilities: liabilities,
+      assets,
+      liabilities,
       date: new Date().toISOString().split('T')[0],
       note
     };
@@ -249,7 +249,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* תמונת מצב נכסים - תחתית */}
-        <div className="max-w-md mx-auto">
+        <div className="flex justify-center">
           <AssetsSection
             snapshots={assetSnapshots}
             onAddSnapshot={handleAddAssetSnapshot}

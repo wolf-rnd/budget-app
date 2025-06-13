@@ -4,14 +4,35 @@ import { AssetSnapshot } from '../../types';
 
 interface AssetsSectionProps {
   snapshots: AssetSnapshot[];
-  onAddSnapshot: (savings: number, liabilities: number, note: string) => void;
+  onAddSnapshot: (assets: Record<string, number>, liabilities: Record<string, number>, note: string) => void;
 }
 
 const AssetsSection: React.FC<AssetsSectionProps> = ({ snapshots, onAddSnapshot }) => {
   const [isAdding, setIsAdding] = useState(false);
-  const [savings, setSavings] = useState('');
-  const [liabilities, setLiabilities] = useState('');
   const [note, setNote] = useState('');
+
+  // הגדרת רשימות קבועות
+  const assetTypes = [
+    { id: 'compensation', name: 'פיצויים' },
+    { id: 'pension_naomi', name: 'קה״ש נעמי שכירה' },
+    { id: 'pension_yossi', name: 'קה״ש יוסי' },
+    { id: 'savings_children', name: 'חסכון לכל ילד' }
+  ];
+
+  const liabilityTypes = [
+    { id: 'anchor', name: 'עוגן' },
+    { id: 'gmach_glik', name: 'גמ״ח גליק' },
+    { id: 'mortgage', name: 'משכנתא' }
+  ];
+
+  // State לכל סוג נכס והתחייבות
+  const [assets, setAssets] = useState<Record<string, string>>(
+    assetTypes.reduce((acc, type) => ({ ...acc, [type.id]: '' }), {})
+  );
+  
+  const [liabilities, setLiabilities] = useState<Record<string, string>>(
+    liabilityTypes.reduce((acc, type) => ({ ...acc, [type.id]: '' }), {})
+  );
 
   const latestSnapshot = snapshots[0];
   const previousSnapshot = snapshots[1];
@@ -30,21 +51,60 @@ const AssetsSection: React.FC<AssetsSectionProps> = ({ snapshots, onAddSnapshot 
   };
 
   const handleAddSnapshot = () => {
-    if (savings && liabilities) {
-      onAddSnapshot(Number(savings), Number(liabilities), note);
-      setSavings('');
-      setLiabilities('');
-      setNote('');
-      setIsAdding(false);
-    }
+    // המרת הערכים למספרים
+    const assetsNumbers = Object.keys(assets).reduce((acc, key) => {
+      const value = assets[key];
+      acc[key] = value ? Number(value) : 0;
+      return acc;
+    }, {} as Record<string, number>);
+
+    const liabilitiesNumbers = Object.keys(liabilities).reduce((acc, key) => {
+      const value = liabilities[key];
+      acc[key] = value ? Number(value) : 0;
+      return acc;
+    }, {} as Record<string, number>);
+
+    onAddSnapshot(assetsNumbers, liabilitiesNumbers, note);
+    
+    // איפוס הטופס
+    setAssets(assetTypes.reduce((acc, type) => ({ ...acc, [type.id]: '' }), {}));
+    setLiabilities(liabilityTypes.reduce((acc, type) => ({ ...acc, [type.id]: '' }), {}));
+    setNote('');
+    setIsAdding(false);
   };
 
-  const netWorth = latestSnapshot ? latestSnapshot.totalSavings - latestSnapshot.totalLiabilities : 0;
-  const previousNetWorth = previousSnapshot ? previousSnapshot.totalSavings - previousSnapshot.totalLiabilities : 0;
+  const handleAssetChange = (assetId: string, value: string) => {
+    setAssets(prev => ({ ...prev, [assetId]: value }));
+  };
+
+  const handleLiabilityChange = (liabilityId: string, value: string) => {
+    setLiabilities(prev => ({ ...prev, [liabilityId]: value }));
+  };
+
+  // חישוב סכומים מהנתונים האחרונים
+  const totalAssets = latestSnapshot?.assets ? 
+    Object.values(latestSnapshot.assets).reduce((sum, amount) => sum + amount, 0) : 
+    latestSnapshot?.totalSavings || 0;
+
+  const totalLiabilities = latestSnapshot?.liabilities ? 
+    Object.values(latestSnapshot.liabilities).reduce((sum, amount) => sum + amount, 0) : 
+    latestSnapshot?.totalLiabilities || 0;
+
+  const netWorth = totalAssets - totalLiabilities;
+  
+  const previousTotalAssets = previousSnapshot?.assets ? 
+    Object.values(previousSnapshot.assets).reduce((sum, amount) => sum + amount, 0) : 
+    previousSnapshot?.totalSavings || 0;
+
+  const previousTotalLiabilities = previousSnapshot?.liabilities ? 
+    Object.values(previousSnapshot.liabilities).reduce((sum, amount) => sum + amount, 0) : 
+    previousSnapshot?.totalLiabilities || 0;
+
+  const previousNetWorth = previousTotalAssets - previousTotalLiabilities;
   const netWorthChange = latestSnapshot && previousSnapshot ? netWorth - previousNetWorth : 0;
 
   return (
-    <div className="bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 rounded-2xl shadow-xl p-8 border-2 border-slate-200">
+    <div className="bg-gradient-to-br from-slate-50 via-gray-50 to-zinc-50 rounded-2xl shadow-xl p-8 border-2 border-slate-200 w-full max-w-4xl">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-xl font-bold text-slate-800 flex items-center gap-3">
           <PieChart size={24} className="text-slate-600" />
@@ -61,28 +121,46 @@ const AssetsSection: React.FC<AssetsSectionProps> = ({ snapshots, onAddSnapshot 
 
       {isAdding && (
         <div className="mb-6 p-6 bg-white rounded-xl shadow-sm border border-slate-200">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-4">
+            {/* עמודת נכסים */}
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">חסכונות</label>
-              <input
-                type="number"
-                value={savings}
-                onChange={(e) => setSavings(e.target.value)}
-                className="w-full p-3 border-2 border-slate-200 rounded-lg text-sm focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                placeholder="0"
-              />
+              <h4 className="text-lg font-bold text-emerald-700 mb-4">נכסים</h4>
+              <div className="space-y-3">
+                {assetTypes.map(asset => (
+                  <div key={asset.id}>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">{asset.name}</label>
+                    <input
+                      type="number"
+                      value={assets[asset.id]}
+                      onChange={(e) => handleAssetChange(asset.id, e.target.value)}
+                      className="w-full p-3 border-2 border-emerald-200 rounded-lg text-sm focus:border-emerald-400 focus:ring-2 focus:ring-emerald-200"
+                      placeholder="0"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
+
+            {/* עמודת התחייבויות */}
             <div>
-              <label className="block text-sm font-bold text-slate-700 mb-2">התחייבויות</label>
-              <input
-                type="number"
-                value={liabilities}
-                onChange={(e) => setLiabilities(e.target.value)}
-                className="w-full p-3 border-2 border-slate-200 rounded-lg text-sm focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                placeholder="0"
-              />
+              <h4 className="text-lg font-bold text-red-700 mb-4">התחייבויות</h4>
+              <div className="space-y-3">
+                {liabilityTypes.map(liability => (
+                  <div key={liability.id}>
+                    <label className="block text-sm font-bold text-slate-700 mb-1">{liability.name}</label>
+                    <input
+                      type="number"
+                      value={liabilities[liability.id]}
+                      onChange={(e) => handleLiabilityChange(liability.id, e.target.value)}
+                      className="w-full p-3 border-2 border-red-200 rounded-lg text-sm focus:border-red-400 focus:ring-2 focus:ring-red-200"
+                      placeholder="0"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
+
           <div className="mb-4">
             <label className="block text-sm font-bold text-slate-700 mb-2">הערה</label>
             <textarea
@@ -112,17 +190,62 @@ const AssetsSection: React.FC<AssetsSectionProps> = ({ snapshots, onAddSnapshot 
 
       {latestSnapshot && (
         <div className="space-y-6">
+          {/* סיכום כללי */}
           <div className="grid grid-cols-2 gap-6">
             <div className="text-center p-4 bg-emerald-50 rounded-xl border-2 border-emerald-200">
-              <p className="text-sm text-emerald-700 font-bold mb-1">חסכונות</p>
-              <p className="text-xl font-bold text-emerald-600">{formatCurrency(latestSnapshot.totalSavings)}</p>
+              <p className="text-sm text-emerald-700 font-bold mb-1">נכסים</p>
+              <p className="text-xl font-bold text-emerald-600">{formatCurrency(totalAssets)}</p>
             </div>
             <div className="text-center p-4 bg-red-50 rounded-xl border-2 border-red-200">
               <p className="text-sm text-red-700 font-bold mb-1">התחייבויות</p>
-              <p className="text-xl font-bold text-red-600">{formatCurrency(latestSnapshot.totalLiabilities)}</p>
+              <p className="text-xl font-bold text-red-600">{formatCurrency(totalLiabilities)}</p>
             </div>
           </div>
 
+          {/* פירוט נכסים והתחייבויות */}
+          {latestSnapshot.assets && latestSnapshot.liabilities && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* פירוט נכסים */}
+              <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-200">
+                <h4 className="text-sm font-bold text-emerald-800 mb-3">פירוט נכסים</h4>
+                <div className="space-y-2">
+                  {assetTypes.map(asset => {
+                    const amount = latestSnapshot.assets?.[asset.id] || 0;
+                    if (amount > 0) {
+                      return (
+                        <div key={asset.id} className="flex justify-between items-center">
+                          <span className="text-xs text-emerald-700">{asset.name}</span>
+                          <span className="text-xs font-bold text-emerald-600">{formatCurrency(amount)}</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+              </div>
+
+              {/* פירוט התחייבויות */}
+              <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+                <h4 className="text-sm font-bold text-red-800 mb-3">פירוט התחייבויות</h4>
+                <div className="space-y-2">
+                  {liabilityTypes.map(liability => {
+                    const amount = latestSnapshot.liabilities?.[liability.id] || 0;
+                    if (amount > 0) {
+                      return (
+                        <div key={liability.id} className="flex justify-between items-center">
+                          <span className="text-xs text-red-700">{liability.name}</span>
+                          <span className="text-xs font-bold text-red-600">{formatCurrency(amount)}</span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* שווי נטו */}
           <div className="text-center p-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border-2 border-blue-200">
             <p className="text-sm text-blue-700 font-bold mb-2">שווי נטו</p>
             <p className={`text-2xl font-bold ${netWorth >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
