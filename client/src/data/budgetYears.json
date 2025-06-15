@@ -1,0 +1,18 @@
+{
+  "budgetYears": [
+    {
+      "id": "1",
+      "name": "01/24 - 12/24",
+      "startDate": "2024-01-01",
+      "endDate": "2024-12-31",
+      "isActive": true
+    },
+    {
+      "id": "2", 
+      "name": "01/23 - 12/23",
+      "startDate": "2023-01-01",
+      "endDate": "2023-12-31",
+      "isActive": false
+    }
+  ]
+}
