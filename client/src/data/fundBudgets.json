@@ -1,0 +1,37 @@
+{
+  "fundBudgets": [
+    {
+      "id": "1",
+      "fundId": "daily",
+      "budgetYearId": "1",
+      "amount": 3000,
+      "amountGiven": 2500
+    },
+    {
+      "id": "2",
+      "fundId": "annual",
+      "budgetYearId": "1",
+      "amount": 50000,
+      "spent": 20000
+    },
+    {
+      "id": "3",
+      "fundId": "extended",
+      "budgetYearId": "1",
+      "amount": 30000,
+      "spent": 15000
+    },
+    {
+      "id": "4",
+      "fundId": "bonus",
+      "budgetYearId": "1",
+      "amount": 12000
+    },
+    {
+      "id": "5",
+      "fundId": "surplus",
+      "budgetYearId": "1",
+      "amount": 8500
+    }
+  ]
+}
