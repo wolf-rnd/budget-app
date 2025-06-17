@@ -19,7 +19,7 @@ export interface UpdateCategoryRequest {
 }
 
 class CategoriesService {
-  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+  private baseURL = '/api';
 
   // Helper method for making API calls
   private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
