@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Check, Star, X, CheckCircle2, Undo2 } from 'lucide-react';
 import { Task } from '../../types';
+import { tasksService } from '../../services/tasksService';
 
 interface TasksSectionProps {
   tasks: Task[];
@@ -12,17 +13,62 @@ interface TasksSectionProps {
 interface UndoNotification {
   taskId: string;
   taskDescription: string;
-  timeoutId:  ReturnType<typeof setTimeout>;
+  timeoutId: ReturnType<typeof setTimeout>;
 }
 
-const TasksSection: React.FC<TasksSectionProps> = ({ tasks, onAddTask, onUpdateTask, onDeleteTask }) => {
+const TasksSection: React.FC<TasksSectionProps> = ({ 
+  tasks: initialTasks, 
+  onAddTask: onAddTaskProp, 
+  onUpdateTask: onUpdateTaskProp, 
+  onDeleteTask: onDeleteTaskProp 
+}) => {
   const [newTask, setNewTask] = useState('');
   const [undoNotification, setUndoNotification] = useState<UndoNotification | null>(null);
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [loading, setLoading] = useState(false);
 
-  const handleAddTask = () => {
+  // טעינת משימות מה-API בטעינה ראשונית
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  const loadTasks = async () => {
+    try {
+      setLoading(true);
+      const apiTasks = await tasksService.getAllTasks({ completed: false });
+      setTasks(apiTasks);
+    } catch (error) {
+      console.error('Failed to load tasks:', error);
+      // במקרה של שגיאה, נשתמש במשימות הראשוניות
+      setTasks(initialTasks);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddTask = async () => {
     if (newTask.trim()) {
-      onAddTask(newTask.trim(), false);
-      setNewTask('');
+      try {
+        setLoading(true);
+        const createdTask = await tasksService.createTask({
+          description: newTask.trim(),
+          important: false,
+          completed: false
+        });
+        
+        setTasks(prevTasks => [...prevTasks, createdTask]);
+        setNewTask('');
+        
+        // קריאה לפונקציה המקורית גם כן (לתאימות לאחור)
+        onAddTaskProp(newTask.trim(), false);
+      } catch (error) {
+        console.error('Failed to create task:', error);
+        // במקרה של שגיאה, נשתמש בפונקציה המקורית
+        onAddTaskProp(newTask.trim(), false);
+        setNewTask('');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -33,38 +79,114 @@ const TasksSection: React.FC<TasksSectionProps> = ({ tasks, onAddTask, onUpdateT
     }
   };
 
-  const handleTaskCompletion = (task: Task) => {
+  const handleTaskCompletion = async (task: Task) => {
     if (!task.completed) {
-      // המשימה מסומנת כבוצעה - מציגים נוטיפיקציה עם אפשרות ביטול
-      onUpdateTask(task.id, { completed: true });
-      
-      // יצירת טיימר של 3 שניות - אחרי זה המשימה נמחקת
-      const timeoutId = setTimeout(() => {
-        onDeleteTask(task.id);
-        setUndoNotification(null);
-      }, 3000);
+      try {
+        setLoading(true);
+        
+        // עדכון המשימה ל-completed = true
+        const updatedTask = await tasksService.updateTask(task.id, { completed: true });
+        
+        // עדכון המצב המקומי
+        setTasks(prevTasks => 
+          prevTasks.map(t => t.id === task.id ? updatedTask : t)
+        );
+        
+        // יצירת טיימר של 3 שניות - אחרי זה המשימה נמחקת
+        const timeoutId = setTimeout(async () => {
+          try {
+            await tasksService.deleteTask(task.id);
+            setTasks(prevTasks => prevTasks.filter(t => t.id !== task.id));
+            setUndoNotification(null);
+          } catch (error) {
+            console.error('Failed to delete task:', error);
+          }
+        }, 3000);
 
-      setUndoNotification({
-        taskId: task.id,
-        taskDescription: task.description,
-        timeoutId
-      });
+        setUndoNotification({
+          taskId: task.id,
+          taskDescription: task.description,
+          timeoutId
+        });
+
+        // קריאה לפונקציה המקורית גם כן
+        onUpdateTaskProp(task.id, { completed: true });
+      } catch (error) {
+        console.error('Failed to update task:', error);
+        // במקרה של שגיאה, נשתמש בפונקציה המקורית
+        onUpdateTaskProp(task.id, { completed: true });
+      } finally {
+        setLoading(false);
+      }
     } else {
-      // המשימה מבוטלת מבוצע - פשוט מעדכנים
-      onUpdateTask(task.id, { completed: false });
+      try {
+        setLoading(true);
+        const updatedTask = await tasksService.updateTask(task.id, { completed: false });
+        setTasks(prevTasks => 
+          prevTasks.map(t => t.id === task.id ? updatedTask : t)
+        );
+        onUpdateTaskProp(task.id, { completed: false });
+      } catch (error) {
+        console.error('Failed to update task:', error);
+        onUpdateTaskProp(task.id, { completed: false });
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
-  const handleUndo = () => {
+  const handleUpdateTask = async (id: string, updates: Partial<Task>) => {
+    try {
+      setLoading(true);
+      const updatedTask = await tasksService.updateTask(id, updates);
+      setTasks(prevTasks => 
+        prevTasks.map(t => t.id === id ? updatedTask : t)
+      );
+      onUpdateTaskProp(id, updates);
+    } catch (error) {
+      console.error('Failed to update task:', error);
+      onUpdateTaskProp(id, updates);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteTask = async (id: string) => {
+    try {
+      setLoading(true);
+      await tasksService.deleteTask(id);
+      setTasks(prevTasks => prevTasks.filter(t => t.id !== id));
+      onDeleteTaskProp(id);
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+      onDeleteTaskProp(id);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUndo = async () => {
     if (undoNotification) {
-      // ביטול הסימון כבוצע
-      onUpdateTask(undoNotification.taskId, { completed: false });
-      
-      // ביטול הטיימר
-      clearTimeout(undoNotification.timeoutId);
-      
-      // הסתרת הנוטיפיקציה
-      setUndoNotification(null);
+      try {
+        setLoading(true);
+        // ביטול הסימון כבוצע
+        const updatedTask = await tasksService.updateTask(undoNotification.taskId, { completed: false });
+        setTasks(prevTasks => 
+          prevTasks.map(t => t.id === undoNotification.taskId ? updatedTask : t)
+        );
+        
+        // ביטול הטיימר
+        clearTimeout(undoNotification.timeoutId);
+        
+        // הסתרת הנוטיפיקציה
+        setUndoNotification(null);
+        
+        onUpdateTaskProp(undoNotification.taskId, { completed: false });
+      } catch (error) {
+        console.error('Failed to undo task completion:', error);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -102,6 +224,9 @@ const TasksSection: React.FC<TasksSectionProps> = ({ tasks, onAddTask, onUpdateT
         <div className="flex items-center justify-center gap-2 mb-4">
           <CheckCircle2 size={18} className="text-purple-600" />
           <h3 className="text-lg font-bold text-gray-800">תזכורות</h3>
+          {loading && (
+            <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
+          )}
         </div>
         
         {/* רשימת המשימות - עיצוב משופר ללא רקע */}
@@ -120,22 +245,24 @@ const TasksSection: React.FC<TasksSectionProps> = ({ tasks, onAddTask, onUpdateT
               >
                 <button
                   onClick={() => handleTaskCompletion(task)}
+                  disabled={loading}
                   className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
                     task.completed 
                       ? 'bg-green-500 border-green-500 text-white' 
                       : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
-                  }`}
+                  } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   {task.completed && <Check size={10} />}
                 </button>
                 
                 <button
-                  onClick={() => onUpdateTask(task.id, { important: !task.important })}
+                  onClick={() => handleUpdateTask(task.id, { important: !task.important })}
+                  disabled={loading}
                   className={`flex-shrink-0 transition-all duration-200 ${
                     task.important 
                       ? 'text-yellow-600 scale-125 drop-shadow-lg animate-pulse' 
                       : 'text-gray-300 hover:text-yellow-500 hover:scale-110'
-                  }`}
+                  } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <Star 
                     size={task.important ? 16 : 12} 
@@ -157,8 +284,11 @@ const TasksSection: React.FC<TasksSectionProps> = ({ tasks, onAddTask, onUpdateT
                 </span>
                 
                 <button
-                  onClick={() => onDeleteTask(task.id)}
-                  className="flex-shrink-0 text-gray-400 hover:text-red-500 p-1 rounded-md hover:bg-red-50 transition-colors"
+                  onClick={() => handleDeleteTask(task.id)}
+                  disabled={loading}
+                  className={`flex-shrink-0 text-gray-400 hover:text-red-500 p-1 rounded-md hover:bg-red-50 transition-colors ${
+                    loading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
                   <X size={12} />
                 </button>
@@ -179,15 +309,18 @@ const TasksSection: React.FC<TasksSectionProps> = ({ tasks, onAddTask, onUpdateT
             value={newTask}
             onChange={(e) => setNewTask(e.target.value)}
             onKeyDown={handleKeyPress}
+            disabled={loading}
             placeholder="תיאור המשימה..."
-            className="flex-1 p-2 border-2 border-gray-200 rounded-lg text-xs focus:border-purple-400 focus:ring-1 focus:ring-purple-200 transition-all bg-white"
+            className={`flex-1 p-2 border-2 border-gray-200 rounded-lg text-xs focus:border-purple-400 focus:ring-1 focus:ring-purple-200 transition-all bg-white ${
+              loading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
           />
           
           <button
             onClick={handleAddTask}
-            disabled={!newTask.trim()}
+            disabled={!newTask.trim() || loading}
             className={`flex-shrink-0 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center ${
-              newTask.trim()
+              newTask.trim() && !loading
                 ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-md hover:shadow-lg'
                 : 'bg-gray-200 text-gray-400 cursor-not-allowed'
             }`}
@@ -211,7 +344,10 @@ const TasksSection: React.FC<TasksSectionProps> = ({ tasks, onAddTask, onUpdateT
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={handleUndo}
-                  className="bg-white text-green-600 px-2 py-1 rounded-md text-xs font-medium hover:bg-gray-100 transition-colors flex items-center gap-1"
+                  disabled={loading}
+                  className={`bg-white text-green-600 px-2 py-1 rounded-md text-xs font-medium hover:bg-gray-100 transition-colors flex items-center gap-1 ${
+                    loading ? 'opacity-50 cursor-not-allowed' : ''
+                  }`}
                 >
                   <Undo2 size={12} />
                   ביטול

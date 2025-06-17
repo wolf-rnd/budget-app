@@ -1,9 +1,6 @@
 import { apiClient } from './api';
 import { Task } from '../types';
 
-// Mock data import
-import tasksData from '../data/tasks.json';
-
 export interface CreateTaskRequest {
   description: string;
   important?: boolean;
@@ -34,139 +31,145 @@ export interface TaskSummary {
 }
 
 class TasksService {
-  // GET / - קבלת כל המשימות (עם פילטרים)
+  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+
+  // Helper method for making API calls
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    
+    const config: RequestInit = {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // GET /tasks - קבלת כל המשימות (עם פילטרים)
   async getAllTasks(filters?: TaskFilters): Promise<Task[]> {
-    // TODO: Replace with actual API call
-    // const params = new URLSearchParams();
-    // if (filters?.completed !== undefined) params.append('completed', filters.completed.toString());
-    // if (filters?.important !== undefined) params.append('important', filters.important.toString());
-    // if (filters?.search) params.append('search', filters.search);
-    // if (filters?.page) params.append('page', filters.page.toString());
-    // if (filters?.limit) params.append('limit', filters.limit.toString());
-    // return apiClient.get<Task[]>(`/tasks?${params.toString()}`);
-    
-    // Mock implementation
-    let filteredTasks = tasksData.tasks;
-    
-    if (filters?.completed !== undefined) {
-      filteredTasks = filteredTasks.filter(task => task.completed === filters.completed);
+    try {
+      const params = new URLSearchParams();
+      
+      if (filters?.completed !== undefined) {
+        params.append('completed', filters.completed.toString());
+      }
+      if (filters?.important !== undefined) {
+        params.append('important', filters.important.toString());
+      }
+      if (filters?.search) {
+        params.append('search', filters.search);
+      }
+      if (filters?.page) {
+        params.append('page', filters.page.toString());
+      }
+      if (filters?.limit) {
+        params.append('limit', filters.limit.toString());
+      }
+
+      const queryString = params.toString();
+      const endpoint = queryString ? `/tasks?${queryString}` : '/tasks';
+      
+      return await this.apiCall<Task[]>(endpoint);
+    } catch (error) {
+      console.error('Failed to fetch tasks:', error);
+      throw error;
     }
-    if (filters?.important !== undefined) {
-      filteredTasks = filteredTasks.filter(task => task.important === filters.important);
-    }
-    if (filters?.search) {
-      filteredTasks = filteredTasks.filter(task => 
-        task.description.toLowerCase().includes(filters.search!.toLowerCase())
-      );
-    }
-    
-    return Promise.resolve(filteredTasks);
   }
 
-  // GET /summary - קבלת סיכום משימות
+  // GET /tasks/summary - קבלת סיכום משימות
   async getTaskSummary(): Promise<TaskSummary> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<TaskSummary>('/tasks/summary');
-    
-    // Mock implementation
-    const totalTasks = tasksData.tasks.length;
-    const completedTasks = tasksData.tasks.filter(task => task.completed).length;
-    const pendingTasks = totalTasks - completedTasks;
-    const importantTasks = tasksData.tasks.filter(task => task.important).length;
-    const completionRate = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
-    
-    return Promise.resolve({
-      totalTasks,
-      completedTasks,
-      pendingTasks,
-      importantTasks,
-      completionRate,
-      recentTasks: tasksData.tasks.slice(0, 5)
-    });
+    try {
+      return await this.apiCall<TaskSummary>('/tasks/summary');
+    } catch (error) {
+      console.error('Failed to fetch task summary:', error);
+      throw error;
+    }
   }
 
-  // GET /:id - קבלת משימה ספציפית
+  // GET /tasks/:id - קבלת משימה ספציפית
   async getTaskById(id: string): Promise<Task | null> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<Task>(`/tasks/${id}`);
-    
-    // Mock implementation
-    const task = tasksData.tasks.find(t => t.id === id);
-    return Promise.resolve(task || null);
+    try {
+      return await this.apiCall<Task>(`/tasks/${id}`);
+    } catch (error) {
+      console.error(`Failed to fetch task ${id}:`, error);
+      return null;
+    }
   }
 
-  // POST / - יצירת משימה חדשה
+  // POST /tasks - יצירת משימה חדשה
   async createTask(data: CreateTaskRequest): Promise<Task> {
-    // TODO: Replace with actual API call
-    // return apiClient.post<Task>('/tasks', data);
-    
-    // Mock implementation
-    const newTask: Task = {
-      id: Date.now().toString(),
-      description: data.description,
-      important: data.important || false,
-      completed: data.completed || false
-    };
-    
-    return Promise.resolve(newTask);
+    try {
+      return await this.apiCall<Task>('/tasks', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error('Failed to create task:', error);
+      throw error;
+    }
   }
 
-  // PUT /:id - עדכון משימה
+  // PUT /tasks/:id - עדכון משימה
   async updateTask(id: string, data: UpdateTaskRequest): Promise<Task> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<Task>(`/tasks/${id}`, data);
-    
-    // Mock implementation
-    const existingTask = tasksData.tasks.find(t => t.id === id);
-    if (!existingTask) {
-      throw new Error('Task not found');
+    try {
+      return await this.apiCall<Task>(`/tasks/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error(`Failed to update task ${id}:`, error);
+      throw error;
     }
-    
-    const updatedTask: Task = {
-      ...existingTask,
-      ...data
-    };
-    
-    return Promise.resolve(updatedTask);
   }
 
-  // PUT /:id/toggle - שינוי סטטוס השלמת משימה
+  // PUT /tasks/:id/toggle - שינוי סטטוס השלמת משימה
   async toggleTaskCompletion(id: string): Promise<Task> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<Task>(`/tasks/${id}/toggle`);
-    
-    // Mock implementation
-    const existingTask = tasksData.tasks.find(t => t.id === id);
-    if (!existingTask) {
-      throw new Error('Task not found');
+    try {
+      return await this.apiCall<Task>(`/tasks/${id}/toggle`, {
+        method: 'PUT',
+      });
+    } catch (error) {
+      console.error(`Failed to toggle task completion ${id}:`, error);
+      throw error;
     }
-    
-    const toggledTask: Task = {
-      ...existingTask,
-      completed: !existingTask.completed
-    };
-    
-    return Promise.resolve(toggledTask);
   }
 
-  // DELETE /:id - מחיקת משימה
+  // DELETE /tasks/:id - מחיקת משימה
   async deleteTask(id: string): Promise<void> {
-    // TODO: Replace with actual API call
-    // return apiClient.delete<void>(`/tasks/${id}`);
-    
-    // Mock implementation
-    console.log(`Deleting task with id: ${id}`);
-    return Promise.resolve();
+    try {
+      await this.apiCall<void>(`/tasks/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error(`Failed to delete task ${id}:`, error);
+      throw error;
+    }
   }
 
-  // DELETE /completed/all - מחיקת כל המשימות שהושלמו
+  // DELETE /tasks/completed/all - מחיקת כל המשימות שהושלמו
   async deleteAllCompletedTasks(): Promise<void> {
-    // TODO: Replace with actual API call
-    // return apiClient.delete<void>('/tasks/completed/all');
-    
-    // Mock implementation
-    console.log('Deleting all completed tasks');
-    return Promise.resolve();
+    try {
+      await this.apiCall<void>('/tasks/completed/all', {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error('Failed to delete all completed tasks:', error);
+      throw error;
+    }
   }
 }
 
