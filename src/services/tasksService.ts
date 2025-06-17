@@ -36,11 +36,13 @@ class TasksService {
   // Helper method for making API calls
   private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    console.log('options.headers', options.headers);
     
     const config: RequestInit = {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        'x-user-id': '11111111-1111-1111-1111-111111111111',
         ...options.headers,
       },
     };

@@ -35,6 +35,7 @@ class FundsService {
       ...options,
       headers: {
         'Content-Type': 'application/json',
+        'x-user-id': '11111111-1111-1111-1111-111111111111',
         ...(token && { 'Authorization': `Bearer ${token}` }),
         ...options.headers,
       },
