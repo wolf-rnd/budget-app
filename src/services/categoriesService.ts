@@ -1,8 +1,3 @@
-import { apiClient } from './api';
-
-// Mock data import
-import categoriesData from '../data/categories.json';
-
 export interface Category {
   id?: string;
   name: string;
@@ -24,122 +19,126 @@ export interface UpdateCategoryRequest {
 }
 
 class CategoriesService {
-  // GET / - קבלת כל הקטגוריות
+  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+
+  // Helper method for making API calls
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    const token = localStorage.getItem('authToken');
+    
+    const config: RequestInit = {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...options.headers,
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // GET /categories - קבלת כל הקטגוריות
   async getAllCategories(): Promise<Category[]> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<Category[]>('/categories');
-    
-    // Mock implementation
-    return Promise.resolve(categoriesData.categories);
+    try {
+      return await this.apiCall<Category[]>('/categories');
+    } catch (error) {
+      console.error('Failed to fetch categories:', error);
+      throw error;
+    }
   }
 
-  // GET /fund/:fundId - קבלת קטגוריות לפי קופה
+  // GET /categories/fund/:fundId - קבלת קטגוריות לפי קופה
   async getCategoriesByFund(fundId: string): Promise<Category[]> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<Category[]>(`/categories/fund/${fundId}`);
-    
-    // Mock implementation
-    const categories = categoriesData.categories.filter(cat => cat.fund === fundId);
-    return Promise.resolve(categories);
+    try {
+      return await this.apiCall<Category[]>(`/categories/fund/${fundId}`);
+    } catch (error) {
+      console.error(`Failed to fetch categories for fund ${fundId}:`, error);
+      throw error;
+    }
   }
 
-  // GET /:id - קבלת קטגוריה ספציפית
+  // GET /categories/:id - קבלת קטגוריה ספציפית
   async getCategoryById(id: string): Promise<Category | null> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<Category>(`/categories/${id}`);
-    
-    // Mock implementation
-    const category = categoriesData.categories.find(cat => cat.id === id);
-    return Promise.resolve(category || null);
+    try {
+      return await this.apiCall<Category>(`/categories/${id}`);
+    } catch (error) {
+      console.error(`Failed to fetch category ${id}:`, error);
+      return null;
+    }
   }
 
-  // POST / - יצירת קטגוריה חדשה
+  // POST /categories - יצירת קטגוריה חדשה
   async createCategory(data: CreateCategoryRequest): Promise<Category> {
-    // TODO: Replace with actual API call
-    // return apiClient.post<Category>('/categories', data);
-    
-    // Mock implementation
-    const newCategory: Category = {
-      id: Date.now().toString(),
-      name: data.name,
-      fund: data.fundId,
-      fundId: data.fundId,
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    return Promise.resolve(newCategory);
+    try {
+      return await this.apiCall<Category>('/categories', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error('Failed to create category:', error);
+      throw error;
+    }
   }
 
-  // PUT /:id - עדכון קטגוריה
+  // PUT /categories/:id - עדכון קטגוריה
   async updateCategory(id: string, data: UpdateCategoryRequest): Promise<Category> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<Category>(`/categories/${id}`, data);
-    
-    // Mock implementation
-    const existingCategory = categoriesData.categories.find(cat => cat.id === id);
-    if (!existingCategory) {
-      throw new Error('Category not found');
+    try {
+      return await this.apiCall<Category>(`/categories/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error(`Failed to update category ${id}:`, error);
+      throw error;
     }
-    
-    const updatedCategory: Category = {
-      ...existingCategory,
-      ...data,
-      updatedAt: new Date().toISOString()
-    };
-    
-    return Promise.resolve(updatedCategory);
   }
 
-  // PUT /:id/deactivate - השבתת קטגוריה
+  // PUT /categories/:id/deactivate - השבתת קטגוריה
   async deactivateCategory(id: string): Promise<Category> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<Category>(`/categories/${id}/deactivate`);
-    
-    // Mock implementation
-    const existingCategory = categoriesData.categories.find(cat => cat.id === id);
-    if (!existingCategory) {
-      throw new Error('Category not found');
+    try {
+      return await this.apiCall<Category>(`/categories/${id}/deactivate`, {
+        method: 'PUT',
+      });
+    } catch (error) {
+      console.error(`Failed to deactivate category ${id}:`, error);
+      throw error;
     }
-    
-    const deactivatedCategory: Category = {
-      ...existingCategory,
-      isActive: false,
-      updatedAt: new Date().toISOString()
-    };
-    
-    return Promise.resolve(deactivatedCategory);
   }
 
-  // PUT /:id/activate - הפעלת קטגוריה
+  // PUT /categories/:id/activate - הפעלת קטגוריה
   async activateCategory(id: string): Promise<Category> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<Category>(`/categories/${id}/activate`);
-    
-    // Mock implementation
-    const existingCategory = categoriesData.categories.find(cat => cat.id === id);
-    if (!existingCategory) {
-      throw new Error('Category not found');
+    try {
+      return await this.apiCall<Category>(`/categories/${id}/activate`, {
+        method: 'PUT',
+      });
+    } catch (error) {
+      console.error(`Failed to activate category ${id}:`, error);
+      throw error;
     }
-    
-    const activatedCategory: Category = {
-      ...existingCategory,
-      isActive: true,
-      updatedAt: new Date().toISOString()
-    };
-    
-    return Promise.resolve(activatedCategory);
   }
 
-  // DELETE /:id - מחיקת קטגוריה
+  // DELETE /categories/:id - מחיקת קטגוריה
   async deleteCategory(id: string): Promise<void> {
-    // TODO: Replace with actual API call
-    // return apiClient.delete<void>(`/categories/${id}`);
-    
-    // Mock implementation
-    console.log(`Deleting category with id: ${id}`);
-    return Promise.resolve();
+    try {
+      await this.apiCall<void>(`/categories/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error(`Failed to delete category ${id}:`, error);
+      throw error;
+    }
   }
 }
 

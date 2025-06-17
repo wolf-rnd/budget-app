@@ -1,8 +1,3 @@
-import { apiClient } from './api';
-
-// Mock data import
-import budgetYearsData from '../data/budgetYears.json';
-
 export interface BudgetYear {
   id: string;
   name: string;
@@ -26,100 +21,114 @@ export interface UpdateBudgetYearRequest {
 }
 
 class BudgetYearsService {
-  // GET / - קבלת כל שנות התקציב
+  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+
+  // Helper method for making API calls
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    const token = localStorage.getItem('authToken');
+    
+    const config: RequestInit = {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...options.headers,
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // GET /budget-years - קבלת כל שנות התקציב
   async getAllBudgetYears(): Promise<BudgetYear[]> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<BudgetYear[]>('/budget-years');
-    
-    // Mock implementation
-    return Promise.resolve(budgetYearsData.budgetYears);
+    try {
+      return await this.apiCall<BudgetYear[]>('/budget-years');
+    } catch (error) {
+      console.error('Failed to fetch budget years:', error);
+      throw error;
+    }
   }
 
-  // GET /active - קבלת שנת התקציב הפעילה
+  // GET /budget-years/active - קבלת שנת התקציב הפעילה
   async getActiveBudgetYear(): Promise<BudgetYear | null> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<BudgetYear>('/budget-years/active');
-    
-    // Mock implementation
-    const activeBudgetYear = budgetYearsData.budgetYears.find(year => year.isActive);
-    return Promise.resolve(activeBudgetYear || null);
+    try {
+      return await this.apiCall<BudgetYear>('/budget-years/active');
+    } catch (error) {
+      console.error('Failed to fetch active budget year:', error);
+      return null;
+    }
   }
 
-  // GET /:id - קבלת שנת תקציב ספציפית
+  // GET /budget-years/:id - קבלת שנת תקציב ספציפית
   async getBudgetYearById(id: string): Promise<BudgetYear | null> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<BudgetYear>(`/budget-years/${id}`);
-    
-    // Mock implementation
-    const budgetYear = budgetYearsData.budgetYears.find(year => year.id === id);
-    return Promise.resolve(budgetYear || null);
+    try {
+      return await this.apiCall<BudgetYear>(`/budget-years/${id}`);
+    } catch (error) {
+      console.error(`Failed to fetch budget year ${id}:`, error);
+      return null;
+    }
   }
 
-  // POST / - יצירת שנת תקציב חדשה
+  // POST /budget-years - יצירת שנת תקציב חדשה
   async createBudgetYear(data: CreateBudgetYearRequest): Promise<BudgetYear> {
-    // TODO: Replace with actual API call
-    // return apiClient.post<BudgetYear>('/budget-years', data);
-    
-    // Mock implementation
-    const newBudgetYear: BudgetYear = {
-      id: Date.now().toString(),
-      ...data,
-      isActive: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-    
-    return Promise.resolve(newBudgetYear);
+    try {
+      return await this.apiCall<BudgetYear>('/budget-years', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error('Failed to create budget year:', error);
+      throw error;
+    }
   }
 
-  // PUT /:id - עדכון שנת תקציב
+  // PUT /budget-years/:id - עדכון שנת תקציב
   async updateBudgetYear(id: string, data: UpdateBudgetYearRequest): Promise<BudgetYear> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<BudgetYear>(`/budget-years/${id}`, data);
-    
-    // Mock implementation
-    const existingBudgetYear = budgetYearsData.budgetYears.find(year => year.id === id);
-    if (!existingBudgetYear) {
-      throw new Error('Budget year not found');
+    try {
+      return await this.apiCall<BudgetYear>(`/budget-years/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error(`Failed to update budget year ${id}:`, error);
+      throw error;
     }
-    
-    const updatedBudgetYear: BudgetYear = {
-      ...existingBudgetYear,
-      ...data,
-      updatedAt: new Date().toISOString()
-    };
-    
-    return Promise.resolve(updatedBudgetYear);
   }
 
-  // PUT /:id/activate - הפעלת שנת תקציב
+  // PUT /budget-years/:id/activate - הפעלת שנת תקציב
   async activateBudgetYear(id: string): Promise<BudgetYear> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<BudgetYear>(`/budget-years/${id}/activate`);
-    
-    // Mock implementation
-    const existingBudgetYear = budgetYearsData.budgetYears.find(year => year.id === id);
-    if (!existingBudgetYear) {
-      throw new Error('Budget year not found');
+    try {
+      return await this.apiCall<BudgetYear>(`/budget-years/${id}/activate`, {
+        method: 'PUT',
+      });
+    } catch (error) {
+      console.error(`Failed to activate budget year ${id}:`, error);
+      throw error;
     }
-    
-    const activatedBudgetYear: BudgetYear = {
-      ...existingBudgetYear,
-      isActive: true,
-      updatedAt: new Date().toISOString()
-    };
-    
-    return Promise.resolve(activatedBudgetYear);
   }
 
-  // DELETE /:id - מחיקת שנת תקציב
+  // DELETE /budget-years/:id - מחיקת שנת תקציב
   async deleteBudgetYear(id: string): Promise<void> {
-    // TODO: Replace with actual API call
-    // return apiClient.delete<void>(`/budget-years/${id}`);
-    
-    // Mock implementation
-    console.log(`Deleting budget year with id: ${id}`);
-    return Promise.resolve();
+    try {
+      await this.apiCall<void>(`/budget-years/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error(`Failed to delete budget year ${id}:`, error);
+      throw error;
+    }
   }
 }
 

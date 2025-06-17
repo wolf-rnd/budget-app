@@ -1,8 +1,4 @@
-import { apiClient } from './api';
 import { Debt } from '../types';
-
-// Mock data import
-import debtsData from '../data/debts.json';
 
 export interface CreateDebtRequest {
   description: string;
@@ -38,143 +34,137 @@ export interface DebtSummary {
 }
 
 class DebtsService {
-  // GET / - קבלת כל החובות (עם פילטרים)
+  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+
+  // Helper method for making API calls
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    const token = localStorage.getItem('authToken');
+    
+    const config: RequestInit = {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...options.headers,
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // GET /debts - קבלת כל החובות (עם פילטרים)
   async getAllDebts(filters?: DebtFilters): Promise<Debt[]> {
-    // TODO: Replace with actual API call
-    // const params = new URLSearchParams();
-    // if (filters?.type) params.append('type', filters.type);
-    // if (filters?.isPaid !== undefined) params.append('isPaid', filters.isPaid.toString());
-    // if (filters?.search) params.append('search', filters.search);
-    // if (filters?.page) params.append('page', filters.page.toString());
-    // if (filters?.limit) params.append('limit', filters.limit.toString());
-    // return apiClient.get<Debt[]>(`/debts?${params.toString()}`);
-    
-    // Mock implementation
-    let filteredDebts = debtsData.debts;
-    
-    if (filters?.type) {
-      filteredDebts = filteredDebts.filter(debt => debt.type === filters.type);
+    try {
+      const params = new URLSearchParams();
+      
+      if (filters?.type) params.append('type', filters.type);
+      if (filters?.isPaid !== undefined) params.append('isPaid', filters.isPaid.toString());
+      if (filters?.search) params.append('search', filters.search);
+      if (filters?.page) params.append('page', filters.page.toString());
+      if (filters?.limit) params.append('limit', filters.limit.toString());
+
+      const queryString = params.toString();
+      const endpoint = queryString ? `/debts?${queryString}` : '/debts';
+      
+      return await this.apiCall<Debt[]>(endpoint);
+    } catch (error) {
+      console.error('Failed to fetch debts:', error);
+      throw error;
     }
-    if (filters?.search) {
-      filteredDebts = filteredDebts.filter(debt => 
-        debt.description.toLowerCase().includes(filters.search!.toLowerCase())
-      );
-    }
-    
-    return Promise.resolve(filteredDebts);
   }
 
-  // GET /summary - קבלת סיכום חובות
+  // GET /debts/summary - קבלת סיכום חובות
   async getDebtSummary(): Promise<DebtSummary> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<DebtSummary>('/debts/summary');
-    
-    // Mock implementation
-    const totalDebtsIOwe = debtsData.debts
-      .filter(debt => debt.type === 'i_owe' || !debt.type)
-      .reduce((sum, debt) => sum + debt.amount, 0);
-    
-    const totalDebtsOwedToMe = debtsData.debts
-      .filter(debt => debt.type === 'owed_to_me')
-      .reduce((sum, debt) => sum + debt.amount, 0);
-    
-    return Promise.resolve({
-      totalDebtsIOwe,
-      totalDebtsOwedToMe,
-      netDebtPosition: totalDebtsOwedToMe - totalDebtsIOwe,
-      paidDebts: 0,
-      unpaidDebts: debtsData.debts.length,
-      recentDebts: debtsData.debts.slice(0, 5)
-    });
+    try {
+      return await this.apiCall<DebtSummary>('/debts/summary');
+    } catch (error) {
+      console.error('Failed to fetch debt summary:', error);
+      throw error;
+    }
   }
 
-  // GET /:id - קבלת חוב ספציפי
+  // GET /debts/:id - קבלת חוב ספציפי
   async getDebtById(id: string): Promise<Debt | null> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<Debt>(`/debts/${id}`);
-    
-    // Mock implementation
-    const debt = debtsData.debts.find(d => d.id === id);
-    return Promise.resolve(debt || null);
+    try {
+      return await this.apiCall<Debt>(`/debts/${id}`);
+    } catch (error) {
+      console.error(`Failed to fetch debt ${id}:`, error);
+      return null;
+    }
   }
 
-  // POST / - יצירת חוב חדש
+  // POST /debts - יצירת חוב חדש
   async createDebt(data: CreateDebtRequest): Promise<Debt> {
-    // TODO: Replace with actual API call
-    // return apiClient.post<Debt>('/debts', data);
-    
-    // Mock implementation
-    const newDebt: Debt = {
-      id: Date.now().toString(),
-      description: data.description,
-      amount: data.amount,
-      note: data.note || '',
-      type: data.type
-    };
-    
-    return Promise.resolve(newDebt);
+    try {
+      return await this.apiCall<Debt>('/debts', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error('Failed to create debt:', error);
+      throw error;
+    }
   }
 
-  // PUT /:id - עדכון חוב
+  // PUT /debts/:id - עדכון חוב
   async updateDebt(id: string, data: UpdateDebtRequest): Promise<Debt> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<Debt>(`/debts/${id}`, data);
-    
-    // Mock implementation
-    const existingDebt = debtsData.debts.find(d => d.id === id);
-    if (!existingDebt) {
-      throw new Error('Debt not found');
+    try {
+      return await this.apiCall<Debt>(`/debts/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error(`Failed to update debt ${id}:`, error);
+      throw error;
     }
-    
-    const updatedDebt: Debt = {
-      ...existingDebt,
-      ...data
-    };
-    
-    return Promise.resolve(updatedDebt);
   }
 
-  // PUT /:id/pay - סימון חוב כשולם
+  // PUT /debts/:id/pay - סימון חוב כשולם
   async markDebtAsPaid(id: string): Promise<Debt> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<Debt>(`/debts/${id}/pay`);
-    
-    // Mock implementation
-    const existingDebt = debtsData.debts.find(d => d.id === id);
-    if (!existingDebt) {
-      throw new Error('Debt not found');
+    try {
+      return await this.apiCall<Debt>(`/debts/${id}/pay`, {
+        method: 'PUT',
+      });
+    } catch (error) {
+      console.error(`Failed to mark debt as paid ${id}:`, error);
+      throw error;
     }
-    
-    const paidDebt: Debt = {
-      ...existingDebt,
-      // Note: Add isPaid field to Debt type if needed
-    };
-    
-    return Promise.resolve(paidDebt);
   }
 
-  // PUT /:id/unpay - ביטול סימון שולם
+  // PUT /debts/:id/unpay - ביטול סימון שולם
   async markDebtAsUnpaid(id: string): Promise<Debt> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<Debt>(`/debts/${id}/unpay`);
-    
-    // Mock implementation
-    const existingDebt = debtsData.debts.find(d => d.id === id);
-    if (!existingDebt) {
-      throw new Error('Debt not found');
+    try {
+      return await this.apiCall<Debt>(`/debts/${id}/unpay`, {
+        method: 'PUT',
+      });
+    } catch (error) {
+      console.error(`Failed to mark debt as unpaid ${id}:`, error);
+      throw error;
     }
-    
-    return Promise.resolve(existingDebt);
   }
 
-  // DELETE /:id - מחיקת חוב
+  // DELETE /debts/:id - מחיקת חוב
   async deleteDebt(id: string): Promise<void> {
-    // TODO: Replace with actual API call
-    // return apiClient.delete<void>(`/debts/${id}`);
-    
-    // Mock implementation
-    console.log(`Deleting debt with id: ${id}`);
-    return Promise.resolve();
+    try {
+      await this.apiCall<void>(`/debts/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error(`Failed to delete debt ${id}:`, error);
+      throw error;
+    }
   }
 }
 

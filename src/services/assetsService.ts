@@ -1,8 +1,4 @@
-import { apiClient } from './api';
 import { AssetSnapshot } from '../types';
-
-// Mock data import
-import assetsData from '../data/assets.json';
 
 export interface CreateAssetSnapshotRequest {
   assets: Record<string, number>;
@@ -34,114 +30,122 @@ export interface AssetTrends {
 }
 
 class AssetsService {
-  // GET / - קבלת כל תמונות מצב הנכסים (עם פילטרים)
-  async getAllAssetSnapshots(filters?: AssetFilters): Promise<AssetSnapshot[]> {
-    // TODO: Replace with actual API call
-    // const params = new URLSearchParams();
-    // if (filters?.startDate) params.append('startDate', filters.startDate);
-    // if (filters?.endDate) params.append('endDate', filters.endDate);
-    // if (filters?.page) params.append('page', filters.page.toString());
-    // if (filters?.limit) params.append('limit', filters.limit.toString());
-    // return apiClient.get<AssetSnapshot[]>(`/assets?${params.toString()}`);
-    
-    // Mock implementation
-    return Promise.resolve(assetsData.assetsSnapshot);
-  }
+  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
 
-  // GET /latest - קבלת תמונת המצב האחרונה
-  async getLatestAssetSnapshot(): Promise<AssetSnapshot | null> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<AssetSnapshot>('/assets/latest');
+  // Helper method for making API calls
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    const token = localStorage.getItem('authToken');
     
-    // Mock implementation
-    const latest = assetsData.assetsSnapshot[0];
-    return Promise.resolve(latest || null);
-  }
-
-  // GET /trends/summary - קבלת מגמות נכסים
-  async getAssetTrends(): Promise<AssetTrends> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<AssetTrends>('/assets/trends/summary');
-    
-    // Mock implementation
-    const snapshots = assetsData.assetsSnapshot;
-    const trends = snapshots.map(snapshot => {
-      const totalAssets = snapshot.assets ? 
-        Object.values(snapshot.assets).reduce((sum, amount) => sum + amount, 0) : 
-        snapshot.totalSavings || 0;
-      
-      const totalLiabilities = snapshot.liabilities ? 
-        Object.values(snapshot.liabilities).reduce((sum, amount) => sum + amount, 0) : 
-        snapshot.totalLiabilities || 0;
-      
-      return {
-        date: snapshot.date,
-        assets: totalAssets,
-        liabilities: totalLiabilities,
-        netWorth: totalAssets - totalLiabilities
-      };
-    });
-    
-    return Promise.resolve({
-      netWorthTrend: trends.map(t => ({ date: t.date, value: t.netWorth })),
-      assetsTrend: trends.map(t => ({ date: t.date, value: t.assets })),
-      liabilitiesTrend: trends.map(t => ({ date: t.date, value: t.liabilities })),
-      monthlyChange: 0,
-      yearlyChange: 0
-    });
-  }
-
-  // GET /:id - קבלת תמונת מצב ספציפית
-  async getAssetSnapshotById(id: string): Promise<AssetSnapshot | null> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<AssetSnapshot>(`/assets/${id}`);
-    
-    // Mock implementation
-    const snapshot = assetsData.assetsSnapshot.find(s => s.id === id);
-    return Promise.resolve(snapshot || null);
-  }
-
-  // POST / - יצירת תמונת מצב חדשה
-  async createAssetSnapshot(data: CreateAssetSnapshotRequest): Promise<AssetSnapshot> {
-    // TODO: Replace with actual API call
-    // return apiClient.post<AssetSnapshot>('/assets', data);
-    
-    // Mock implementation
-    const newSnapshot: AssetSnapshot = {
-      id: Date.now().toString(),
-      ...data
+    const config: RequestInit = {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...options.headers,
+      },
     };
-    
-    return Promise.resolve(newSnapshot);
-  }
 
-  // PUT /:id - עדכון תמונת מצב
-  async updateAssetSnapshot(id: string, data: UpdateAssetSnapshotRequest): Promise<AssetSnapshot> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<AssetSnapshot>(`/assets/${id}`, data);
-    
-    // Mock implementation
-    const existingSnapshot = assetsData.assetsSnapshot.find(s => s.id === id);
-    if (!existingSnapshot) {
-      throw new Error('Asset snapshot not found');
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
     }
-    
-    const updatedSnapshot: AssetSnapshot = {
-      ...existingSnapshot,
-      ...data
-    };
-    
-    return Promise.resolve(updatedSnapshot);
   }
 
-  // DELETE /:id - מחיקת תמונת מצב
+  // GET /assets - קבלת כל תמונות מצב הנכסים (עם פילטרים)
+  async getAllAssetSnapshots(filters?: AssetFilters): Promise<AssetSnapshot[]> {
+    try {
+      const params = new URLSearchParams();
+      
+      if (filters?.startDate) params.append('startDate', filters.startDate);
+      if (filters?.endDate) params.append('endDate', filters.endDate);
+      if (filters?.page) params.append('page', filters.page.toString());
+      if (filters?.limit) params.append('limit', filters.limit.toString());
+
+      const queryString = params.toString();
+      const endpoint = queryString ? `/assets?${queryString}` : '/assets';
+      
+      return await this.apiCall<AssetSnapshot[]>(endpoint);
+    } catch (error) {
+      console.error('Failed to fetch asset snapshots:', error);
+      throw error;
+    }
+  }
+
+  // GET /assets/latest - קבלת תמונת המצב האחרונה
+  async getLatestAssetSnapshot(): Promise<AssetSnapshot | null> {
+    try {
+      return await this.apiCall<AssetSnapshot>('/assets/latest');
+    } catch (error) {
+      console.error('Failed to fetch latest asset snapshot:', error);
+      return null;
+    }
+  }
+
+  // GET /assets/trends/summary - קבלת מגמות נכסים
+  async getAssetTrends(): Promise<AssetTrends> {
+    try {
+      return await this.apiCall<AssetTrends>('/assets/trends/summary');
+    } catch (error) {
+      console.error('Failed to fetch asset trends:', error);
+      throw error;
+    }
+  }
+
+  // GET /assets/:id - קבלת תמונת מצב ספציפית
+  async getAssetSnapshotById(id: string): Promise<AssetSnapshot | null> {
+    try {
+      return await this.apiCall<AssetSnapshot>(`/assets/${id}`);
+    } catch (error) {
+      console.error(`Failed to fetch asset snapshot ${id}:`, error);
+      return null;
+    }
+  }
+
+  // POST /assets - יצירת תמונת מצב חדשה
+  async createAssetSnapshot(data: CreateAssetSnapshotRequest): Promise<AssetSnapshot> {
+    try {
+      return await this.apiCall<AssetSnapshot>('/assets', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error('Failed to create asset snapshot:', error);
+      throw error;
+    }
+  }
+
+  // PUT /assets/:id - עדכון תמונת מצב
+  async updateAssetSnapshot(id: string, data: UpdateAssetSnapshotRequest): Promise<AssetSnapshot> {
+    try {
+      return await this.apiCall<AssetSnapshot>(`/assets/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error(`Failed to update asset snapshot ${id}:`, error);
+      throw error;
+    }
+  }
+
+  // DELETE /assets/:id - מחיקת תמונת מצב
   async deleteAssetSnapshot(id: string): Promise<void> {
-    // TODO: Replace with actual API call
-    // return apiClient.delete<void>(`/assets/${id}`);
-    
-    // Mock implementation
-    console.log(`Deleting asset snapshot with id: ${id}`);
-    return Promise.resolve();
+    try {
+      await this.apiCall<void>(`/assets/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error(`Failed to delete asset snapshot ${id}:`, error);
+      throw error;
+    }
   }
 }
 

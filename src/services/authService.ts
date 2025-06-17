@@ -1,14 +1,4 @@
-import { apiClient } from './api';
-
-// Mock data import (temporary)
-// import userData from '../data/user.json'; // נוסיף קובץ זה
-
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  createdAt: string;
-}
+import { User } from '../types';
 
 export interface LoginRequest {
   email: string;
@@ -27,72 +17,95 @@ export interface AuthResponse {
 }
 
 class AuthService {
-  // POST /register - רישום משתמש חדש
+  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+
+  // Helper method for making API calls
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    
+    const config: RequestInit = {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // POST /auth/register - רישום משתמש חדש
   async register(data: RegisterRequest): Promise<AuthResponse> {
-    // TODO: Replace with actual API call
-    // return apiClient.post<AuthResponse>('/auth/register', data);
-    
-    // Mock implementation
-    const mockUser: User = {
-      id: Date.now().toString(),
-      email: data.email,
-      name: data.name,
-      createdAt: new Date().toISOString()
-    };
-    
-    const mockToken = 'mock-jwt-token-' + Date.now();
-    apiClient.setToken(mockToken);
-    
-    return Promise.resolve({
-      user: mockUser,
-      token: mockToken
-    });
+    try {
+      return await this.apiCall<AuthResponse>('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error('Failed to register:', error);
+      throw error;
+    }
   }
 
-  // POST /login - התחברות משתמש
+  // POST /auth/login - התחברות משתמש
   async login(data: LoginRequest): Promise<AuthResponse> {
-    // TODO: Replace with actual API call
-    // return apiClient.post<AuthResponse>('/auth/login', data);
-    
-    // Mock implementation
-    const mockUser: User = {
-      id: '1',
-      email: data.email,
-      name: 'נעמי מסינג',
-      createdAt: '2024-01-01T00:00:00.000Z'
-    };
-    
-    const mockToken = 'mock-jwt-token-' + Date.now();
-    apiClient.setToken(mockToken);
-    
-    return Promise.resolve({
-      user: mockUser,
-      token: mockToken
-    });
+    try {
+      const response = await this.apiCall<AuthResponse>('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+      
+      // שמירת הטוקן ב-localStorage
+      if (response.token) {
+        localStorage.setItem('authToken', response.token);
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Failed to login:', error);
+      throw error;
+    }
   }
 
-  // GET /me - קבלת פרטי המשתמש הנוכחי
+  // GET /auth/me - קבלת פרטי המשתמש הנוכחי
   async getCurrentUser(): Promise<User> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<User>('/auth/me');
-    
-    // Mock implementation
-    return Promise.resolve({
-      id: '1',
-      email: 'naomi@example.com',
-      name: 'נעמי מסינג',
-      createdAt: '2024-01-01T00:00:00.000Z'
-    });
+    try {
+      const token = localStorage.getItem('authToken');
+      return await this.apiCall<User>('/auth/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    } catch (error) {
+      console.error('Failed to get current user:', error);
+      throw error;
+    }
   }
 
   // Logout (client-side only)
   logout(): void {
-    apiClient.removeToken();
+    localStorage.removeItem('authToken');
   }
 
   // Check if user is authenticated
   isAuthenticated(): boolean {
     return !!localStorage.getItem('authToken');
+  }
+
+  // Get auth token
+  getToken(): string | null {
+    return localStorage.getItem('authToken');
   }
 }
 

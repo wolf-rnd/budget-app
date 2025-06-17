@@ -1,8 +1,4 @@
-import { apiClient } from './api';
 import { TitheGiven } from '../types';
-
-// Mock data import
-import titheData from '../data/tithe.json';
 
 export interface CreateTitheRequest {
   description: string;
@@ -36,102 +32,113 @@ export interface TitheSummary {
 }
 
 class TitheService {
-  // GET / - קבלת כל המעשרות (עם פילטרים)
+  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+
+  // Helper method for making API calls
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    const token = localStorage.getItem('authToken');
+    
+    const config: RequestInit = {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...options.headers,
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // GET /tithe - קבלת כל המעשרות (עם פילטרים)
   async getAllTithes(filters?: TitheFilters): Promise<TitheGiven[]> {
-    // TODO: Replace with actual API call
-    // const params = new URLSearchParams();
-    // if (filters?.startDate) params.append('startDate', filters.startDate);
-    // if (filters?.endDate) params.append('endDate', filters.endDate);
-    // if (filters?.search) params.append('search', filters.search);
-    // if (filters?.page) params.append('page', filters.page.toString());
-    // if (filters?.limit) params.append('limit', filters.limit.toString());
-    // return apiClient.get<TitheGiven[]>(`/tithe?${params.toString()}`);
-    
-    // Mock implementation
-    let filteredTithes = titheData.titheGiven;
-    
-    if (filters?.search) {
-      filteredTithes = filteredTithes.filter(tithe => 
-        tithe.description.toLowerCase().includes(filters.search!.toLowerCase())
-      );
+    try {
+      const params = new URLSearchParams();
+      
+      if (filters?.startDate) params.append('startDate', filters.startDate);
+      if (filters?.endDate) params.append('endDate', filters.endDate);
+      if (filters?.search) params.append('search', filters.search);
+      if (filters?.page) params.append('page', filters.page.toString());
+      if (filters?.limit) params.append('limit', filters.limit.toString());
+
+      const queryString = params.toString();
+      const endpoint = queryString ? `/tithe?${queryString}` : '/tithe';
+      
+      return await this.apiCall<TitheGiven[]>(endpoint);
+    } catch (error) {
+      console.error('Failed to fetch tithes:', error);
+      throw error;
     }
-    
-    return Promise.resolve(filteredTithes);
   }
 
-  // GET /summary - קבלת סיכום מעשרות
+  // GET /tithe/summary - קבלת סיכום מעשרות
   async getTitheSummary(): Promise<TitheSummary> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<TitheSummary>('/tithe/summary');
-    
-    // Mock implementation
-    const totalGiven = titheData.titheGiven.reduce((sum, tithe) => sum + tithe.amount, 0);
-    const totalIncome = 85000; // From income data
-    const tithePercentage = 10;
-    const totalRequired = (totalIncome * tithePercentage) / 100;
-    const totalRemaining = totalRequired - totalGiven;
-    
-    return Promise.resolve({
-      totalGiven,
-      totalRequired,
-      totalRemaining,
-      tithePercentage,
-      totalIncome,
-      recentTithes: titheData.titheGiven.slice(0, 5)
-    });
-  }
-
-  // GET /:id - קבלת מעשר ספציפי
-  async getTitheById(id: string): Promise<TitheGiven | null> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<TitheGiven>(`/tithe/${id}`);
-    
-    // Mock implementation
-    const tithe = titheData.titheGiven.find(t => t.id === id);
-    return Promise.resolve(tithe || null);
-  }
-
-  // POST / - יצירת מעשר חדש
-  async createTithe(data: CreateTitheRequest): Promise<TitheGiven> {
-    // TODO: Replace with actual API call
-    // return apiClient.post<TitheGiven>('/tithe', data);
-    
-    // Mock implementation
-    const newTithe: TitheGiven = {
-      id: Date.now().toString(),
-      ...data
-    };
-    
-    return Promise.resolve(newTithe);
-  }
-
-  // PUT /:id - עדכון מעשר
-  async updateTithe(id: string, data: UpdateTitheRequest): Promise<TitheGiven> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<TitheGiven>(`/tithe/${id}`, data);
-    
-    // Mock implementation
-    const existingTithe = titheData.titheGiven.find(t => t.id === id);
-    if (!existingTithe) {
-      throw new Error('Tithe not found');
+    try {
+      return await this.apiCall<TitheSummary>('/tithe/summary');
+    } catch (error) {
+      console.error('Failed to fetch tithe summary:', error);
+      throw error;
     }
-    
-    const updatedTithe: TitheGiven = {
-      ...existingTithe,
-      ...data
-    };
-    
-    return Promise.resolve(updatedTithe);
   }
 
-  // DELETE /:id - מחיקת מעשר
+  // GET /tithe/:id - קבלת מעשר ספציפי
+  async getTitheById(id: string): Promise<TitheGiven | null> {
+    try {
+      return await this.apiCall<TitheGiven>(`/tithe/${id}`);
+    } catch (error) {
+      console.error(`Failed to fetch tithe ${id}:`, error);
+      return null;
+    }
+  }
+
+  // POST /tithe - יצירת מעשר חדש
+  async createTithe(data: CreateTitheRequest): Promise<TitheGiven> {
+    try {
+      return await this.apiCall<TitheGiven>('/tithe', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error('Failed to create tithe:', error);
+      throw error;
+    }
+  }
+
+  // PUT /tithe/:id - עדכון מעשר
+  async updateTithe(id: string, data: UpdateTitheRequest): Promise<TitheGiven> {
+    try {
+      return await this.apiCall<TitheGiven>(`/tithe/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error(`Failed to update tithe ${id}:`, error);
+      throw error;
+    }
+  }
+
+  // DELETE /tithe/:id - מחיקת מעשר
   async deleteTithe(id: string): Promise<void> {
-    // TODO: Replace with actual API call
-    // return apiClient.delete<void>(`/tithe/${id}`);
-    
-    // Mock implementation
-    console.log(`Deleting tithe with id: ${id}`);
-    return Promise.resolve();
+    try {
+      await this.apiCall<void>(`/tithe/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error(`Failed to delete tithe ${id}:`, error);
+      throw error;
+    }
   }
 }
 

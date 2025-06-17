@@ -1,9 +1,4 @@
-import { apiClient } from './api';
 import { Fund } from '../types';
-
-// Mock data import
-import budgetData from '../data/budget.json';
-import fundBudgetsData from '../data/fundBudgets.json';
 
 export interface CreateFundRequest {
   name: string;
@@ -28,118 +23,130 @@ export interface UpdateFundBudgetRequest {
 }
 
 class FundsService {
-  // GET / - קבלת כל הקופות (עם אפשרות לסינון לפי שנת תקציב)
+  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+
+  // Helper method for making API calls
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    const token = localStorage.getItem('authToken');
+    
+    const config: RequestInit = {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...options.headers,
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // GET /funds - קבלת כל הקופות (עם אפשרות לסינון לפי שנת תקציב)
   async getAllFunds(budgetYearId?: string): Promise<Fund[]> {
-    // TODO: Replace with actual API call
-    // const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
-    // return apiClient.get<Fund[]>(`/funds${params}`);
-    
-    // Mock implementation
-    return Promise.resolve(budgetData.funds);
+    try {
+      const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
+      return await this.apiCall<Fund[]>(`/funds${params}`);
+    } catch (error) {
+      console.error('Failed to fetch funds:', error);
+      throw error;
+    }
   }
 
-  // GET /:id - קבלת קופה ספציפית
+  // GET /funds/:id - קבלת קופה ספציפית
   async getFundById(id: string): Promise<Fund | null> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<Fund>(`/funds/${id}`);
-    
-    // Mock implementation
-    const fund = budgetData.funds.find(f => f.id === id);
-    return Promise.resolve(fund || null);
+    try {
+      return await this.apiCall<Fund>(`/funds/${id}`);
+    } catch (error) {
+      console.error(`Failed to fetch fund ${id}:`, error);
+      return null;
+    }
   }
 
-  // POST / - יצירת קופה חדשה
+  // POST /funds - יצירת קופה חדשה
   async createFund(data: CreateFundRequest): Promise<Fund> {
-    // TODO: Replace with actual API call
-    // return apiClient.post<Fund>('/funds', data);
-    
-    // Mock implementation
-    const newFund: Fund = {
-      id: Date.now().toString(),
-      amount: 0,
-      ...data
-    };
-    
-    return Promise.resolve(newFund);
+    try {
+      return await this.apiCall<Fund>('/funds', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error('Failed to create fund:', error);
+      throw error;
+    }
   }
 
-  // PUT /:id - עדכון קופה
+  // PUT /funds/:id - עדכון קופה
   async updateFund(id: string, data: UpdateFundRequest): Promise<Fund> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<Fund>(`/funds/${id}`, data);
-    
-    // Mock implementation
-    const existingFund = budgetData.funds.find(f => f.id === id);
-    if (!existingFund) {
-      throw new Error('Fund not found');
+    try {
+      return await this.apiCall<Fund>(`/funds/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error(`Failed to update fund ${id}:`, error);
+      throw error;
     }
-    
-    const updatedFund: Fund = {
-      ...existingFund,
-      ...data
-    };
-    
-    return Promise.resolve(updatedFund);
   }
 
-  // PUT /:id/budget/:budgetYearId - עדכון תקציב קופה לשנה ספציפית
+  // PUT /funds/:id/budget/:budgetYearId - עדכון תקציב קופה לשנה ספציפית
   async updateFundBudget(id: string, budgetYearId: string, data: UpdateFundBudgetRequest): Promise<Fund> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<Fund>(`/funds/${id}/budget/${budgetYearId}`, data);
-    
-    // Mock implementation
-    const existingFund = budgetData.funds.find(f => f.id === id);
-    if (!existingFund) {
-      throw new Error('Fund not found');
+    try {
+      return await this.apiCall<Fund>(`/funds/${id}/budget/${budgetYearId}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error(`Failed to update fund budget ${id}:`, error);
+      throw error;
     }
-    
-    const updatedFund: Fund = {
-      ...existingFund,
-      amount: data.amount,
-      amountGiven: data.amountGiven,
-      spent: data.spent
-    };
-    
-    return Promise.resolve(updatedFund);
   }
 
-  // PUT /:id/deactivate - השבתת קופה
+  // PUT /funds/:id/deactivate - השבתת קופה
   async deactivateFund(id: string): Promise<Fund> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<Fund>(`/funds/${id}/deactivate`);
-    
-    // Mock implementation
-    const existingFund = budgetData.funds.find(f => f.id === id);
-    if (!existingFund) {
-      throw new Error('Fund not found');
+    try {
+      return await this.apiCall<Fund>(`/funds/${id}/deactivate`, {
+        method: 'PUT',
+      });
+    } catch (error) {
+      console.error(`Failed to deactivate fund ${id}:`, error);
+      throw error;
     }
-    
-    // Note: Add isActive field to Fund type if needed
-    return Promise.resolve(existingFund);
   }
 
-  // PUT /:id/activate - הפעלת קופה
+  // PUT /funds/:id/activate - הפעלת קופה
   async activateFund(id: string): Promise<Fund> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<Fund>(`/funds/${id}/activate`);
-    
-    // Mock implementation
-    const existingFund = budgetData.funds.find(f => f.id === id);
-    if (!existingFund) {
-      throw new Error('Fund not found');
+    try {
+      return await this.apiCall<Fund>(`/funds/${id}/activate`, {
+        method: 'PUT',
+      });
+    } catch (error) {
+      console.error(`Failed to activate fund ${id}:`, error);
+      throw error;
     }
-    
-    return Promise.resolve(existingFund);
   }
 
-  // DELETE /:id - מחיקת קופה
+  // DELETE /funds/:id - מחיקת קופה
   async deleteFund(id: string): Promise<void> {
-    // TODO: Replace with actual API call
-    // return apiClient.delete<void>(`/funds/${id}`);
-    
-    // Mock implementation
-    console.log(`Deleting fund with id: ${id}`);
-    return Promise.resolve();
+    try {
+      await this.apiCall<void>(`/funds/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error(`Failed to delete fund ${id}:`, error);
+      throw error;
+    }
   }
 }
 

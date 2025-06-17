@@ -1,8 +1,4 @@
-import { apiClient } from './api';
 import { Income } from '../types';
-
-// Mock data import
-import incomeData from '../data/income.json';
 
 export interface CreateIncomeRequest {
   name: string;
@@ -43,111 +39,115 @@ export interface IncomeSummary {
 }
 
 class IncomesService {
-  // GET / - קבלת כל ההכנסות (עם פילטרים)
+  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+
+  // Helper method for making API calls
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    const token = localStorage.getItem('authToken');
+    
+    const config: RequestInit = {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { 'Authorization': `Bearer ${token}` }),
+        ...options.headers,
+      },
+    };
+
+    try {
+      const response = await fetch(url, config);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API request failed:', error);
+      throw error;
+    }
+  }
+
+  // GET /incomes - קבלת כל ההכנסות (עם פילטרים)
   async getAllIncomes(filters?: IncomeFilters): Promise<Income[]> {
-    // TODO: Replace with actual API call
-    // const params = new URLSearchParams();
-    // if (filters?.budgetYearId) params.append('budgetYearId', filters.budgetYearId);
-    // if (filters?.month) params.append('month', filters.month.toString());
-    // if (filters?.year) params.append('year', filters.year.toString());
-    // if (filters?.source) params.append('source', filters.source);
-    // if (filters?.page) params.append('page', filters.page.toString());
-    // if (filters?.limit) params.append('limit', filters.limit.toString());
-    // return apiClient.get<Income[]>(`/incomes?${params.toString()}`);
-    
-    // Mock implementation
-    let filteredIncomes = incomeData.incomes;
-    
-    if (filters?.month) {
-      filteredIncomes = filteredIncomes.filter(income => income.month === filters.month);
+    try {
+      const params = new URLSearchParams();
+      
+      if (filters?.budgetYearId) params.append('budgetYearId', filters.budgetYearId);
+      if (filters?.month) params.append('month', filters.month.toString());
+      if (filters?.year) params.append('year', filters.year.toString());
+      if (filters?.source) params.append('source', filters.source);
+      if (filters?.page) params.append('page', filters.page.toString());
+      if (filters?.limit) params.append('limit', filters.limit.toString());
+
+      const queryString = params.toString();
+      const endpoint = queryString ? `/incomes?${queryString}` : '/incomes';
+      
+      return await this.apiCall<Income[]>(endpoint);
+    } catch (error) {
+      console.error('Failed to fetch incomes:', error);
+      throw error;
     }
-    if (filters?.year) {
-      filteredIncomes = filteredIncomes.filter(income => income.year === filters.year);
-    }
-    
-    return Promise.resolve(filteredIncomes);
   }
 
-  // GET /:id - קבלת הכנסה ספציפית
+  // GET /incomes/:id - קבלת הכנסה ספציפית
   async getIncomeById(id: string): Promise<Income | null> {
-    // TODO: Replace with actual API call
-    // return apiClient.get<Income>(`/incomes/${id}`);
-    
-    // Mock implementation
-    const income = incomeData.incomes.find(inc => inc.id === id);
-    return Promise.resolve(income || null);
-  }
-
-  // GET /stats/summary - קבלת סטטיסטיקות הכנסות
-  async getIncomeSummary(budgetYearId?: string): Promise<IncomeSummary> {
-    // TODO: Replace with actual API call
-    // const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
-    // return apiClient.get<IncomeSummary>(`/incomes/stats/summary${params}`);
-    
-    // Mock implementation
-    const totalIncome = incomeData.incomes.reduce((sum, income) => sum + income.amount, 0);
-    const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth() + 1;
-    
-    const currentMonthIncome = incomeData.incomes
-      .filter(income => income.month === currentMonth && income.year === currentYear)
-      .reduce((sum, income) => sum + income.amount, 0);
-    
-    const yearToDateIncome = incomeData.incomes
-      .filter(income => income.year === currentYear)
-      .reduce((sum, income) => sum + income.amount, 0);
-    
-    return Promise.resolve({
-      totalIncome,
-      monthlyAverage: totalIncome / 12,
-      currentMonthIncome,
-      yearToDateIncome,
-      incomeBySource: [],
-      incomeByMonth: []
-    });
-  }
-
-  // POST / - יצירת הכנסה חדשה
-  async createIncome(data: CreateIncomeRequest): Promise<Income> {
-    // TODO: Replace with actual API call
-    // return apiClient.post<Income>('/incomes', data);
-    
-    // Mock implementation
-    const newIncome: Income = {
-      id: Date.now().toString(),
-      ...data
-    };
-    
-    return Promise.resolve(newIncome);
-  }
-
-  // PUT /:id - עדכון הכנסה
-  async updateIncome(id: string, data: UpdateIncomeRequest): Promise<Income> {
-    // TODO: Replace with actual API call
-    // return apiClient.put<Income>(`/incomes/${id}`, data);
-    
-    // Mock implementation
-    const existingIncome = incomeData.incomes.find(inc => inc.id === id);
-    if (!existingIncome) {
-      throw new Error('Income not found');
+    try {
+      return await this.apiCall<Income>(`/incomes/${id}`);
+    } catch (error) {
+      console.error(`Failed to fetch income ${id}:`, error);
+      return null;
     }
-    
-    const updatedIncome: Income = {
-      ...existingIncome,
-      ...data
-    };
-    
-    return Promise.resolve(updatedIncome);
   }
 
-  // DELETE /:id - מחיקת הכנסה
+  // GET /incomes/stats/summary - קבלת סטטיסטיקות הכנסות
+  async getIncomeSummary(budgetYearId?: string): Promise<IncomeSummary> {
+    try {
+      const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
+      return await this.apiCall<IncomeSummary>(`/incomes/stats/summary${params}`);
+    } catch (error) {
+      console.error('Failed to fetch income summary:', error);
+      throw error;
+    }
+  }
+
+  // POST /incomes - יצירת הכנסה חדשה
+  async createIncome(data: CreateIncomeRequest): Promise<Income> {
+    try {
+      return await this.apiCall<Income>('/incomes', {
+        method: 'POST',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error('Failed to create income:', error);
+      throw error;
+    }
+  }
+
+  // PUT /incomes/:id - עדכון הכנסה
+  async updateIncome(id: string, data: UpdateIncomeRequest): Promise<Income> {
+    try {
+      return await this.apiCall<Income>(`/incomes/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      });
+    } catch (error) {
+      console.error(`Failed to update income ${id}:`, error);
+      throw error;
+    }
+  }
+
+  // DELETE /incomes/:id - מחיקת הכנסה
   async deleteIncome(id: string): Promise<void> {
-    // TODO: Replace with actual API call
-    // return apiClient.delete<void>(`/incomes/${id}`);
-    
-    // Mock implementation
-    console.log(`Deleting income with id: ${id}`);
-    return Promise.resolve();
+    try {
+      await this.apiCall<void>(`/incomes/${id}`, {
+        method: 'DELETE',
+      });
+    } catch (error) {
+      console.error(`Failed to delete income ${id}:`, error);
+      throw error;
+    }
   }
 }
 
