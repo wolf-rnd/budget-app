@@ -1,5 +1,5 @@
 import React from 'react';
-import { Settings, Calendar, TrendingUp, TrendingDown } from 'lucide-react';
+import { Calendar, TrendingUp, TrendingDown } from 'lucide-react';
 import { BudgetYear } from '../../types';
 
 interface TopActionsProps {
@@ -8,7 +8,6 @@ interface TopActionsProps {
   onBudgetYearChange: (budgetYear: BudgetYear) => void;
   onAddExpense: () => void;
   onAddIncome: () => void;
-  onOpenSettings: () => void;
 }
 
 const TopActions: React.FC<TopActionsProps> = ({
@@ -16,21 +15,12 @@ const TopActions: React.FC<TopActionsProps> = ({
   budgetYears,
   onBudgetYearChange,
   onAddExpense,
-  onAddIncome,
-  onOpenSettings
+  onAddIncome
 }) => {
   return (
     <div className="bg-white rounded-lg shadow-md p-4 mb-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <button
-            onClick={onOpenSettings}
-            className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
-          >
-            <Settings size={18} />
-            הגדרות
-          </button>
-          
           <div className="flex items-center gap-2">
             <Calendar size={18} className="text-gray-500" />
             <select

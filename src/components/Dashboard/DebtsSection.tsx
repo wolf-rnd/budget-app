@@ -138,14 +138,14 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
         />
       </div>
       
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-nowrap">
         <input
           type="text"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           onKeyDown={(e) => handleKeyPress(e, type)}
           placeholder="הערה (אופציונלי)"
-          className={`flex-1 p-2 border-2 rounded text-xs transition-all bg-white ${
+          className={`w-20 md:w-28 p-2 border-2 rounded text-xs transition-all bg-white ${
             type === 'owed_to_me'
               ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
               : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Fund, Income, Expense, TitheGiven, Debt, Task, AssetSnapshot, Category, BudgetYear, FundBudget } from '../types';
 import TopActions from '../components/Dashboard/TopActions';
+
 import BudgetChart from '../components/Dashboard/BudgetChart';
 import FundsGrid from '../components/Dashboard/FundsGrid';
 import TitheSection from '../components/Dashboard/TitheSection';
@@ -34,6 +35,7 @@ import budgetYearsData from '../data/budgetYears.json';
 import fundBudgetsData from '../data/fundBudgets.json';
 
 const Dashboard: React.FC = () => {
+
   // State management
   const [budgetYears] = useState<BudgetYear[]>(budgetYearsData.budgetYears);
   const [selectedBudgetYear, setSelectedBudgetYear] = useState<BudgetYear | null>(null);
@@ -60,6 +62,7 @@ const Dashboard: React.FC = () => {
   const [categories] = useState<Category[]>(categoriesData.categories);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
+  const [currentDisplayMonth, setCurrentDisplayMonth] = useState<number>(new Date().getMonth() + 1);
 
   // Initialize selected budget year
   useEffect(() => {
@@ -191,9 +194,7 @@ const Dashboard: React.FC = () => {
     console.log('הוצאה חדשה נוספה:', newExpense);
   };
 
-  const handleOpenSettings = () => {
-    console.log('פתיחת הגדרות');
-  };
+  
 
   const handleCloseDailyFund = (remainingAmount: number) => {
     if (!selectedBudgetYear) return;
@@ -314,6 +315,14 @@ const Dashboard: React.FC = () => {
     };
   });
 
+  const getMonthName = (monthNumber: number) => {
+    const months = [
+      'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
+      'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
+    ];
+    return months[monthNumber - 1] || '';
+  };
+
   if (!selectedBudgetYear) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -329,13 +338,12 @@ const Dashboard: React.FC = () => {
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
         <TopActions
-          selectedBudgetYear={selectedBudgetYear}
-          budgetYears={budgetYears}
-          onBudgetYearChange={handleBudgetYearChange}
-          onAddExpense={handleAddExpense}
-          onAddIncome={handleAddIncome}
-          onOpenSettings={handleOpenSettings}
-        />
+           selectedBudgetYear={selectedBudgetYear}
+           budgetYears={budgetYears}
+           onBudgetYearChange={handleBudgetYearChange}
+           onAddExpense={handleAddExpense}
+           onAddIncome={handleAddIncome}
+         />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <TitheSection
@@ -368,6 +376,8 @@ const Dashboard: React.FC = () => {
               funds={displayFunds}
               onCloseDailyFund={handleCloseDailyFund}
               onAddMoneyToEnvelope={handleAddMoneyToEnvelope}
+              currentDisplayMonth={currentDisplayMonth}
+              onMonthChange={setCurrentDisplayMonth}
             />
           </div>
 

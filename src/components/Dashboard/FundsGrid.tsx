@@ -7,9 +7,10 @@ interface FundsGridProps {
   currentDisplayMonth: number;
   onCloseDailyFund: (remainingAmount: number) => void;
   onAddMoneyToEnvelope: (amount: number) => void;
+  onMonthChange: (month: number) => void;
 }
 
-const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onCloseDailyFund, onAddMoneyToEnvelope }) => {
+const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onCloseDailyFund, onAddMoneyToEnvelope, onMonthChange }) => {
   const [showEnvelopeInput, setShowEnvelopeInput] = useState(false);
   const [envelopeAmount, setEnvelopeAmount] = useState('');
   const [showClosureInput, setShowClosureInput] = useState(false);
@@ -19,14 +20,7 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onClo
   const level2Funds = funds.filter(fund => fund.level === 2);
   const level3Funds = funds.filter(fund => fund.level === 3);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('he-IL', {
-      style: 'currency',
-      currency: 'ILS',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+  const formatCurrency = (amount: number) => amount.toLocaleString('he-IL');
 
   const getMonthName = (monthNumber: number) => {
     const months = [
@@ -224,7 +218,7 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onClo
             
             <div className="grid grid-cols-3 gap-4">
               {/* תקציב */}
-              <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="p-1 bg-gray-50 rounded-lg border border-gray-200 w-[70px] h-full">
                 <div className="flex items-center justify-center gap-1 mb-2">
                   <Target size={14} className="text-indigo-600" />
                   <p className="text-xs text-gray-600 font-medium">תקציב</p>
@@ -233,7 +227,7 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onClo
               </div>
               
               {/* מומש */}
-              <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="p-1 bg-gray-50 rounded-lg border border-gray-200 w-[70px] h-full">
                 <div className="flex items-center justify-center gap-1 mb-2">
                   <TrendingUp size={14} className="text-orange-600 rotate-180" />
                   <p className="text-xs text-gray-600 font-medium">מומש</p>
@@ -242,7 +236,7 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onClo
               </div>
               
               {/* נותר */}
-              <div className="text-center p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <div className="p-1 bg-gray-50 rounded-lg border border-gray-200 w-[70px] h-full">
                 <div className="flex items-center justify-center gap-1 mb-2">
                   <Coins size={14} className="text-green-600" />
                   <p className="text-xs text-gray-600 font-medium">נותר</p>
