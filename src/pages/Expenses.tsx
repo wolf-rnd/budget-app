@@ -1,12 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { TrendingDown, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Undo2, X } from 'lucide-react';
 import { Expense, Category, BudgetYear } from '../types';
 import ExpenseModal from '../components/Modals/ExpenseModal';
 import { filterExpensesByBudgetYear } from '../utils/budgetUtils';
 
-import expensesData from '../data/expenses.json';
-import categoriesData from '../data/categories.json';
-import budgetYearsData from '../data/budgetYears.json';
+// Import services instead of JSON data
+import { expensesService } from '../services/expensesService';
+import { categoriesService } from '../services/categoriesService';
+import { budgetYearsService } from '../services/budgetYearsService';
 
 interface UndoNotification {
   expenseId: string;
@@ -19,17 +20,46 @@ interface ExpensesProps {
 }
 
 const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
-  const [expenses, setExpenses] = useState<Expense[]>(expensesData.expenses);
-  const [categories] = useState<Category[]>(categoriesData.categories);
-  const [budgetYears] = useState<BudgetYear[]>(budgetYearsData.budgetYears);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [budgetYears, setBudgetYears] = useState<BudgetYear[]>([]);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
   const [undoNotification, setUndoNotification] = useState<UndoNotification | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedFund, setSelectedFund] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  // Load data from API
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const [expensesData, categoriesData, budgetYearsData] = await Promise.all([
+        expensesService.getAllExpenses(),
+        categoriesService.getAllCategories(),
+        budgetYearsService.getAllBudgetYears()
+      ]);
+
+      setExpenses(expensesData);
+      setCategories(categoriesData);
+      setBudgetYears(budgetYearsData);
+    } catch (err) {
+      console.error('Failed to load expenses data:', err);
+      setError('שגיאה בטעינת נתוני ההוצאות');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const currentBudgetYear = selectedBudgetYear || budgetYears.find(year => year.isActive) || budgetYears[0];
 
@@ -109,7 +139,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
     setIsExpenseModalOpen(true);
   };
 
-  const handleExpenseModalSubmit = (newExpense: {
+  const handleExpenseModalSubmit = async (newExpense: {
     name: string;
     amount: number;
     category: string;
@@ -117,18 +147,13 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
     date: string;
     note?: string;
   }) => {
-    const expense: Expense = {
-      id: Date.now().toString(),
-      name: newExpense.name,
-      amount: newExpense.amount,
-      category: newExpense.category,
-      fund: newExpense.fund,
-      date: newExpense.date,
-      note: newExpense.note
-    };
-    
-    setExpenses([expense, ...expenses]);
-    console.log('הוצאה חדשה נוספה:', newExpense);
+    try {
+      const createdExpense = await expensesService.createExpense(newExpense);
+      setExpenses([createdExpense, ...expenses]);
+      console.log('הוצאה חדשה נוספה:', createdExpense);
+    } catch (error) {
+      console.error('Failed to create expense:', error);
+    }
   };
 
   const handleEditExpense = (id: string) => {
@@ -139,7 +164,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
     }
   };
 
-  const handleExpenseEditSubmit = (id: string, updatedExpense: {
+  const handleExpenseEditSubmit = async (id: string, updatedExpense: {
     name: string;
     amount: number;
     category: string;
@@ -147,41 +172,52 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
     date: string;
     note?: string;
   }) => {
-    setExpenses(expenses.map(expense => 
-      expense.id === id 
-        ? { ...expense, ...updatedExpense }
-        : expense
-    ));
-    console.log('הוצאה עודכנה:', updatedExpense);
+    try {
+      const updated = await expensesService.updateExpense(id, updatedExpense);
+      setExpenses(expenses.map(expense => 
+        expense.id === id ? updated : expense
+      ));
+      console.log('הוצאה עודכנה:', updated);
+    } catch (error) {
+      console.error('Failed to update expense:', error);
+    }
   };
 
-  const handleDeleteExpense = (id: string) => {
+  const handleDeleteExpense = async (id: string) => {
     const expenseToDelete = expenses.find(expense => expense.id === id);
     if (!expenseToDelete) return;
 
-    setExpenses(expenses.filter(expense => expense.id !== id));
+    try {
+      await expensesService.deleteExpense(id);
+      setExpenses(expenses.filter(expense => expense.id !== id));
 
-    const timeoutId = setTimeout(() => {
-      setUndoNotification(null);
-      console.log('מחיקה סופית של הוצאה:', expenseToDelete.name);
-    }, 3000);
+      const timeoutId = setTimeout(() => {
+        setUndoNotification(null);
+        console.log('מחיקה סופית של הוצאה:', expenseToDelete.name);
+      }, 3000);
 
-    setUndoNotification({
-      expenseId: id,
-      expenseName: expenseToDelete.name,
-      timeoutId
-    });
+      setUndoNotification({
+        expenseId: id,
+        expenseName: expenseToDelete.name,
+        timeoutId
+      });
+    } catch (error) {
+      console.error('Failed to delete expense:', error);
+    }
   };
 
-  const handleUndo = () => {
+  const handleUndo = async () => {
     if (undoNotification) {
-      const expenseToRestore = expensesData.expenses.find(expense => expense.id === undoNotification.expenseId);
-      if (expenseToRestore) {
-        setExpenses(prevExpenses => [expenseToRestore, ...prevExpenses]);
+      try {
+        // כאן נוכל להוסיף קריאה ל-API לשחזור ההוצאה
+        // לעת עתה נטען מחדש את הנתונים
+        await loadData();
+        
+        clearTimeout(undoNotification.timeoutId);
+        setUndoNotification(null);
+      } catch (error) {
+        console.error('Failed to undo expense deletion:', error);
       }
-      
-      clearTimeout(undoNotification.timeoutId);
-      setUndoNotification(null);
     }
   };
 
@@ -200,6 +236,35 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
     setSelectedCategory('');
     setSelectedFund('');
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-amber-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">טוען הוצאות...</h2>
+          <p className="text-gray-600">אנא המתן בזמן טעינת הנתונים מהשרת</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-red-800 mb-2">שגיאה בטעינת ההוצאות</h2>
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={loadData}
+            className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition-colors"
+          >
+            נסה שוב
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">

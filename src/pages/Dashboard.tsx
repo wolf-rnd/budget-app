@@ -22,63 +22,99 @@ import {
   getBudgetYearByDate
 } from '../utils/budgetUtils';
 
-// Import JSON data
-import budgetData from '../data/budget.json';
-import incomeData from '../data/income.json';
-import expensesData from '../data/expenses.json';
-import titheData from '../data/tithe.json';
-import debtsData from '../data/debts.json';
-import tasksData from '../data/tasks.json';
-import assetsData from '../data/assets.json';
-import categoriesData from '../data/categories.json';
-import budgetYearsData from '../data/budgetYears.json';
-import fundBudgetsData from '../data/fundBudgets.json';
+// Import services instead of JSON data
+import { budgetYearsService } from '../services/budgetYearsService';
+import { incomesService } from '../services/incomesService';
+import { expensesService } from '../services/expensesService';
+import { titheService } from '../services/titheService';
+import { debtsService } from '../services/debtsService';
+import { tasksService } from '../services/tasksService';
+import { assetsService } from '../services/assetsService';
+import { categoriesService } from '../services/categoriesService';
+import { fundsService } from '../services/fundsService';
 
 const Dashboard: React.FC = () => {
-
   // State management
-  const [budgetYears] = useState<BudgetYear[]>(budgetYearsData.budgetYears);
+  const [budgetYears, setBudgetYears] = useState<BudgetYear[]>([]);
   const [selectedBudgetYear, setSelectedBudgetYear] = useState<BudgetYear | null>(null);
-  const [fundBudgets, setFundBudgets] = useState<FundBudget[]>(fundBudgetsData.fundBudgets);
-  
-  const allowedTypes = ["monthly", "annual", "savings"] as const;
-  const [funds] = useState<Fund[]>(
-    budgetData.funds
-      .filter((item): item is typeof item & { type: "monthly" | "annual" | "savings" } => 
-        allowedTypes.includes(item.type as "monthly" | "annual" | "savings")
-      )
-      .map((item) => ({
-        ...item,
-        type: item.type as "monthly" | "annual" | "savings",
-      })) as Fund[]
-  );
-
-  const [incomes, setIncomes] = useState<Income[]>(incomeData.incomes);
-  const [expenses, setExpenses] = useState<Expense[]>(expensesData.expenses);
-  const [titheGiven, setTitheGiven] = useState<TitheGiven[]>(titheData.titheGiven);
-  const [debts, setDebts] = useState<Debt[]>(debtsData.debts);
-  const [tasks, setTasks] = useState<Task[]>(tasksData.tasks);
-  const [assetSnapshots, setAssetSnapshots] = useState<AssetSnapshot[]>(assetsData.assetsSnapshot);
-  const [categories] = useState<Category[]>(categoriesData.categories);
+  const [funds, setFunds] = useState<Fund[]>([]);
+  const [incomes, setIncomes] = useState<Income[]>([]);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [titheGiven, setTitheGiven] = useState<TitheGiven[]>([]);
+  const [debts, setDebts] = useState<Debt[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [assetSnapshots, setAssetSnapshots] = useState<AssetSnapshot[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [currentDisplayMonth, setCurrentDisplayMonth] = useState<number>(new Date().getMonth() + 1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Initialize selected budget year
+  // Load all data from API
   useEffect(() => {
-    const savedBudgetYearId = localStorage.getItem('selectedBudgetYearId');
-    let initialBudgetYear: BudgetYear | null = null;
+    loadAllData();
+  }, []);
 
-    if (savedBudgetYearId) {
-      initialBudgetYear = budgetYears.find(year => year.id === savedBudgetYearId) || null;
+  const loadAllData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // טעינת כל הנתונים במקביל
+      const [
+        budgetYearsData,
+        fundsData,
+        incomesData,
+        expensesData,
+        titheData,
+        debtsData,
+        tasksData,
+        assetsData,
+        categoriesData
+      ] = await Promise.all([
+        budgetYearsService.getAllBudgetYears(),
+        fundsService.getAllFunds(),
+        incomesService.getAllIncomes(),
+        expensesService.getAllExpenses(),
+        titheService.getAllTithes(),
+        debtsService.getAllDebts(),
+        tasksService.getAllTasks(),
+        assetsService.getAllAssetSnapshots(),
+        categoriesService.getAllCategories()
+      ]);
+
+      setBudgetYears(budgetYearsData);
+      setFunds(fundsData);
+      setIncomes(incomesData);
+      setExpenses(expensesData);
+      setTitheGiven(titheData);
+      setDebts(debtsData);
+      setTasks(tasksData);
+      setAssetSnapshots(assetsData);
+      setCategories(categoriesData);
+
+      // הגדרת שנת תקציב ראשונית
+      const savedBudgetYearId = localStorage.getItem('selectedBudgetYearId');
+      let initialBudgetYear: BudgetYear | null = null;
+
+      if (savedBudgetYearId) {
+        initialBudgetYear = budgetYearsData.find(year => year.id === savedBudgetYearId) || null;
+      }
+
+      if (!initialBudgetYear) {
+        initialBudgetYear = getActiveBudgetYear(budgetYearsData) || getLatestBudgetYear(budgetYearsData);
+      }
+
+      setSelectedBudgetYear(initialBudgetYear);
+
+    } catch (err) {
+      console.error('Failed to load dashboard data:', err);
+      setError('שגיאה בטעינת נתוני הדשבורד');
+    } finally {
+      setLoading(false);
     }
-
-    if (!initialBudgetYear) {
-      initialBudgetYear = getActiveBudgetYear(budgetYears) || getLatestBudgetYear(budgetYears);
-    }
-
-    setSelectedBudgetYear(initialBudgetYear);
-  }, [budgetYears]);
+  };
 
   // Save selected budget year to localStorage
   useEffect(() => {
@@ -92,23 +128,11 @@ const Dashboard: React.FC = () => {
   const currentBudgetYearExpenses = selectedBudgetYear ? filterExpensesByBudgetYear(expenses, selectedBudgetYear) : [];
   const allIncomesForTithe = getAllIncomesForTithe(incomes);
 
-  // Get fund budgets for current year
-  const getCurrentFundBudgets = () => {
-    if (!selectedBudgetYear) return [];
-    return fundBudgets.filter(fb => fb.budgetYearId === selectedBudgetYear.id);
-  };
-
-  const currentFundBudgets = getCurrentFundBudgets();
-
   // Calculate totals
-  const totalBudget = currentFundBudgets
-    .filter(fb => {
-      const fund = funds.find(f => f.id === fb.fundId);
-      return fund?.includeInBudget;
-    })
-    .reduce((sum, fb) => {
-      const fund = funds.find(f => f.id === fb.fundId);
-      return sum + (fund?.type === 'monthly' ? fb.amount * 12 : fb.amount);
+  const totalBudget = funds
+    .filter(fund => fund.includeInBudget)
+    .reduce((sum, fund) => {
+      return sum + (fund.type === 'monthly' ? fund.amount * 12 : fund.amount);
     }, 0);
   
   const totalIncome = currentBudgetYearIncomes.reduce((sum, income) => sum + income.amount, 0);
@@ -128,29 +152,33 @@ const Dashboard: React.FC = () => {
     setIsIncomeModalOpen(true);
   };
 
-  const handleIncomeModalSubmit = (newIncome: {
+  const handleIncomeModalSubmit = async (newIncome: {
     name: string;
     amount: number;
     date: string;
     source?: string;
     note?: string;
   }) => {
-    const income: Income = {
-      id: Date.now().toString(),
-      name: newIncome.name,
-      amount: newIncome.amount,
-      month: new Date(newIncome.date).getMonth() + 1,
-      year: new Date(newIncome.date).getFullYear(),
-      date: newIncome.date,
-      source: newIncome.source,
-      note: newIncome.note
-    };
-    
-    setIncomes([...incomes, income]);
-    console.log('הכנסה חדשה נוספה:', newIncome);
+    try {
+      const incomeData = {
+        name: newIncome.name,
+        amount: newIncome.amount,
+        month: new Date(newIncome.date).getMonth() + 1,
+        year: new Date(newIncome.date).getFullYear(),
+        date: newIncome.date,
+        source: newIncome.source,
+        note: newIncome.note
+      };
+
+      const createdIncome = await incomesService.createIncome(incomeData);
+      setIncomes([...incomes, createdIncome]);
+      console.log('הכנסה חדשה נוספה:', createdIncome);
+    } catch (error) {
+      console.error('Failed to create income:', error);
+    }
   };
 
-  const handleExpenseModalSubmit = (newExpense: {
+  const handleExpenseModalSubmit = async (newExpense: {
     name: string;
     amount: number;
     category: string;
@@ -158,162 +186,126 @@ const Dashboard: React.FC = () => {
     date: string;
     note?: string;
   }) => {
-    const expense: Expense = {
-      id: Date.now().toString(),
-      name: newExpense.name,
-      amount: newExpense.amount,
-      category: newExpense.category,
-      fund: newExpense.fund,
-      date: newExpense.date,
-      note: newExpense.note
-    };
-    
-    setExpenses([...expenses, expense]);
-    
-    // Update fund budgets
-    setFundBudgets(prevFundBudgets => 
-      prevFundBudgets.map(fb => {
-        const fund = funds.find(f => f.id === fb.fundId && f.name === newExpense.fund);
-        if (fund && selectedBudgetYear && fb.budgetYearId === selectedBudgetYear.id) {
-          if (fund.type === 'monthly') {
-            return { 
-              ...fb, 
-              amountGiven: (fb.amountGiven || 0) - newExpense.amount 
-            };
-          } else {
-            return { 
-              ...fb, 
-              spent: (fb.spent || 0) + newExpense.amount 
-            };
-          }
-        }
-        return fb;
-      })
-    );
-    
-    console.log('הוצאה חדשה נוספה:', newExpense);
+    try {
+      const createdExpense = await expensesService.createExpense(newExpense);
+      setExpenses([...expenses, createdExpense]);
+      console.log('הוצאה חדשה נוספה:', createdExpense);
+    } catch (error) {
+      console.error('Failed to create expense:', error);
+    }
   };
 
-  
-
-  const handleCloseDailyFund = (remainingAmount: number) => {
+  const handleCloseDailyFund = async (remainingAmount: number) => {
     if (!selectedBudgetYear) return;
 
-    setFundBudgets(prevFundBudgets => {
-      return prevFundBudgets.map(fb => {
-        const fund = funds.find(f => f.id === fb.fundId);
-        
-        if (fund?.id === 'daily' && fb.budgetYearId === selectedBudgetYear.id) {
-          return {
-            ...fb,
-            amountGiven: remainingAmount
-          };
-        }
-        
-        if (fund?.id === 'surplus' && fb.budgetYearId === selectedBudgetYear.id) {
-          const dailyFundBudget = prevFundBudgets.find(f => {
-            const dailyFund = funds.find(fund => fund.id === f.fundId && fund.id === 'daily');
-            return dailyFund && f.budgetYearId === selectedBudgetYear.id;
-          });
-          
-          if (dailyFundBudget) {
-            const remainingToGive = dailyFundBudget.amount - (dailyFundBudget.amountGiven || 0);
-            const amountToAdd = remainingAmount + remainingToGive;
-            
-            return {
-              ...fb,
-              amount: fb.amount + amountToAdd
-            };
-          }
-        }
-        
-        return fb;
-      });
-    });
-    
-    console.log(`סגירת חודש: ${remainingAmount} ש"ח נותר במעטפה`);
+    try {
+      // כאן נוכל להוסיף קריאה ל-API לעדכון הקופות
+      console.log(`סגירת חודש: ${remainingAmount} ש"ח נותר במעטפה`);
+    } catch (error) {
+      console.error('Failed to close daily fund:', error);
+    }
   };
 
-  const handleAddMoneyToEnvelope = (amount: number) => {
+  const handleAddMoneyToEnvelope = async (amount: number) => {
     if (!selectedBudgetYear) return;
 
-    setFundBudgets(prevFundBudgets => 
-      prevFundBudgets.map(fb => {
-        const fund = funds.find(f => f.id === fb.fundId);
-        if (fund?.id === 'daily' && fb.budgetYearId === selectedBudgetYear.id) {
-          return { ...fb, amountGiven: (fb.amountGiven || 0) + amount };
-        }
-        return fb;
-      })
-    );
-    console.log(`נוסף ${amount} ש"ח למעטפה בחודש ${getMonthName(currentDisplayMonth)}`);
+    try {
+      // כאן נוכל להוסיף קריאה ל-API לעדכון הקופות
+      console.log(`נוסף ${amount} ש"ח למעטפה בחודש ${getMonthName(currentDisplayMonth)}`);
+    } catch (error) {
+      console.error('Failed to add money to envelope:', error);
+    }
   };
 
-  const handleAddTithe = (amount: number, description: string) => {
-    const newTithe: TitheGiven = {
-      id: Date.now().toString(),
-      description,
-      amount,
-      note: '',
-      date: new Date().toISOString().split('T')[0]
-    };
-    setTitheGiven([...titheGiven, newTithe]);
+  const handleAddTithe = async (amount: number, description: string) => {
+    try {
+      const titheData = {
+        description,
+        amount,
+        note: '',
+        date: new Date().toISOString().split('T')[0]
+      };
+
+      const createdTithe = await titheService.createTithe(titheData);
+      setTitheGiven([...titheGiven, createdTithe]);
+    } catch (error) {
+      console.error('Failed to create tithe:', error);
+    }
   };
 
-  const handleAddDebt = (amount: number, description: string, note: string = '', type: 'owed_to_me' | 'i_owe' = 'i_owe') => {
-    const newDebt: Debt = {
-      id: Date.now().toString(),
-      description,
-      amount,
-      note,
-      type
-    };
-    setDebts([...debts, newDebt]);
+  const handleAddDebt = async (amount: number, description: string, note: string = '', type: 'owed_to_me' | 'i_owe' = 'i_owe') => {
+    try {
+      const debtData = {
+        description,
+        amount,
+        note,
+        type
+      };
+
+      const createdDebt = await debtsService.createDebt(debtData);
+      setDebts([...debts, createdDebt]);
+    } catch (error) {
+      console.error('Failed to create debt:', error);
+    }
   };
 
-  const handleDeleteDebt = (id: string) => {
-    setDebts(debts.filter(debt => debt.id !== id));
+  const handleDeleteDebt = async (id: string) => {
+    try {
+      await debtsService.deleteDebt(id);
+      setDebts(debts.filter(debt => debt.id !== id));
+    } catch (error) {
+      console.error('Failed to delete debt:', error);
+    }
   };
 
-  const handleAddTask = (description: string, important: boolean = false) => {
-    const newTask: Task = {
-      id: Date.now().toString(),
-      description,
-      important,
-      completed: false
-    };
-    setTasks([...tasks, newTask]);
+  const handleAddTask = async (description: string, important: boolean = false) => {
+    try {
+      const taskData = {
+        description,
+        important,
+        completed: false
+      };
+
+      const createdTask = await tasksService.createTask(taskData);
+      setTasks([...tasks, createdTask]);
+    } catch (error) {
+      console.error('Failed to create task:', error);
+    }
   };
 
-  const handleUpdateTask = (id: string, updates: Partial<Task>) => {
-    setTasks(tasks.map(task => task.id === id ? { ...task, ...updates } : task));
+  const handleUpdateTask = async (id: string, updates: Partial<Task>) => {
+    try {
+      const updatedTask = await tasksService.updateTask(id, updates);
+      setTasks(tasks.map(task => task.id === id ? updatedTask : task));
+    } catch (error) {
+      console.error('Failed to update task:', error);
+    }
   };
 
-  const handleDeleteTask = (id: string) => {
-    setTasks(tasks.filter(task => task.id !== id));
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await tasksService.deleteTask(id);
+      setTasks(tasks.filter(task => task.id !== id));
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+    }
   };
 
-  const handleAddAssetSnapshot = (assets: Record<string, number>, liabilities: Record<string, number>, note: string) => {
-    const newSnapshot: AssetSnapshot = {
-      id: Date.now().toString(),
-      assets,
-      liabilities,
-      date: new Date().toISOString().split('T')[0],
-      note
-    };
-    setAssetSnapshots([newSnapshot, ...assetSnapshots]);
-  };
+  const handleAddAssetSnapshot = async (assets: Record<string, number>, liabilities: Record<string, number>, note: string) => {
+    try {
+      const snapshotData = {
+        assets,
+        liabilities,
+        note,
+        date: new Date().toISOString().split('T')[0]
+      };
 
-  // Convert fund budgets to display format
-  const displayFunds = funds.map(fund => {
-    const fundBudget = currentFundBudgets.find(fb => fb.fundId === fund.id);
-    return {
-      ...fund,
-      amount: fundBudget?.amount || 0,
-      amountGiven: fundBudget?.amountGiven,
-      spent: fundBudget?.spent
-    };
-  });
+      const createdSnapshot = await assetsService.createAssetSnapshot(snapshotData);
+      setAssetSnapshots([createdSnapshot, ...assetSnapshots]);
+    } catch (error) {
+      console.error('Failed to create asset snapshot:', error);
+    }
+  };
 
   const getMonthName = (monthNumber: number) => {
     const months = [
@@ -322,6 +314,35 @@ const Dashboard: React.FC = () => {
     ];
     return months[monthNumber - 1] || '';
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">טוען נתונים...</h2>
+          <p className="text-gray-600">אנא המתן בזמן טעינת הנתונים מהשרת</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-red-800 mb-2">שגיאה בטעינת הנתונים</h2>
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={loadAllData}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            נסה שוב
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!selectedBudgetYear) {
     return (
@@ -348,7 +369,7 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <TitheSection
             totalIncome={totalIncomesForTithe}
-            tithePercentage={budgetData.tithePercentage}
+            tithePercentage={10}
             titheGiven={titheGiven}
             onAddTithe={handleAddTithe}
           />
@@ -373,7 +394,7 @@ const Dashboard: React.FC = () => {
               מצב קופות - {selectedBudgetYear.name}
             </h2>
             <FundsGrid
-              funds={displayFunds}
+              funds={funds}
               onCloseDailyFund={handleCloseDailyFund}
               onAddMoneyToEnvelope={handleAddMoneyToEnvelope}
               currentDisplayMonth={currentDisplayMonth}

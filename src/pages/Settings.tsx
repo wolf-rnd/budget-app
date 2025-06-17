@@ -1,43 +1,107 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, Calendar, Percent, Wallet, Users, Plus, Edit, Trash2 } from 'lucide-react';
 import { BudgetYear } from '../types';
 import { formatBudgetYearName } from '../utils/budgetUtils';
 
-import budgetYearsData from '../data/budgetYears.json';
+// Import services instead of JSON data
+import { budgetYearsService } from '../services/budgetYearsService';
 
 const Settings: React.FC = () => {
-  const [budgetYears, setBudgetYears] = useState<BudgetYear[]>(budgetYearsData.budgetYears);
+  const [budgetYears, setBudgetYears] = useState<BudgetYear[]>([]);
   const [isAddingYear, setIsAddingYear] = useState(false);
   const [newYearStart, setNewYearStart] = useState('');
   const [newYearEnd, setNewYearEnd] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAddBudgetYear = () => {
-    if (newYearStart && newYearEnd) {
-      const newYear: BudgetYear = {
-        id: Date.now().toString(),
-        name: formatBudgetYearName(newYearStart, newYearEnd),
-        startDate: newYearStart,
-        endDate: newYearEnd,
-        isActive: false
-      };
+  // Load budget years from API
+  useEffect(() => {
+    loadBudgetYears();
+  }, []);
 
-      setBudgetYears([...budgetYears, newYear]);
-      setNewYearStart('');
-      setNewYearEnd('');
-      setIsAddingYear(false);
+  const loadBudgetYears = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await budgetYearsService.getAllBudgetYears();
+      setBudgetYears(data);
+    } catch (err) {
+      console.error('Failed to load budget years:', err);
+      setError('שגיאה בטעינת שנות התקציב');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDeleteBudgetYear = (id: string) => {
-    setBudgetYears(budgetYears.filter(year => year.id !== id));
+  const handleAddBudgetYear = async () => {
+    if (newYearStart && newYearEnd) {
+      try {
+        const budgetYearData = {
+          name: formatBudgetYearName(newYearStart, newYearEnd),
+          startDate: newYearStart,
+          endDate: newYearEnd
+        };
+
+        const newYear = await budgetYearsService.createBudgetYear(budgetYearData);
+        setBudgetYears([...budgetYears, newYear]);
+        setNewYearStart('');
+        setNewYearEnd('');
+        setIsAddingYear(false);
+      } catch (error) {
+        console.error('Failed to create budget year:', error);
+      }
+    }
   };
 
-  const handleSetActive = (id: string) => {
-    setBudgetYears(budgetYears.map(year => ({
-      ...year,
-      isActive: year.id === id
-    })));
+  const handleDeleteBudgetYear = async (id: string) => {
+    try {
+      await budgetYearsService.deleteBudgetYear(id);
+      setBudgetYears(budgetYears.filter(year => year.id !== id));
+    } catch (error) {
+      console.error('Failed to delete budget year:', error);
+    }
   };
+
+  const handleSetActive = async (id: string) => {
+    try {
+      await budgetYearsService.activateBudgetYear(id);
+      setBudgetYears(budgetYears.map(year => ({
+        ...year,
+        isActive: year.id === id
+      })));
+    } catch (error) {
+      console.error('Failed to activate budget year:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-gray-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">טוען הגדרות...</h2>
+          <p className="text-gray-600">אנא המתן בזמן טעינת הנתונים מהשרת</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-red-800 mb-2">שגיאה בטעינת ההגדרות</h2>
+          <p className="text-red-600 mb-4">{error}</p>
+          <button
+            onClick={loadBudgetYears}
+            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            נסה שוב
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
