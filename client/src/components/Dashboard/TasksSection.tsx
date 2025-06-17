@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Check, Star, X, CheckCircle2, Undo2 } from 'lucide-react';
+import { Plus, Check, Star, X, CheckCircle2, Undo2, ListTodo } from 'lucide-react';
 import { Task } from '../../types';
 
 interface TasksSectionProps {
@@ -12,7 +12,7 @@ interface TasksSectionProps {
 interface UndoNotification {
   taskId: string;
   taskDescription: string;
-  timeoutId:  ReturnType<typeof setTimeout>;
+  timeoutId: NodeJS.Timeout;
 }
 
 const TasksSection: React.FC<TasksSectionProps> = ({ tasks, onAddTask, onUpdateTask, onDeleteTask }) => {
@@ -114,7 +114,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({ tasks, onAddTask, onUpdateT
                   task.completed 
                     ? 'bg-green-100 border-2 border-green-300' 
                     : task.important
-                      ? 'bg-gradient-to-r from-yellow-200 via-amber-100 to-yellow-200 border-2 border-yellow-500 shadow-lg ring-2 ring-yellow-300/50 hover:ring-4 hover:ring-yellow-300/70 hover:shadow-xl'
+                      ? 'bg-gradient-to-r from-yellow-200 via-amber-100 to-yellow-200 border-3 border-yellow-500 shadow-2xl ring-4 ring-yellow-300/50 transform scale-105'
                       : 'bg-white border border-gray-200 hover:shadow-md hover:border-purple-300'
                 }`}
               >

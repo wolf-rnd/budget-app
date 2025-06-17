@@ -5,12 +5,16 @@ interface SummaryCardsProps {
   totalBudget: number;
   totalIncome: number;
   totalExpenses: number;
+  totalDebts: number;
+  expectedIncome: number;
 }
 
 const SummaryCards: React.FC<SummaryCardsProps> = ({
   totalBudget,
   totalIncome,
-  totalExpenses
+  totalExpenses,
+  totalDebts,
+  expectedIncome
 }) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('he-IL', {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, AlertTriangle, CreditCard, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Plus, AlertTriangle, CreditCard, X, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Debt } from '../../types';
 
 interface DebtsSectionProps {
