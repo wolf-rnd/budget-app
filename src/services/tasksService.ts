@@ -1,4 +1,3 @@
-import { apiClient } from './api';
 import { Task } from '../types';
 
 export interface CreateTaskRequest {
