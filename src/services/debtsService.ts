@@ -1,4 +1,5 @@
 import { Debt } from '../types';
+import { ENV } from '../config/env';
 
 export interface CreateDebtRequest {
   description: string;
@@ -34,7 +35,7 @@ export interface DebtSummary {
 }
 
 class DebtsService {
-  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+  private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
   private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -59,7 +60,9 @@ class DebtsService {
 
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      if (ENV.DEV_MODE) {
+        console.error('API request failed:', error);
+      }
       throw error;
     }
   }
@@ -80,7 +83,9 @@ class DebtsService {
       
       return await this.apiCall<Debt[]>(endpoint);
     } catch (error) {
-      console.error('Failed to fetch debts:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch debts:', error);
+      }
       throw error;
     }
   }
@@ -90,7 +95,9 @@ class DebtsService {
     try {
       return await this.apiCall<DebtSummary>('/debts/summary');
     } catch (error) {
-      console.error('Failed to fetch debt summary:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch debt summary:', error);
+      }
       throw error;
     }
   }
@@ -100,7 +107,9 @@ class DebtsService {
     try {
       return await this.apiCall<Debt>(`/debts/${id}`);
     } catch (error) {
-      console.error(`Failed to fetch debt ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to fetch debt ${id}:`, error);
+      }
       return null;
     }
   }
@@ -113,7 +122,9 @@ class DebtsService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error('Failed to create debt:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create debt:', error);
+      }
       throw error;
     }
   }
@@ -126,7 +137,9 @@ class DebtsService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error(`Failed to update debt ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to update debt ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -138,7 +151,9 @@ class DebtsService {
         method: 'PUT',
       });
     } catch (error) {
-      console.error(`Failed to mark debt as paid ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to mark debt as paid ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -150,7 +165,9 @@ class DebtsService {
         method: 'PUT',
       });
     } catch (error) {
-      console.error(`Failed to mark debt as unpaid ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to mark debt as unpaid ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -162,7 +179,9 @@ class DebtsService {
         method: 'DELETE',
       });
     } catch (error) {
-      console.error(`Failed to delete debt ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to delete debt ${id}:`, error);
+      }
       throw error;
     }
   }

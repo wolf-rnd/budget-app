@@ -1,3 +1,5 @@
+import { ENV } from '../config/env';
+
 export interface Category {
   id?: string;
   name: string;
@@ -19,7 +21,7 @@ export interface UpdateCategoryRequest {
 }
 
 class CategoriesService {
-  private baseURL = '/api';
+  private baseURL = '/api'; // Using proxy path for development
 
   // Helper method for making API calls
   private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -44,7 +46,9 @@ class CategoriesService {
 
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      if (ENV.DEV_MODE) {
+        console.error('API request failed:', error);
+      }
       throw error;
     }
   }
@@ -54,7 +58,9 @@ class CategoriesService {
     try {
       return await this.apiCall<Category[]>('/categories');
     } catch (error) {
-      console.error('Failed to fetch categories:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch categories:', error);
+      }
       throw error;
     }
   }
@@ -64,7 +70,9 @@ class CategoriesService {
     try {
       return await this.apiCall<Category[]>(`/categories/fund/${fundId}`);
     } catch (error) {
-      console.error(`Failed to fetch categories for fund ${fundId}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to fetch categories for fund ${fundId}:`, error);
+      }
       throw error;
     }
   }
@@ -74,7 +82,9 @@ class CategoriesService {
     try {
       return await this.apiCall<Category>(`/categories/${id}`);
     } catch (error) {
-      console.error(`Failed to fetch category ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to fetch category ${id}:`, error);
+      }
       return null;
     }
   }
@@ -87,7 +97,9 @@ class CategoriesService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error('Failed to create category:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create category:', error);
+      }
       throw error;
     }
   }
@@ -100,7 +112,9 @@ class CategoriesService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error(`Failed to update category ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to update category ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -112,7 +126,9 @@ class CategoriesService {
         method: 'PUT',
       });
     } catch (error) {
-      console.error(`Failed to deactivate category ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to deactivate category ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -124,7 +140,9 @@ class CategoriesService {
         method: 'PUT',
       });
     } catch (error) {
-      console.error(`Failed to activate category ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to activate category ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -136,7 +154,9 @@ class CategoriesService {
         method: 'DELETE',
       });
     } catch (error) {
-      console.error(`Failed to delete category ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to delete category ${id}:`, error);
+      }
       throw error;
     }
   }

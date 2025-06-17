@@ -1,4 +1,5 @@
 import { TitheGiven } from '../types';
+import { ENV } from '../config/env';
 
 export interface CreateTitheRequest {
   description: string;
@@ -32,7 +33,7 @@ export interface TitheSummary {
 }
 
 class TitheService {
-  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+  private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
   private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -57,7 +58,9 @@ class TitheService {
 
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      if (ENV.DEV_MODE) {
+        console.error('API request failed:', error);
+      }
       throw error;
     }
   }
@@ -78,7 +81,9 @@ class TitheService {
       
       return await this.apiCall<TitheGiven[]>(endpoint);
     } catch (error) {
-      console.error('Failed to fetch tithes:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch tithes:', error);
+      }
       throw error;
     }
   }
@@ -88,7 +93,9 @@ class TitheService {
     try {
       return await this.apiCall<TitheSummary>('/tithe/summary');
     } catch (error) {
-      console.error('Failed to fetch tithe summary:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch tithe summary:', error);
+      }
       throw error;
     }
   }
@@ -98,7 +105,9 @@ class TitheService {
     try {
       return await this.apiCall<TitheGiven>(`/tithe/${id}`);
     } catch (error) {
-      console.error(`Failed to fetch tithe ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to fetch tithe ${id}:`, error);
+      }
       return null;
     }
   }
@@ -111,7 +120,9 @@ class TitheService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error('Failed to create tithe:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create tithe:', error);
+      }
       throw error;
     }
   }
@@ -124,7 +135,9 @@ class TitheService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error(`Failed to update tithe ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to update tithe ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -136,7 +149,9 @@ class TitheService {
         method: 'DELETE',
       });
     } catch (error) {
-      console.error(`Failed to delete tithe ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to delete tithe ${id}:`, error);
+      }
       throw error;
     }
   }

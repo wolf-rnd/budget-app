@@ -1,4 +1,5 @@
 import { Fund } from '../types';
+import { ENV } from '../config/env';
 
 export interface CreateFundRequest {
   name: string;
@@ -23,7 +24,7 @@ export interface UpdateFundBudgetRequest {
 }
 
 class FundsService {
-  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+  private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
   private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -48,7 +49,9 @@ class FundsService {
 
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      if (ENV.DEV_MODE) {
+        console.error('API request failed:', error);
+      }
       throw error;
     }
   }
@@ -59,7 +62,9 @@ class FundsService {
       const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
       return await this.apiCall<Fund[]>(`/funds${params}`);
     } catch (error) {
-      console.error('Failed to fetch funds:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch funds:', error);
+      }
       throw error;
     }
   }
@@ -69,7 +74,9 @@ class FundsService {
     try {
       return await this.apiCall<Fund>(`/funds/${id}`);
     } catch (error) {
-      console.error(`Failed to fetch fund ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to fetch fund ${id}:`, error);
+      }
       return null;
     }
   }
@@ -82,7 +89,9 @@ class FundsService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error('Failed to create fund:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create fund:', error);
+      }
       throw error;
     }
   }
@@ -95,7 +104,9 @@ class FundsService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error(`Failed to update fund ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to update fund ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -108,7 +119,9 @@ class FundsService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error(`Failed to update fund budget ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to update fund budget ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -120,7 +133,9 @@ class FundsService {
         method: 'PUT',
       });
     } catch (error) {
-      console.error(`Failed to deactivate fund ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to deactivate fund ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -132,7 +147,9 @@ class FundsService {
         method: 'PUT',
       });
     } catch (error) {
-      console.error(`Failed to activate fund ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to activate fund ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -144,7 +161,9 @@ class FundsService {
         method: 'DELETE',
       });
     } catch (error) {
-      console.error(`Failed to delete fund ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to delete fund ${id}:`, error);
+      }
       throw error;
     }
   }

@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://messing-family-budget-api.netlify.app',
+        target: process.env.VITE_API_BASE_URL || 'https://messing-family-budget-api.netlify.app',
         changeOrigin: true,
         secure: true
       }

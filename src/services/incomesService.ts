@@ -1,4 +1,5 @@
 import { Income } from '../types';
+import { ENV } from '../config/env';
 
 export interface CreateIncomeRequest {
   name: string;
@@ -39,7 +40,7 @@ export interface IncomeSummary {
 }
 
 class IncomesService {
-  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+  private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
   private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -64,7 +65,9 @@ class IncomesService {
 
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      if (ENV.DEV_MODE) {
+        console.error('API request failed:', error);
+      }
       throw error;
     }
   }
@@ -86,7 +89,9 @@ class IncomesService {
       
       return await this.apiCall<Income[]>(endpoint);
     } catch (error) {
-      console.error('Failed to fetch incomes:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch incomes:', error);
+      }
       throw error;
     }
   }
@@ -96,7 +101,9 @@ class IncomesService {
     try {
       return await this.apiCall<Income>(`/incomes/${id}`);
     } catch (error) {
-      console.error(`Failed to fetch income ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to fetch income ${id}:`, error);
+      }
       return null;
     }
   }
@@ -107,7 +114,9 @@ class IncomesService {
       const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
       return await this.apiCall<IncomeSummary>(`/incomes/stats/summary${params}`);
     } catch (error) {
-      console.error('Failed to fetch income summary:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch income summary:', error);
+      }
       throw error;
     }
   }
@@ -120,7 +129,9 @@ class IncomesService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error('Failed to create income:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create income:', error);
+      }
       throw error;
     }
   }
@@ -133,7 +144,9 @@ class IncomesService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error(`Failed to update income ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to update income ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -145,7 +158,9 @@ class IncomesService {
         method: 'DELETE',
       });
     } catch (error) {
-      console.error(`Failed to delete income ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to delete income ${id}:`, error);
+      }
       throw error;
     }
   }

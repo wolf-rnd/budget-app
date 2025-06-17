@@ -1,4 +1,5 @@
 import { Task } from '../types';
+import { ENV } from '../config/env';
 
 export interface CreateTaskRequest {
   description: string;
@@ -30,7 +31,7 @@ export interface TaskSummary {
 }
 
 class TasksService {
-  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+  private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
   private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -53,7 +54,9 @@ class TasksService {
 
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      if (ENV.DEV_MODE) {
+        console.error('API request failed:', error);
+      }
       throw error;
     }
   }
@@ -84,7 +87,9 @@ class TasksService {
       
       return await this.apiCall<Task[]>(endpoint);
     } catch (error) {
-      console.error('Failed to fetch tasks:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch tasks:', error);
+      }
       throw error;
     }
   }
@@ -94,7 +99,9 @@ class TasksService {
     try {
       return await this.apiCall<TaskSummary>('/tasks/summary');
     } catch (error) {
-      console.error('Failed to fetch task summary:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch task summary:', error);
+      }
       throw error;
     }
   }
@@ -104,7 +111,9 @@ class TasksService {
     try {
       return await this.apiCall<Task>(`/tasks/${id}`);
     } catch (error) {
-      console.error(`Failed to fetch task ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to fetch task ${id}:`, error);
+      }
       return null;
     }
   }
@@ -117,7 +126,9 @@ class TasksService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error('Failed to create task:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create task:', error);
+      }
       throw error;
     }
   }
@@ -130,7 +141,9 @@ class TasksService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error(`Failed to update task ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to update task ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -142,7 +155,9 @@ class TasksService {
         method: 'PUT',
       });
     } catch (error) {
-      console.error(`Failed to toggle task completion ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to toggle task completion ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -154,7 +169,9 @@ class TasksService {
         method: 'DELETE',
       });
     } catch (error) {
-      console.error(`Failed to delete task ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to delete task ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -166,7 +183,9 @@ class TasksService {
         method: 'DELETE',
       });
     } catch (error) {
-      console.error('Failed to delete all completed tasks:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to delete all completed tasks:', error);
+      }
       throw error;
     }
   }

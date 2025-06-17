@@ -1,4 +1,5 @@
 import { User } from '../types';
+import { ENV } from '../config/env';
 
 export interface LoginRequest {
   email: string;
@@ -17,7 +18,7 @@ export interface AuthResponse {
 }
 
 class AuthService {
-  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+  private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
   private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -40,7 +41,9 @@ class AuthService {
 
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      if (ENV.DEV_MODE) {
+        console.error('API request failed:', error);
+      }
       throw error;
     }
   }
@@ -53,7 +56,9 @@ class AuthService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error('Failed to register:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to register:', error);
+      }
       throw error;
     }
   }
@@ -73,7 +78,9 @@ class AuthService {
       
       return response;
     } catch (error) {
-      console.error('Failed to login:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to login:', error);
+      }
       throw error;
     }
   }
@@ -88,7 +95,9 @@ class AuthService {
         },
       });
     } catch (error) {
-      console.error('Failed to get current user:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to get current user:', error);
+      }
       throw error;
     }
   }

@@ -1,4 +1,5 @@
 import { Fund, Income, Expense, Debt, Task } from '../types';
+import { ENV } from '../config/env';
 
 export interface DashboardSummary {
   totalIncome: number;
@@ -15,7 +16,7 @@ export interface DashboardSummary {
 }
 
 class DashboardService {
-  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+  private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
   private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -40,7 +41,9 @@ class DashboardService {
 
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      if (ENV.DEV_MODE) {
+        console.error('API request failed:', error);
+      }
       throw error;
     }
   }
@@ -51,7 +54,9 @@ class DashboardService {
       const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
       return await this.apiCall<DashboardSummary>(`/dashboard/summary${params}`);
     } catch (error) {
-      console.error('Failed to fetch dashboard summary:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch dashboard summary:', error);
+      }
       throw error;
     }
   }

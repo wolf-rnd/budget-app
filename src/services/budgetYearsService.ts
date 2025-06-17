@@ -1,3 +1,5 @@
+import { ENV } from '../config/env';
+
 export interface BudgetYear {
   id: string;
   name: string;
@@ -21,7 +23,7 @@ export interface UpdateBudgetYearRequest {
 }
 
 class BudgetYearsService {
-  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+  private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
   private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -46,7 +48,9 @@ class BudgetYearsService {
 
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      if (ENV.DEV_MODE) {
+        console.error('API request failed:', error);
+      }
       throw error;
     }
   }
@@ -56,7 +60,9 @@ class BudgetYearsService {
     try {
       return await this.apiCall<BudgetYear[]>('/budget-years');
     } catch (error) {
-      console.error('Failed to fetch budget years:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch budget years:', error);
+      }
       throw error;
     }
   }
@@ -66,7 +72,9 @@ class BudgetYearsService {
     try {
       return await this.apiCall<BudgetYear>('/budget-years/active');
     } catch (error) {
-      console.error('Failed to fetch active budget year:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch active budget year:', error);
+      }
       return null;
     }
   }
@@ -76,7 +84,9 @@ class BudgetYearsService {
     try {
       return await this.apiCall<BudgetYear>(`/budget-years/${id}`);
     } catch (error) {
-      console.error(`Failed to fetch budget year ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to fetch budget year ${id}:`, error);
+      }
       return null;
     }
   }
@@ -89,7 +99,9 @@ class BudgetYearsService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error('Failed to create budget year:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create budget year:', error);
+      }
       throw error;
     }
   }
@@ -102,7 +114,9 @@ class BudgetYearsService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error(`Failed to update budget year ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to update budget year ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -114,7 +128,9 @@ class BudgetYearsService {
         method: 'PUT',
       });
     } catch (error) {
-      console.error(`Failed to activate budget year ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to activate budget year ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -126,7 +142,9 @@ class BudgetYearsService {
         method: 'DELETE',
       });
     } catch (error) {
-      console.error(`Failed to delete budget year ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to delete budget year ${id}:`, error);
+      }
       throw error;
     }
   }

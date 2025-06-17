@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   Calculator
 } from 'lucide-react';
+import { ENV } from '../../config/env';
 
 interface SidebarProps {
   currentPage: string;
@@ -92,7 +93,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange, isCollapse
                 <div className="absolute -bottom-1 -left-1 w-2 h-2 bg-orange-400 rounded-full shadow-sm"></div>
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-800 leading-tight">תקציב-בית</h2>
+                <h2 className="text-lg font-bold text-gray-800 leading-tight">{ENV.APP_NAME}</h2>
                 <p className="text-xs text-emerald-600 font-medium">ניהול חכם</p>
               </div>
             </div>
@@ -194,9 +195,9 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange, isCollapse
               <div className="w-4 h-4 bg-gradient-to-br from-emerald-400 to-blue-500 rounded-sm flex items-center justify-center">
                 <Calculator size={10} className="text-white" />
               </div>
-              <p className="text-xs text-gray-600 font-medium">תקציב-בית</p>
+              <p className="text-xs text-gray-600 font-medium">{ENV.APP_NAME}</p>
             </div>
-            <p className="text-xs text-gray-400">גרסה 1.0 • ניהול חכם</p>
+            <p className="text-xs text-gray-400">גרסה {ENV.APP_VERSION} • ניהול חכם</p>
           </div>
         </div>
       )}

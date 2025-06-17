@@ -1,4 +1,5 @@
 import { AssetSnapshot } from '../types';
+import { ENV } from '../config/env';
 
 export interface CreateAssetSnapshotRequest {
   assets: Record<string, number>;
@@ -30,7 +31,7 @@ export interface AssetTrends {
 }
 
 class AssetsService {
-  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+  private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
   private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -55,7 +56,9 @@ class AssetsService {
 
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      if (ENV.DEV_MODE) {
+        console.error('API request failed:', error);
+      }
       throw error;
     }
   }
@@ -75,7 +78,9 @@ class AssetsService {
       
       return await this.apiCall<AssetSnapshot[]>(endpoint);
     } catch (error) {
-      console.error('Failed to fetch asset snapshots:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch asset snapshots:', error);
+      }
       throw error;
     }
   }
@@ -85,7 +90,9 @@ class AssetsService {
     try {
       return await this.apiCall<AssetSnapshot>('/assets/latest');
     } catch (error) {
-      console.error('Failed to fetch latest asset snapshot:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch latest asset snapshot:', error);
+      }
       return null;
     }
   }
@@ -95,7 +102,9 @@ class AssetsService {
     try {
       return await this.apiCall<AssetTrends>('/assets/trends/summary');
     } catch (error) {
-      console.error('Failed to fetch asset trends:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch asset trends:', error);
+      }
       throw error;
     }
   }
@@ -105,7 +114,9 @@ class AssetsService {
     try {
       return await this.apiCall<AssetSnapshot>(`/assets/${id}`);
     } catch (error) {
-      console.error(`Failed to fetch asset snapshot ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to fetch asset snapshot ${id}:`, error);
+      }
       return null;
     }
   }
@@ -118,7 +129,9 @@ class AssetsService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error('Failed to create asset snapshot:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create asset snapshot:', error);
+      }
       throw error;
     }
   }
@@ -131,7 +144,9 @@ class AssetsService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error(`Failed to update asset snapshot ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to update asset snapshot ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -143,7 +158,9 @@ class AssetsService {
         method: 'DELETE',
       });
     } catch (error) {
-      console.error(`Failed to delete asset snapshot ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to delete asset snapshot ${id}:`, error);
+      }
       throw error;
     }
   }

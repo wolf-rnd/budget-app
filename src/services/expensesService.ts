@@ -1,4 +1,5 @@
 import { Expense } from '../types';
+import { ENV } from '../config/env';
 
 export interface CreateExpenseRequest {
   name: string;
@@ -42,7 +43,7 @@ export interface ExpenseSummary {
 }
 
 class ExpensesService {
-  private baseURL = 'https://messing-family-budget-api.netlify.app/api';
+  private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
   private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -67,7 +68,9 @@ class ExpensesService {
 
       return await response.json();
     } catch (error) {
-      console.error('API request failed:', error);
+      if (ENV.DEV_MODE) {
+        console.error('API request failed:', error);
+      }
       throw error;
     }
   }
@@ -93,7 +96,9 @@ class ExpensesService {
       
       return await this.apiCall<Expense[]>(endpoint);
     } catch (error) {
-      console.error('Failed to fetch expenses:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch expenses:', error);
+      }
       throw error;
     }
   }
@@ -103,7 +108,9 @@ class ExpensesService {
     try {
       return await this.apiCall<Expense>(`/expenses/${id}`);
     } catch (error) {
-      console.error(`Failed to fetch expense ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to fetch expense ${id}:`, error);
+      }
       return null;
     }
   }
@@ -114,7 +121,9 @@ class ExpensesService {
       const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
       return await this.apiCall<ExpenseSummary>(`/expenses/stats/summary${params}`);
     } catch (error) {
-      console.error('Failed to fetch expense summary:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to fetch expense summary:', error);
+      }
       throw error;
     }
   }
@@ -127,7 +136,9 @@ class ExpensesService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error('Failed to create expense:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create expense:', error);
+      }
       throw error;
     }
   }
@@ -140,7 +151,9 @@ class ExpensesService {
         body: JSON.stringify(data),
       });
     } catch (error) {
-      console.error(`Failed to update expense ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to update expense ${id}:`, error);
+      }
       throw error;
     }
   }
@@ -152,7 +165,9 @@ class ExpensesService {
         method: 'DELETE',
       });
     } catch (error) {
-      console.error(`Failed to delete expense ${id}:`, error);
+      if (ENV.DEV_MODE) {
+        console.error(`Failed to delete expense ${id}:`, error);
+      }
       throw error;
     }
   }

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Heart, Calculator } from 'lucide-react';
+import { ENV } from '../../config/env';
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
@@ -14,7 +15,7 @@ const Footer: React.FC = () => {
               <Calculator size={16} className="text-white" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-gray-800">תקציב-בית</h3>
+              <h3 className="text-sm font-bold text-gray-800">{ENV.APP_NAME}</h3>
               <p className="text-xs text-gray-500">ניהול חכם</p>
             </div>
           </div>
@@ -30,7 +31,7 @@ const Footer: React.FC = () => {
 
           {/* מידע נוסף */}
           <div className="text-center md:text-left">
-            <p className="text-xs text-gray-400">גרסה 1.0</p>
+            <p className="text-xs text-gray-400">גרסה {ENV.APP_VERSION}</p>
             <p className="text-xs text-gray-400">מערכת ניהול תקציב משפחתי</p>
           </div>
         </div>

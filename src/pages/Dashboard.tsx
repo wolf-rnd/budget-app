@@ -22,6 +22,8 @@ import {
   getBudgetYearByDate
 } from '../utils/budgetUtils';
 
+import { ENV } from '../config/env';
+
 // Import services instead of JSON data
 import { budgetYearsService } from '../services/budgetYearsService';
 import { incomesService } from '../services/incomesService';
@@ -109,7 +111,9 @@ const Dashboard: React.FC = () => {
       setSelectedBudgetYear(initialBudgetYear);
 
     } catch (err) {
-      console.error('Failed to load dashboard data:', err);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to load dashboard data:', err);
+      }
       setError('שגיאה בטעינת נתוני הדשבורד');
     } finally {
       setLoading(false);
@@ -172,9 +176,13 @@ const Dashboard: React.FC = () => {
 
       const createdIncome = await incomesService.createIncome(incomeData);
       setIncomes([...incomes, createdIncome]);
-      console.log('הכנסה חדשה נוספה:', createdIncome);
+      if (ENV.DEV_MODE) {
+        console.log('הכנסה חדשה נוספה:', createdIncome);
+      }
     } catch (error) {
-      console.error('Failed to create income:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create income:', error);
+      }
     }
   };
 
@@ -189,9 +197,13 @@ const Dashboard: React.FC = () => {
     try {
       const createdExpense = await expensesService.createExpense(newExpense);
       setExpenses([...expenses, createdExpense]);
-      console.log('הוצאה חדשה נוספה:', createdExpense);
+      if (ENV.DEV_MODE) {
+        console.log('הוצאה חדשה נוספה:', createdExpense);
+      }
     } catch (error) {
-      console.error('Failed to create expense:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create expense:', error);
+      }
     }
   };
 
@@ -200,9 +212,13 @@ const Dashboard: React.FC = () => {
 
     try {
       // כאן נוכל להוסיף קריאה ל-API לעדכון הקופות
-      console.log(`סגירת חודש: ${remainingAmount} ש"ח נותר במעטפה`);
+      if (ENV.DEV_MODE) {
+        console.log(`סגירת חודש: ${remainingAmount} ש"ח נותר במעטפה`);
+      }
     } catch (error) {
-      console.error('Failed to close daily fund:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to close daily fund:', error);
+      }
     }
   };
 
@@ -211,9 +227,13 @@ const Dashboard: React.FC = () => {
 
     try {
       // כאן נוכל להוסיף קריאה ל-API לעדכון הקופות
-      console.log(`נוסף ${amount} ש"ח למעטפה בחודש ${getMonthName(currentDisplayMonth)}`);
+      if (ENV.DEV_MODE) {
+        console.log(`נוסף ${amount} ש"ח למעטפה בחודש ${getMonthName(currentDisplayMonth)}`);
+      }
     } catch (error) {
-      console.error('Failed to add money to envelope:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to add money to envelope:', error);
+      }
     }
   };
 
@@ -229,7 +249,9 @@ const Dashboard: React.FC = () => {
       const createdTithe = await titheService.createTithe(titheData);
       setTitheGiven([...titheGiven, createdTithe]);
     } catch (error) {
-      console.error('Failed to create tithe:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create tithe:', error);
+      }
     }
   };
 
@@ -245,7 +267,9 @@ const Dashboard: React.FC = () => {
       const createdDebt = await debtsService.createDebt(debtData);
       setDebts([...debts, createdDebt]);
     } catch (error) {
-      console.error('Failed to create debt:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create debt:', error);
+      }
     }
   };
 
@@ -254,7 +278,9 @@ const Dashboard: React.FC = () => {
       await debtsService.deleteDebt(id);
       setDebts(debts.filter(debt => debt.id !== id));
     } catch (error) {
-      console.error('Failed to delete debt:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to delete debt:', error);
+      }
     }
   };
 
@@ -269,7 +295,9 @@ const Dashboard: React.FC = () => {
       const createdTask = await tasksService.createTask(taskData);
       setTasks([...tasks, createdTask]);
     } catch (error) {
-      console.error('Failed to create task:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create task:', error);
+      }
     }
   };
 
@@ -278,7 +306,9 @@ const Dashboard: React.FC = () => {
       const updatedTask = await tasksService.updateTask(id, updates);
       setTasks(tasks.map(task => task.id === id ? updatedTask : task));
     } catch (error) {
-      console.error('Failed to update task:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to update task:', error);
+      }
     }
   };
 
@@ -287,7 +317,9 @@ const Dashboard: React.FC = () => {
       await tasksService.deleteTask(id);
       setTasks(tasks.filter(task => task.id !== id));
     } catch (error) {
-      console.error('Failed to delete task:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to delete task:', error);
+      }
     }
   };
 
@@ -303,7 +335,9 @@ const Dashboard: React.FC = () => {
       const createdSnapshot = await assetsService.createAssetSnapshot(snapshotData);
       setAssetSnapshots([createdSnapshot, ...assetSnapshots]);
     } catch (error) {
-      console.error('Failed to create asset snapshot:', error);
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create asset snapshot:', error);
+      }
     }
   };
 
@@ -369,7 +403,7 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <TitheSection
             totalIncome={totalIncomesForTithe}
-            tithePercentage={10}
+            tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
             titheGiven={titheGiven}
             onAddTithe={handleAddTithe}
           />
