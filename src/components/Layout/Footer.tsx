@@ -25,9 +25,7 @@ const Footer: React.FC = () => {
               <span className="text-sm text-gray-600">© {currentYear} כל הזכויות שמורות לנעמי מסינג</span>
               <Heart size={14} className="text-pink-500" />
             </div>
-            <p className="text-xs text-gray-500">
-              <span className="font-medium">תכנון וניהול פיננסי:</span> יוסי מסינג
-            </p>
+           
           </div>
 
           {/* מידע נוסף */}
