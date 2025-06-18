@@ -10,7 +10,8 @@ export class ApiError extends Error {
   constructor(
     message: string,
     public status?: number,
-    public code?: string
+    public code?: string,
+    public endpoint?: string
   ) {
     super(message);
     this.name = 'ApiError';
@@ -22,10 +23,35 @@ export class ApiClient {
   private timeout: number;
   private retryAttempts: number = 2;
   private retryDelay: number = 1000;
+  private notificationCallback?: (notification: any) => void;
 
   constructor() {
     this.baseURL = ENV.API_BASE_URL;
     this.timeout = ENV.API_TIMEOUT;
+  }
+
+  setNotificationCallback(callback: (notification: any) => void) {
+    this.notificationCallback = callback;
+  }
+
+  private showNotification(
+    type: 'error' | 'warning' | 'info' | 'success',
+    title: string,
+    message: string,
+    status?: number,
+    endpoint?: string
+  ) {
+    if (this.notificationCallback) {
+      this.notificationCallback({
+        type,
+        title,
+        message,
+        status,
+        endpoint,
+        autoHide: type !== 'error', // Errors stay visible until manually closed
+        duration: type === 'error' ? 0 : 6000
+      });
+    }
   }
 
   private async makeRequest<T>(
@@ -56,7 +82,27 @@ export class ApiClient {
       clearTimeout(timeoutId);
       
       if (!response.ok) {
-        // Handle specific HTTP status codes
+        let errorMessage = `שגיאת שרת: ${response.status}`;
+        let serverMessage = '';
+        
+        try {
+          const errorData = await response.json();
+          serverMessage = errorData.message || errorData.error || '';
+        } catch {
+          // If we can't parse the error response, use status text
+          serverMessage = response.statusText;
+        }
+        
+        // Show notification for HTTP errors
+        this.showNotification(
+          'error',
+          `שגיאה בקריאה לשרת`,
+          serverMessage || errorMessage,
+          response.status,
+          endpoint
+        );
+        
+        // Handle specific HTTP status codes with retry
         if (response.status >= 500 && attempt <= this.retryAttempts) {
           if (ENV.DEV_MODE) {
             console.warn(`Server error (${response.status}), retrying attempt ${attempt}/${this.retryAttempts}`);
@@ -66,12 +112,32 @@ export class ApiClient {
         }
         
         throw new ApiError(
-          `HTTP error! status: ${response.status}`,
-          response.status
+          serverMessage || errorMessage,
+          response.status,
+          'HTTP_ERROR',
+          endpoint
         );
       }
 
       const result = await response.json();
+      
+      // Show success notification for write operations
+      if (['POST', 'PUT', 'DELETE'].includes(options.method || 'GET')) {
+        const operationNames = {
+          'POST': 'נוצר',
+          'PUT': 'עודכן', 
+          'DELETE': 'נמחק'
+        };
+        
+        this.showNotification(
+          'success',
+          'פעולה הושלמה בהצלחה',
+          `הנתונים ${operationNames[options.method as keyof typeof operationNames]} בהצלחה`,
+          response.status,
+          endpoint
+        );
+      }
+      
       return {
         data: result.data || result,
         success: true
@@ -84,6 +150,16 @@ export class ApiClient {
       }
       
       if (error.name === 'AbortError') {
+        const timeoutMessage = 'הבקשה לשרת לקחה יותר מדי זמן';
+        
+        this.showNotification(
+          'error',
+          'תם הזמן הקצוב',
+          timeoutMessage,
+          408,
+          endpoint
+        );
+        
         if (attempt <= this.retryAttempts) {
           if (ENV.DEV_MODE) {
             console.warn(`Request timeout, retrying attempt ${attempt}/${this.retryAttempts}`);
@@ -91,8 +167,27 @@ export class ApiClient {
           await this.delay(this.retryDelay * attempt);
           return this.makeRequest(endpoint, options, attempt + 1);
         }
-        throw new ApiError('Request timeout after retries', 408, 'TIMEOUT');
+        throw new ApiError(timeoutMessage, 408, 'TIMEOUT', endpoint);
       }
+      
+      // Handle network errors
+      let networkMessage = 'בעיית רשת - לא ניתן להתחבר לשרת';
+      
+      if (error.message.includes('socket hang up')) {
+        networkMessage = 'השרת סגר את החיבור באופן בלתי צפוי';
+      } else if (error.message.includes('fetch')) {
+        networkMessage = 'לא ניתן להתחבר לשרת - בדוק את החיבור לאינטרנט';
+      } else if (error.message.includes('network')) {
+        networkMessage = 'בעיית רשת - אין חיבור לאינטרנט';
+      }
+      
+      this.showNotification(
+        'error',
+        'בעיית חיבור',
+        networkMessage,
+        0,
+        endpoint
+      );
       
       // Handle network errors with retry
       if (attempt <= this.retryAttempts && (
@@ -108,9 +203,10 @@ export class ApiClient {
       }
       
       throw new ApiError(
-        error.message || 'Network error occurred',
+        networkMessage,
         0,
-        'NETWORK_ERROR'
+        'NETWORK_ERROR',
+        endpoint
       );
     }
   }
