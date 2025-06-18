@@ -1,4 +1,6 @@
 import { ENV } from '../config/env';
+import { apiClient, ApiError } from './apiClient';
+import { mockBudgetYears } from './mockData';
 
 export interface BudgetYear {
   id: string;
@@ -23,48 +25,21 @@ export interface UpdateBudgetYearRequest {
 }
 
 class BudgetYearsService {
-  private baseURL = ENV.API_BASE_URL;
-
-  // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
-    const url = `${this.baseURL}${endpoint}`;
-    const token = localStorage.getItem('authToken');
-    
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': '11111111-1111-1111-1111-111111111111',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-        ...options.headers,
-      },
-    };
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('API request failed:', error);
-      }
-      throw error;
-    }
-  }
-
   // GET /budget-years - קבלת כל שנות התקציב
   async getAllBudgetYears(): Promise<BudgetYear[]> {
     try {
-      const response = await this.apiCall<BudgetYear[]>('/budget-years');
+      const response = await apiClient.get<BudgetYear[]>('/budget-years');
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch budget years:', error);
+        console.warn('Failed to fetch budget years from API, using mock data:', error);
       }
+      
+      // Return mock data as fallback
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockBudgetYears;
+      }
+      
       throw error;
     }
   }
@@ -72,12 +47,17 @@ class BudgetYearsService {
   // GET /budget-years/active - קבלת שנת התקציב הפעילה
   async getActiveBudgetYear(): Promise<BudgetYear | null> {
     try {
-      const response = await this.apiCall<BudgetYear>('/budget-years/active');
+      const response = await apiClient.get<BudgetYear>('/budget-years/active');
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch active budget year:', error);
+        console.warn('Failed to fetch active budget year from API:', error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockBudgetYears.find(year => year.isActive) || null;
+      }
+      
       return null;
     }
   }
@@ -85,12 +65,17 @@ class BudgetYearsService {
   // GET /budget-years/:id - קבלת שנת תקציב ספציפית
   async getBudgetYearById(id: string): Promise<BudgetYear | null> {
     try {
-      const response = await this.apiCall<BudgetYear>(`/budget-years/${id}`);
+      const response = await apiClient.get<BudgetYear>(`/budget-years/${id}`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error(`Failed to fetch budget year ${id}:`, error);
+        console.warn(`Failed to fetch budget year ${id} from API:`, error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockBudgetYears.find(year => year.id === id) || null;
+      }
+      
       return null;
     }
   }
@@ -98,10 +83,7 @@ class BudgetYearsService {
   // POST /budget-years - יצירת שנת תקציב חדשה
   async createBudgetYear(data: CreateBudgetYearRequest): Promise<BudgetYear> {
     try {
-      const response = await this.apiCall<BudgetYear>('/budget-years', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.post<BudgetYear>('/budget-years', data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -114,10 +96,7 @@ class BudgetYearsService {
   // PUT /budget-years/:id - עדכון שנת תקציב
   async updateBudgetYear(id: string, data: UpdateBudgetYearRequest): Promise<BudgetYear> {
     try {
-      const response = await this.apiCall<BudgetYear>(`/budget-years/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.put<BudgetYear>(`/budget-years/${id}`, data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -130,9 +109,7 @@ class BudgetYearsService {
   // PUT /budget-years/:id/activate - הפעלת שנת תקציב
   async activateBudgetYear(id: string): Promise<BudgetYear> {
     try {
-      const response = await this.apiCall<BudgetYear>(`/budget-years/${id}/activate`, {
-        method: 'PUT',
-      });
+      const response = await apiClient.put<BudgetYear>(`/budget-years/${id}/activate`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -145,9 +122,7 @@ class BudgetYearsService {
   // DELETE /budget-years/:id - מחיקת שנת תקציב
   async deleteBudgetYear(id: string): Promise<void> {
     try {
-      await this.apiCall<void>(`/budget-years/${id}`, {
-        method: 'DELETE',
-      });
+      await apiClient.delete<void>(`/budget-years/${id}`);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to delete budget year ${id}:`, error);

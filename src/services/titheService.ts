@@ -1,5 +1,7 @@
 import { TitheGiven } from '../types';
 import { ENV } from '../config/env';
+import { apiClient, ApiError } from './apiClient';
+import { mockTithes } from './mockData';
 
 export interface CreateTitheRequest {
   description: string;
@@ -33,39 +35,6 @@ export interface TitheSummary {
 }
 
 class TitheService {
-  private baseURL = ENV.API_BASE_URL;
-
-  // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
-    const url = `${this.baseURL}${endpoint}`;
-    const token = localStorage.getItem('authToken');
-    
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': '11111111-1111-1111-1111-111111111111',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-        ...options.headers,
-      },
-    };
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('API request failed:', error);
-      }
-      throw error;
-    }
-  }
-
   // GET /tithe - קבלת כל המעשרות (עם פילטרים)
   async getAllTithes(filters?: TitheFilters): Promise<TitheGiven[]> {
     try {
@@ -80,12 +49,18 @@ class TitheService {
       const queryString = params.toString();
       const endpoint = queryString ? `/tithe?${queryString}` : '/tithe';
       
-      const response = await this.apiCall<TitheGiven[]>(endpoint);
+      const response = await apiClient.get<TitheGiven[]>(endpoint);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch tithes:', error);
+        console.warn('Failed to fetch tithes from API, using mock data:', error);
       }
+      
+      // Return mock data as fallback
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockTithes;
+      }
+      
       throw error;
     }
   }
@@ -93,12 +68,25 @@ class TitheService {
   // GET /tithe/summary - קבלת סיכום מעשרות
   async getTitheSummary(): Promise<TitheSummary> {
     try {
-      const response = await this.apiCall<TitheSummary>('/tithe/summary');
+      const response = await apiClient.get<TitheSummary>('/tithe/summary');
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch tithe summary:', error);
+        console.warn('Failed to fetch tithe summary from API:', error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        const totalGiven = mockTithes.reduce((sum, tithe) => sum + tithe.amount, 0);
+        return {
+          totalGiven,
+          totalRequired: 1500,
+          totalRemaining: 1500 - totalGiven,
+          tithePercentage: 10,
+          totalIncome: 15000,
+          recentTithes: mockTithes
+        };
+      }
+      
       throw error;
     }
   }
@@ -106,12 +94,17 @@ class TitheService {
   // GET /tithe/:id - קבלת מעשר ספציפי
   async getTitheById(id: string): Promise<TitheGiven | null> {
     try {
-      const response = await this.apiCall<TitheGiven>(`/tithe/${id}`);
+      const response = await apiClient.get<TitheGiven>(`/tithe/${id}`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error(`Failed to fetch tithe ${id}:`, error);
+        console.warn(`Failed to fetch tithe ${id} from API:`, error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockTithes.find(tithe => tithe.id === id) || null;
+      }
+      
       return null;
     }
   }
@@ -119,10 +112,7 @@ class TitheService {
   // POST /tithe - יצירת מעשר חדש
   async createTithe(data: CreateTitheRequest): Promise<TitheGiven> {
     try {
-      const response = await this.apiCall<TitheGiven>('/tithe', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.post<TitheGiven>('/tithe', data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -135,10 +125,7 @@ class TitheService {
   // PUT /tithe/:id - עדכון מעשר
   async updateTithe(id: string, data: UpdateTitheRequest): Promise<TitheGiven> {
     try {
-      const response = await this.apiCall<TitheGiven>(`/tithe/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.put<TitheGiven>(`/tithe/${id}`, data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -151,9 +138,7 @@ class TitheService {
   // DELETE /tithe/:id - מחיקת מעשר
   async deleteTithe(id: string): Promise<void> {
     try {
-      await this.apiCall<void>(`/tithe/${id}`, {
-        method: 'DELETE',
-      });
+      await apiClient.delete<void>(`/tithe/${id}`);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to delete tithe ${id}:`, error);

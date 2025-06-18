@@ -1,5 +1,7 @@
 import { Task } from '../types';
 import { ENV } from '../config/env';
+import { apiClient, ApiError } from './apiClient';
+import { mockTasks } from './mockData';
 
 export interface CreateTaskRequest {
   description: string;
@@ -31,38 +33,6 @@ export interface TaskSummary {
 }
 
 class TasksService {
-  private baseURL = ENV.API_BASE_URL;
-
-  // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
-    const url = `${this.baseURL}${endpoint}`;
-    console.log('options.headers', options.headers);
-    
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': '11111111-1111-1111-1111-111111111111',
-        ...options.headers,
-      },
-    };
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('API request failed:', error);
-      }
-      throw error;
-    }
-  }
-
   // GET /tasks - קבלת כל המשימות (עם פילטרים)
   async getAllTasks(filters?: TaskFilters): Promise<Task[]> {
     try {
@@ -87,12 +57,18 @@ class TasksService {
       const queryString = params.toString();
       const endpoint = queryString ? `/tasks?${queryString}` : '/tasks';
       
-      const response = await this.apiCall<Task[]>(endpoint);
+      const response = await apiClient.get<Task[]>(endpoint);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch tasks:', error);
+        console.warn('Failed to fetch tasks from API, using mock data:', error);
       }
+      
+      // Return mock data as fallback
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockTasks;
+      }
+      
       throw error;
     }
   }
@@ -100,12 +76,27 @@ class TasksService {
   // GET /tasks/summary - קבלת סיכום משימות
   async getTaskSummary(): Promise<TaskSummary> {
     try {
-      const response = await this.apiCall<TaskSummary>('/tasks/summary');
+      const response = await apiClient.get<TaskSummary>('/tasks/summary');
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch task summary:', error);
+        console.warn('Failed to fetch task summary from API:', error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        const completedTasks = mockTasks.filter(task => task.completed).length;
+        const importantTasks = mockTasks.filter(task => task.important).length;
+        
+        return {
+          totalTasks: mockTasks.length,
+          completedTasks,
+          pendingTasks: mockTasks.length - completedTasks,
+          importantTasks,
+          completionRate: mockTasks.length > 0 ? (completedTasks / mockTasks.length) * 100 : 0,
+          recentTasks: mockTasks
+        };
+      }
+      
       throw error;
     }
   }
@@ -113,12 +104,17 @@ class TasksService {
   // GET /tasks/:id - קבלת משימה ספציפית
   async getTaskById(id: string): Promise<Task | null> {
     try {
-      const response = await this.apiCall<Task>(`/tasks/${id}`);
+      const response = await apiClient.get<Task>(`/tasks/${id}`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error(`Failed to fetch task ${id}:`, error);
+        console.warn(`Failed to fetch task ${id} from API:`, error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockTasks.find(task => task.id === id) || null;
+      }
+      
       return null;
     }
   }
@@ -126,10 +122,7 @@ class TasksService {
   // POST /tasks - יצירת משימה חדשה
   async createTask(data: CreateTaskRequest): Promise<Task> {
     try {
-      const response = await this.apiCall<Task>('/tasks', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.post<Task>('/tasks', data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -142,10 +135,7 @@ class TasksService {
   // PUT /tasks/:id - עדכון משימה
   async updateTask(id: string, data: UpdateTaskRequest): Promise<Task> {
     try {
-      const response = await this.apiCall<Task>(`/tasks/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.put<Task>(`/tasks/${id}`, data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -158,9 +148,7 @@ class TasksService {
   // PUT /tasks/:id/toggle - שינוי סטטוס השלמת משימה
   async toggleTaskCompletion(id: string): Promise<Task> {
     try {
-      const response = await this.apiCall<Task>(`/tasks/${id}/toggle`, {
-        method: 'PUT',
-      });
+      const response = await apiClient.put<Task>(`/tasks/${id}/toggle`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -173,9 +161,7 @@ class TasksService {
   // DELETE /tasks/:id - מחיקת משימה
   async deleteTask(id: string): Promise<void> {
     try {
-      await this.apiCall<void>(`/tasks/${id}`, {
-        method: 'DELETE',
-      });
+      await apiClient.delete<void>(`/tasks/${id}`);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to delete task ${id}:`, error);
@@ -187,9 +173,7 @@ class TasksService {
   // DELETE /tasks/completed/all - מחיקת כל המשימות שהושלמו
   async deleteAllCompletedTasks(): Promise<void> {
     try {
-      await this.apiCall<void>('/tasks/completed/all', {
-        method: 'DELETE',
-      });
+      await apiClient.delete<void>('/tasks/completed/all');
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to delete all completed tasks:', error);

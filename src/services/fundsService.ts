@@ -1,5 +1,7 @@
 import { Fund } from '../types';
 import { ENV } from '../config/env';
+import { apiClient, ApiError } from './apiClient';
+import { mockFunds } from './mockData';
 
 export interface CreateFundRequest {
   name: string;
@@ -24,49 +26,22 @@ export interface UpdateFundBudgetRequest {
 }
 
 class FundsService {
-  private baseURL = ENV.API_BASE_URL;
-
-  // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
-    const url = `${this.baseURL}${endpoint}`;
-    const token = localStorage.getItem('authToken');
-    
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': '11111111-1111-1111-1111-111111111111',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-        ...options.headers,
-      },
-    };
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('API request failed:', error);
-      }
-      throw error;
-    }
-  }
-
   // GET /funds - קבלת כל הקופות (עם אפשרות לסינון לפי שנת תקציב)
   async getAllFunds(budgetYearId?: string): Promise<Fund[]> {
     try {
       const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
-      const response = await this.apiCall<Fund[]>(`/funds${params}`);
+      const response = await apiClient.get<Fund[]>(`/funds${params}`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch funds:', error);
+        console.warn('Failed to fetch funds from API, using mock data:', error);
       }
+      
+      // Return mock data as fallback
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockFunds;
+      }
+      
       throw error;
     }
   }
@@ -74,12 +49,17 @@ class FundsService {
   // GET /funds/:id - קבלת קופה ספציפית
   async getFundById(id: string): Promise<Fund | null> {
     try {
-      const response = await this.apiCall<Fund>(`/funds/${id}`);
+      const response = await apiClient.get<Fund>(`/funds/${id}`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error(`Failed to fetch fund ${id}:`, error);
+        console.warn(`Failed to fetch fund ${id} from API:`, error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockFunds.find(fund => fund.id === id) || null;
+      }
+      
       return null;
     }
   }
@@ -87,10 +67,7 @@ class FundsService {
   // POST /funds - יצירת קופה חדשה
   async createFund(data: CreateFundRequest): Promise<Fund> {
     try {
-      const response = await this.apiCall<Fund>('/funds', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.post<Fund>('/funds', data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -103,10 +80,7 @@ class FundsService {
   // PUT /funds/:id - עדכון קופה
   async updateFund(id: string, data: UpdateFundRequest): Promise<Fund> {
     try {
-      const response = await this.apiCall<Fund>(`/funds/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.put<Fund>(`/funds/${id}`, data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -119,10 +93,7 @@ class FundsService {
   // PUT /funds/:id/budget/:budgetYearId - עדכון תקציב קופה לשנה ספציפית
   async updateFundBudget(id: string, budgetYearId: string, data: UpdateFundBudgetRequest): Promise<Fund> {
     try {
-      const response = await this.apiCall<Fund>(`/funds/${id}/budget/${budgetYearId}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.put<Fund>(`/funds/${id}/budget/${budgetYearId}`, data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -135,9 +106,7 @@ class FundsService {
   // PUT /funds/:id/deactivate - השבתת קופה
   async deactivateFund(id: string): Promise<Fund> {
     try {
-      const response = await this.apiCall<Fund>(`/funds/${id}/deactivate`, {
-        method: 'PUT',
-      });
+      const response = await apiClient.put<Fund>(`/funds/${id}/deactivate`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -150,9 +119,7 @@ class FundsService {
   // PUT /funds/:id/activate - הפעלת קופה
   async activateFund(id: string): Promise<Fund> {
     try {
-      const response = await this.apiCall<Fund>(`/funds/${id}/activate`, {
-        method: 'PUT',
-      });
+      const response = await apiClient.put<Fund>(`/funds/${id}/activate`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -165,9 +132,7 @@ class FundsService {
   // DELETE /funds/:id - מחיקת קופה
   async deleteFund(id: string): Promise<void> {
     try {
-      await this.apiCall<void>(`/funds/${id}`, {
-        method: 'DELETE',
-      });
+      await apiClient.delete<void>(`/funds/${id}`);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to delete fund ${id}:`, error);

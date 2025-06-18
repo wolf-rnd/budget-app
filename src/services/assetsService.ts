@@ -1,5 +1,7 @@
 import { AssetSnapshot } from '../types';
 import { ENV } from '../config/env';
+import { apiClient, ApiError } from './apiClient';
+import { mockAssetSnapshots } from './mockData';
 
 export interface CreateAssetSnapshotRequest {
   assets: Record<string, number>;
@@ -31,39 +33,6 @@ export interface AssetTrends {
 }
 
 class AssetsService {
-  private baseURL = ENV.API_BASE_URL;
-
-  // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
-    const url = `${this.baseURL}${endpoint}`;
-    const token = localStorage.getItem('authToken');
-    
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': '11111111-1111-1111-1111-111111111111',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-        ...options.headers,
-      },
-    };
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('API request failed:', error);
-      }
-      throw error;
-    }
-  }
-
   // GET /assets - קבלת כל תמונות מצב הנכסים (עם פילטרים)
   async getAllAssetSnapshots(filters?: AssetFilters): Promise<AssetSnapshot[]> {
     try {
@@ -77,12 +46,18 @@ class AssetsService {
       const queryString = params.toString();
       const endpoint = queryString ? `/assets?${queryString}` : '/assets';
       
-      const response = await this.apiCall<AssetSnapshot[]>(endpoint);
+      const response = await apiClient.get<AssetSnapshot[]>(endpoint);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch asset snapshots:', error);
+        console.warn('Failed to fetch asset snapshots from API, using mock data:', error);
       }
+      
+      // Return mock data as fallback
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockAssetSnapshots;
+      }
+      
       throw error;
     }
   }
@@ -90,12 +65,17 @@ class AssetsService {
   // GET /assets/latest - קבלת תמונת המצב האחרונה
   async getLatestAssetSnapshot(): Promise<AssetSnapshot | null> {
     try {
-      const response = await this.apiCall<AssetSnapshot>('/assets/latest');
+      const response = await apiClient.get<AssetSnapshot>('/assets/latest');
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch latest asset snapshot:', error);
+        console.warn('Failed to fetch latest asset snapshot from API:', error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockAssetSnapshots[0] || null;
+      }
+      
       return null;
     }
   }
@@ -103,12 +83,23 @@ class AssetsService {
   // GET /assets/trends/summary - קבלת מגמות נכסים
   async getAssetTrends(): Promise<AssetTrends> {
     try {
-      const response = await this.apiCall<AssetTrends>('/assets/trends/summary');
+      const response = await apiClient.get<AssetTrends>('/assets/trends/summary');
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch asset trends:', error);
+        console.warn('Failed to fetch asset trends from API:', error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return {
+          netWorthTrend: [{ date: new Date().toISOString().split('T')[0], value: 850000 }],
+          assetsTrend: [{ date: new Date().toISOString().split('T')[0], value: 1650000 }],
+          liabilitiesTrend: [{ date: new Date().toISOString().split('T')[0], value: 800000 }],
+          monthlyChange: 5000,
+          yearlyChange: 60000
+        };
+      }
+      
       throw error;
     }
   }
@@ -116,12 +107,17 @@ class AssetsService {
   // GET /assets/:id - קבלת תמונת מצב ספציפית
   async getAssetSnapshotById(id: string): Promise<AssetSnapshot | null> {
     try {
-      const response = await this.apiCall<AssetSnapshot>(`/assets/${id}`);
+      const response = await apiClient.get<AssetSnapshot>(`/assets/${id}`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error(`Failed to fetch asset snapshot ${id}:`, error);
+        console.warn(`Failed to fetch asset snapshot ${id} from API:`, error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockAssetSnapshots.find(snapshot => snapshot.id === id) || null;
+      }
+      
       return null;
     }
   }
@@ -129,10 +125,7 @@ class AssetsService {
   // POST /assets - יצירת תמונת מצב חדשה
   async createAssetSnapshot(data: CreateAssetSnapshotRequest): Promise<AssetSnapshot> {
     try {
-      const response = await this.apiCall<AssetSnapshot>('/assets', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.post<AssetSnapshot>('/assets', data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -145,10 +138,7 @@ class AssetsService {
   // PUT /assets/:id - עדכון תמונת מצב
   async updateAssetSnapshot(id: string, data: UpdateAssetSnapshotRequest): Promise<AssetSnapshot> {
     try {
-      const response = await this.apiCall<AssetSnapshot>(`/assets/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.put<AssetSnapshot>(`/assets/${id}`, data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -161,9 +151,7 @@ class AssetsService {
   // DELETE /assets/:id - מחיקת תמונת מצב
   async deleteAssetSnapshot(id: string): Promise<void> {
     try {
-      await this.apiCall<void>(`/assets/${id}`, {
-        method: 'DELETE',
-      });
+      await apiClient.delete<void>(`/assets/${id}`);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to delete asset snapshot ${id}:`, error);

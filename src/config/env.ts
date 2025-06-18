@@ -15,6 +15,10 @@ export const ENV = {
   DEV_MODE: import.meta.env.VITE_DEV_MODE === 'true',
   LOG_LEVEL: import.meta.env.VITE_LOG_LEVEL || 'info',
   
+  // API Settings
+  API_TIMEOUT: Number(import.meta.env.VITE_API_TIMEOUT) || 10000,
+  ENABLE_MOCK_DATA: import.meta.env.VITE_ENABLE_MOCK_DATA === 'true',
+  
   // Derived values
   IS_PRODUCTION: import.meta.env.PROD,
   IS_DEVELOPMENT: import.meta.env.DEV,

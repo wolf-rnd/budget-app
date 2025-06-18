@@ -1,5 +1,7 @@
 import { Expense } from '../types';
 import { ENV } from '../config/env';
+import { apiClient, ApiError } from './apiClient';
+import { mockExpenses } from './mockData';
 
 export interface CreateExpenseRequest {
   name: string;
@@ -43,39 +45,6 @@ export interface ExpenseSummary {
 }
 
 class ExpensesService {
-  private baseURL = ENV.API_BASE_URL;
-
-  // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
-    const url = `${this.baseURL}${endpoint}`;
-    const token = localStorage.getItem('authToken');
-    
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': '11111111-1111-1111-1111-111111111111',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-        ...options.headers,
-      },
-    };
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('API request failed:', error);
-      }
-      throw error;
-    }
-  }
-
   // GET /expenses - קבלת כל ההוצאות (עם פילטרים)
   async getAllExpenses(filters?: ExpenseFilters): Promise<Expense[]> {
     try {
@@ -95,12 +64,18 @@ class ExpensesService {
       const queryString = params.toString();
       const endpoint = queryString ? `/expenses?${queryString}` : '/expenses';
       
-      const response = await this.apiCall<Expense[]>(endpoint);
+      const response = await apiClient.get<Expense[]>(endpoint);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch expenses:', error);
+        console.warn('Failed to fetch expenses from API, using mock data:', error);
       }
+      
+      // Return mock data as fallback
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockExpenses;
+      }
+      
       throw error;
     }
   }
@@ -108,12 +83,17 @@ class ExpensesService {
   // GET /expenses/:id - קבלת הוצאה ספציפית
   async getExpenseById(id: string): Promise<Expense | null> {
     try {
-      const response = await this.apiCall<Expense>(`/expenses/${id}`);
+      const response = await apiClient.get<Expense>(`/expenses/${id}`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error(`Failed to fetch expense ${id}:`, error);
+        console.warn(`Failed to fetch expense ${id} from API:`, error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockExpenses.find(expense => expense.id === id) || null;
+      }
+      
       return null;
     }
   }
@@ -122,12 +102,26 @@ class ExpensesService {
   async getExpenseSummary(budgetYearId?: string): Promise<ExpenseSummary> {
     try {
       const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
-      const response = await this.apiCall<ExpenseSummary>(`/expenses/stats/summary${params}`);
+      const response = await apiClient.get<ExpenseSummary>(`/expenses/stats/summary${params}`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch expense summary:', error);
+        console.warn('Failed to fetch expense summary from API:', error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        const totalExpenses = mockExpenses.reduce((sum, expense) => sum + expense.amount, 0);
+        return {
+          totalExpenses,
+          monthlyAverage: totalExpenses / 12,
+          currentMonthExpenses: totalExpenses,
+          yearToDateExpenses: totalExpenses,
+          expensesByCategory: [{ category: 'מזון', amount: totalExpenses }],
+          expensesByFund: [{ fund: 'קופת יומיום', amount: totalExpenses }],
+          expensesByMonth: [{ month: new Date().getMonth() + 1, amount: totalExpenses }]
+        };
+      }
+      
       throw error;
     }
   }
@@ -135,10 +129,7 @@ class ExpensesService {
   // POST /expenses - יצירת הוצאה חדשה
   async createExpense(data: CreateExpenseRequest): Promise<Expense> {
     try {
-      const response = await this.apiCall<Expense>('/expenses', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.post<Expense>('/expenses', data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -151,10 +142,7 @@ class ExpensesService {
   // PUT /expenses/:id - עדכון הוצאה
   async updateExpense(id: string, data: UpdateExpenseRequest): Promise<Expense> {
     try {
-      const response = await this.apiCall<Expense>(`/expenses/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.put<Expense>(`/expenses/${id}`, data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -167,9 +155,7 @@ class ExpensesService {
   // DELETE /expenses/:id - מחיקת הוצאה
   async deleteExpense(id: string): Promise<void> {
     try {
-      await this.apiCall<void>(`/expenses/${id}`, {
-        method: 'DELETE',
-      });
+      await apiClient.delete<void>(`/expenses/${id}`);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to delete expense ${id}:`, error);

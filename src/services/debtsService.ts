@@ -1,5 +1,7 @@
 import { Debt } from '../types';
 import { ENV } from '../config/env';
+import { apiClient, ApiError } from './apiClient';
+import { mockDebts } from './mockData';
 
 export interface CreateDebtRequest {
   description: string;
@@ -35,39 +37,6 @@ export interface DebtSummary {
 }
 
 class DebtsService {
-  private baseURL = ENV.API_BASE_URL;
-
-  // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
-    const url = `${this.baseURL}${endpoint}`;
-    const token = localStorage.getItem('authToken');
-    
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': '11111111-1111-1111-1111-111111111111',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-        ...options.headers,
-      },
-    };
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('API request failed:', error);
-      }
-      throw error;
-    }
-  }
-
   // GET /debts - קבלת כל החובות (עם פילטרים)
   async getAllDebts(filters?: DebtFilters): Promise<Debt[]> {
     try {
@@ -82,12 +51,18 @@ class DebtsService {
       const queryString = params.toString();
       const endpoint = queryString ? `/debts?${queryString}` : '/debts';
       
-      const response = await this.apiCall<Debt[]>(endpoint);
+      const response = await apiClient.get<Debt[]>(endpoint);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch debts:', error);
+        console.warn('Failed to fetch debts from API, using mock data:', error);
       }
+      
+      // Return mock data as fallback
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockDebts;
+      }
+      
       throw error;
     }
   }
@@ -95,12 +70,28 @@ class DebtsService {
   // GET /debts/summary - קבלת סיכום חובות
   async getDebtSummary(): Promise<DebtSummary> {
     try {
-      const response = await this.apiCall<DebtSummary>('/debts/summary');
+      const response = await apiClient.get<DebtSummary>('/debts/summary');
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch debt summary:', error);
+        console.warn('Failed to fetch debt summary from API:', error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        const totalDebtsOwedToMe = mockDebts
+          .filter(debt => debt.type === 'owed_to_me')
+          .reduce((sum, debt) => sum + debt.amount, 0);
+        
+        return {
+          totalDebtsIOwe: 0,
+          totalDebtsOwedToMe,
+          netDebtPosition: totalDebtsOwedToMe,
+          paidDebts: 0,
+          unpaidDebts: mockDebts.length,
+          recentDebts: mockDebts
+        };
+      }
+      
       throw error;
     }
   }
@@ -108,12 +99,17 @@ class DebtsService {
   // GET /debts/:id - קבלת חוב ספציפי
   async getDebtById(id: string): Promise<Debt | null> {
     try {
-      const response = await this.apiCall<Debt>(`/debts/${id}`);
+      const response = await apiClient.get<Debt>(`/debts/${id}`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error(`Failed to fetch debt ${id}:`, error);
+        console.warn(`Failed to fetch debt ${id} from API:`, error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockDebts.find(debt => debt.id === id) || null;
+      }
+      
       return null;
     }
   }
@@ -121,10 +117,7 @@ class DebtsService {
   // POST /debts - יצירת חוב חדש
   async createDebt(data: CreateDebtRequest): Promise<Debt> {
     try {
-      const response = await this.apiCall<Debt>('/debts', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.post<Debt>('/debts', data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -137,10 +130,7 @@ class DebtsService {
   // PUT /debts/:id - עדכון חוב
   async updateDebt(id: string, data: UpdateDebtRequest): Promise<Debt> {
     try {
-      const response = await this.apiCall<Debt>(`/debts/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.put<Debt>(`/debts/${id}`, data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -153,9 +143,7 @@ class DebtsService {
   // PUT /debts/:id/pay - סימון חוב כשולם
   async markDebtAsPaid(id: string): Promise<Debt> {
     try {
-      const response = await this.apiCall<Debt>(`/debts/${id}/pay`, {
-        method: 'PUT',
-      });
+      const response = await apiClient.put<Debt>(`/debts/${id}/pay`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -168,9 +156,7 @@ class DebtsService {
   // PUT /debts/:id/unpay - ביטול סימון שולם
   async markDebtAsUnpaid(id: string): Promise<Debt> {
     try {
-      const response = await this.apiCall<Debt>(`/debts/${id}/unpay`, {
-        method: 'PUT',
-      });
+      const response = await apiClient.put<Debt>(`/debts/${id}/unpay`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -183,9 +169,7 @@ class DebtsService {
   // DELETE /debts/:id - מחיקת חוב
   async deleteDebt(id: string): Promise<void> {
     try {
-      await this.apiCall<void>(`/debts/${id}`, {
-        method: 'DELETE',
-      });
+      await apiClient.delete<void>(`/debts/${id}`);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to delete debt ${id}:`, error);

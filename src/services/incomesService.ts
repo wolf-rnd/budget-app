@@ -1,5 +1,7 @@
 import { Income } from '../types';
 import { ENV } from '../config/env';
+import { apiClient, ApiError } from './apiClient';
+import { mockIncomes } from './mockData';
 
 export interface CreateIncomeRequest {
   name: string;
@@ -40,39 +42,6 @@ export interface IncomeSummary {
 }
 
 class IncomesService {
-  private baseURL = ENV.API_BASE_URL;
-
-  // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
-    const url = `${this.baseURL}${endpoint}`;
-    const token = localStorage.getItem('authToken');
-    
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': '11111111-1111-1111-1111-111111111111',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-        ...options.headers,
-      },
-    };
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('API request failed:', error);
-      }
-      throw error;
-    }
-  }
-
   // GET /incomes - קבלת כל ההכנסות (עם פילטרים)
   async getAllIncomes(filters?: IncomeFilters): Promise<Income[]> {
     try {
@@ -88,12 +57,18 @@ class IncomesService {
       const queryString = params.toString();
       const endpoint = queryString ? `/incomes?${queryString}` : '/incomes';
       
-      const response = await this.apiCall<Income[]>(endpoint);
+      const response = await apiClient.get<Income[]>(endpoint);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch incomes:', error);
+        console.warn('Failed to fetch incomes from API, using mock data:', error);
       }
+      
+      // Return mock data as fallback
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockIncomes;
+      }
+      
       throw error;
     }
   }
@@ -101,12 +76,17 @@ class IncomesService {
   // GET /incomes/:id - קבלת הכנסה ספציפית
   async getIncomeById(id: string): Promise<Income | null> {
     try {
-      const response = await this.apiCall<Income>(`/incomes/${id}`);
+      const response = await apiClient.get<Income>(`/incomes/${id}`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error(`Failed to fetch income ${id}:`, error);
+        console.warn(`Failed to fetch income ${id} from API:`, error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockIncomes.find(income => income.id === id) || null;
+      }
+      
       return null;
     }
   }
@@ -115,12 +95,25 @@ class IncomesService {
   async getIncomeSummary(budgetYearId?: string): Promise<IncomeSummary> {
     try {
       const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
-      const response = await this.apiCall<IncomeSummary>(`/incomes/stats/summary${params}`);
+      const response = await apiClient.get<IncomeSummary>(`/incomes/stats/summary${params}`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch income summary:', error);
+        console.warn('Failed to fetch income summary from API:', error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        const totalIncome = mockIncomes.reduce((sum, income) => sum + income.amount, 0);
+        return {
+          totalIncome,
+          monthlyAverage: totalIncome / 12,
+          currentMonthIncome: totalIncome,
+          yearToDateIncome: totalIncome,
+          incomeBySource: [{ source: 'עבודה', amount: totalIncome }],
+          incomeByMonth: [{ month: new Date().getMonth() + 1, amount: totalIncome }]
+        };
+      }
+      
       throw error;
     }
   }
@@ -128,10 +121,7 @@ class IncomesService {
   // POST /incomes - יצירת הכנסה חדשה
   async createIncome(data: CreateIncomeRequest): Promise<Income> {
     try {
-      const response = await this.apiCall<Income>('/incomes', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.post<Income>('/incomes', data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -144,10 +134,7 @@ class IncomesService {
   // PUT /incomes/:id - עדכון הכנסה
   async updateIncome(id: string, data: UpdateIncomeRequest): Promise<Income> {
     try {
-      const response = await this.apiCall<Income>(`/incomes/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.put<Income>(`/incomes/${id}`, data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -160,9 +147,7 @@ class IncomesService {
   // DELETE /incomes/:id - מחיקת הכנסה
   async deleteIncome(id: string): Promise<void> {
     try {
-      await this.apiCall<void>(`/incomes/${id}`, {
-        method: 'DELETE',
-      });
+      await apiClient.delete<void>(`/incomes/${id}`);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to delete income ${id}:`, error);

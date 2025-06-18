@@ -1,4 +1,6 @@
 import { ENV } from '../config/env';
+import { apiClient, ApiError } from './apiClient';
+import { mockCategories } from './mockData';
 
 export interface Category {
   id?: string;
@@ -21,49 +23,21 @@ export interface UpdateCategoryRequest {
 }
 
 class CategoriesService {
-  private baseURL = ENV.API_BASE_URL;
-  
-
-  // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
-    const url = `${this.baseURL}${endpoint}`;
-    const token = localStorage.getItem('authToken');
-    
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': '11111111-1111-1111-1111-111111111111',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-        ...options.headers,
-      },
-    };
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('API request failed:', error);
-      }
-      throw error;
-    }
-  }
-
   // GET /categories - קבלת כל הקטגוריות
   async getAllCategories(): Promise<Category[]> {
     try {
-      const response = await this.apiCall<Category[]>('/categories');
+      const response = await apiClient.get<Category[]>('/categories');
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to fetch categories:', error);
+        console.warn('Failed to fetch categories from API, using mock data:', error);
       }
+      
+      // Return mock data as fallback
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockCategories;
+      }
+      
       throw error;
     }
   }
@@ -71,12 +45,17 @@ class CategoriesService {
   // GET /categories/fund/:fundId - קבלת קטגוריות לפי קופה
   async getCategoriesByFund(fundId: string): Promise<Category[]> {
     try {
-      const response = await this.apiCall<Category[]>(`/categories/fund/${fundId}`);
+      const response = await apiClient.get<Category[]>(`/categories/fund/${fundId}`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error(`Failed to fetch categories for fund ${fundId}:`, error);
+        console.warn(`Failed to fetch categories for fund ${fundId} from API:`, error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockCategories.filter(cat => cat.fundId === fundId);
+      }
+      
       throw error;
     }
   }
@@ -84,12 +63,17 @@ class CategoriesService {
   // GET /categories/:id - קבלת קטגוריה ספציפית
   async getCategoryById(id: string): Promise<Category | null> {
     try {
-      const response = await this.apiCall<Category>(`/categories/${id}`);
+      const response = await apiClient.get<Category>(`/categories/${id}`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error(`Failed to fetch category ${id}:`, error);
+        console.warn(`Failed to fetch category ${id} from API:`, error);
       }
+      
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        return mockCategories.find(cat => cat.id === id) || null;
+      }
+      
       return null;
     }
   }
@@ -97,10 +81,7 @@ class CategoriesService {
   // POST /categories - יצירת קטגוריה חדשה
   async createCategory(data: CreateCategoryRequest): Promise<Category> {
     try {
-      const response = await this.apiCall<Category>('/categories', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.post<Category>('/categories', data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -113,10 +94,7 @@ class CategoriesService {
   // PUT /categories/:id - עדכון קטגוריה
   async updateCategory(id: string, data: UpdateCategoryRequest): Promise<Category> {
     try {
-      const response = await this.apiCall<Category>(`/categories/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
+      const response = await apiClient.put<Category>(`/categories/${id}`, data);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -129,9 +107,7 @@ class CategoriesService {
   // PUT /categories/:id/deactivate - השבתת קטגוריה
   async deactivateCategory(id: string): Promise<Category> {
     try {
-      const response = await this.apiCall<Category>(`/categories/${id}/deactivate`, {
-        method: 'PUT',
-      });
+      const response = await apiClient.put<Category>(`/categories/${id}/deactivate`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -144,9 +120,7 @@ class CategoriesService {
   // PUT /categories/:id/activate - הפעלת קטגוריה
   async activateCategory(id: string): Promise<Category> {
     try {
-      const response = await this.apiCall<Category>(`/categories/${id}/activate`, {
-        method: 'PUT',
-      });
+      const response = await apiClient.put<Category>(`/categories/${id}/activate`);
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -159,9 +133,7 @@ class CategoriesService {
   // DELETE /categories/:id - מחיקת קטגוריה
   async deleteCategory(id: string): Promise<void> {
     try {
-      await this.apiCall<void>(`/categories/${id}`, {
-        method: 'DELETE',
-      });
+      await apiClient.delete<void>(`/categories/${id}`);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to delete category ${id}:`, error);
