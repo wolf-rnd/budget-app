@@ -1,7 +1,9 @@
 // Environment configuration
 export const ENV = {
-  // API Configuration
-  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api',
+  // API Configuration - Use proxy in development, full URL in production
+  API_BASE_URL: import.meta.env.DEV 
+    ? '/api' 
+    : (import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001/api'),
   
   // Application Settings
   APP_NAME: import.meta.env.VITE_APP_NAME || 'תקציב-בית',
