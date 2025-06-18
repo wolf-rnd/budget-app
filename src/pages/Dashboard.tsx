@@ -134,7 +134,9 @@ const Dashboard: React.FC = () => {
       if (ENV.DEV_MODE) {
         console.error('Failed to load dashboard data:', err);
       }
-      setError('שגיאה בטעינת נתוני הדשבורד');
+      // Use the specific error message from the API client instead of a generic message
+      const errorMessage = err instanceof Error ? err.message : 'שגיאה בטעינת נתוני הדשבורד';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
