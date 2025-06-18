@@ -36,7 +36,7 @@ class TitheService {
   private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
     const url = `${this.baseURL}${endpoint}`;
     const token = localStorage.getItem('authToken');
     
@@ -93,7 +93,8 @@ class TitheService {
   // GET /tithe/summary - קבלת סיכום מעשרות
   async getTitheSummary(): Promise<TitheSummary> {
     try {
-      return await this.apiCall<TitheSummary>('/tithe/summary');
+      const response = await this.apiCall<TitheSummary>('/tithe/summary');
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch tithe summary:', error);
@@ -105,7 +106,8 @@ class TitheService {
   // GET /tithe/:id - קבלת מעשר ספציפי
   async getTitheById(id: string): Promise<TitheGiven | null> {
     try {
-      return await this.apiCall<TitheGiven>(`/tithe/${id}`);
+      const response = await this.apiCall<TitheGiven>(`/tithe/${id}`);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to fetch tithe ${id}:`, error);
@@ -117,10 +119,11 @@ class TitheService {
   // POST /tithe - יצירת מעשר חדש
   async createTithe(data: CreateTitheRequest): Promise<TitheGiven> {
     try {
-      return await this.apiCall<TitheGiven>('/tithe', {
+      const response = await this.apiCall<TitheGiven>('/tithe', {
         method: 'POST',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create tithe:', error);
@@ -132,10 +135,11 @@ class TitheService {
   // PUT /tithe/:id - עדכון מעשר
   async updateTithe(id: string, data: UpdateTitheRequest): Promise<TitheGiven> {
     try {
-      return await this.apiCall<TitheGiven>(`/tithe/${id}`, {
+      const response = await this.apiCall<TitheGiven>(`/tithe/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to update tithe ${id}:`, error);

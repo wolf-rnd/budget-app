@@ -25,7 +25,7 @@ class CategoriesService {
   
 
   // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
     const url = `${this.baseURL}${endpoint}`;
     const token = localStorage.getItem('authToken');
     
@@ -71,7 +71,8 @@ class CategoriesService {
   // GET /categories/fund/:fundId - קבלת קטגוריות לפי קופה
   async getCategoriesByFund(fundId: string): Promise<Category[]> {
     try {
-      return await this.apiCall<Category[]>(`/categories/fund/${fundId}`);
+      const response = await this.apiCall<Category[]>(`/categories/fund/${fundId}`);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to fetch categories for fund ${fundId}:`, error);
@@ -83,7 +84,8 @@ class CategoriesService {
   // GET /categories/:id - קבלת קטגוריה ספציפית
   async getCategoryById(id: string): Promise<Category | null> {
     try {
-      return await this.apiCall<Category>(`/categories/${id}`);
+      const response = await this.apiCall<Category>(`/categories/${id}`);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to fetch category ${id}:`, error);
@@ -95,10 +97,11 @@ class CategoriesService {
   // POST /categories - יצירת קטגוריה חדשה
   async createCategory(data: CreateCategoryRequest): Promise<Category> {
     try {
-      return await this.apiCall<Category>('/categories', {
+      const response = await this.apiCall<Category>('/categories', {
         method: 'POST',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create category:', error);
@@ -110,10 +113,11 @@ class CategoriesService {
   // PUT /categories/:id - עדכון קטגוריה
   async updateCategory(id: string, data: UpdateCategoryRequest): Promise<Category> {
     try {
-      return await this.apiCall<Category>(`/categories/${id}`, {
+      const response = await this.apiCall<Category>(`/categories/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to update category ${id}:`, error);
@@ -125,9 +129,10 @@ class CategoriesService {
   // PUT /categories/:id/deactivate - השבתת קטגוריה
   async deactivateCategory(id: string): Promise<Category> {
     try {
-      return await this.apiCall<Category>(`/categories/${id}/deactivate`, {
+      const response = await this.apiCall<Category>(`/categories/${id}/deactivate`, {
         method: 'PUT',
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to deactivate category ${id}:`, error);
@@ -139,9 +144,10 @@ class CategoriesService {
   // PUT /categories/:id/activate - הפעלת קטגוריה
   async activateCategory(id: string): Promise<Category> {
     try {
-      return await this.apiCall<Category>(`/categories/${id}/activate`, {
+      const response = await this.apiCall<Category>(`/categories/${id}/activate`, {
         method: 'PUT',
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to activate category ${id}:`, error);

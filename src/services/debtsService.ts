@@ -38,7 +38,7 @@ class DebtsService {
   private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
     const url = `${this.baseURL}${endpoint}`;
     const token = localStorage.getItem('authToken');
     
@@ -95,7 +95,8 @@ class DebtsService {
   // GET /debts/summary - קבלת סיכום חובות
   async getDebtSummary(): Promise<DebtSummary> {
     try {
-      return await this.apiCall<DebtSummary>('/debts/summary');
+      const response = await this.apiCall<DebtSummary>('/debts/summary');
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch debt summary:', error);
@@ -107,7 +108,8 @@ class DebtsService {
   // GET /debts/:id - קבלת חוב ספציפי
   async getDebtById(id: string): Promise<Debt | null> {
     try {
-      return await this.apiCall<Debt>(`/debts/${id}`);
+      const response = await this.apiCall<Debt>(`/debts/${id}`);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to fetch debt ${id}:`, error);
@@ -119,10 +121,11 @@ class DebtsService {
   // POST /debts - יצירת חוב חדש
   async createDebt(data: CreateDebtRequest): Promise<Debt> {
     try {
-      return await this.apiCall<Debt>('/debts', {
+      const response = await this.apiCall<Debt>('/debts', {
         method: 'POST',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create debt:', error);
@@ -134,10 +137,11 @@ class DebtsService {
   // PUT /debts/:id - עדכון חוב
   async updateDebt(id: string, data: UpdateDebtRequest): Promise<Debt> {
     try {
-      return await this.apiCall<Debt>(`/debts/${id}`, {
+      const response = await this.apiCall<Debt>(`/debts/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to update debt ${id}:`, error);
@@ -149,9 +153,10 @@ class DebtsService {
   // PUT /debts/:id/pay - סימון חוב כשולם
   async markDebtAsPaid(id: string): Promise<Debt> {
     try {
-      return await this.apiCall<Debt>(`/debts/${id}/pay`, {
+      const response = await this.apiCall<Debt>(`/debts/${id}/pay`, {
         method: 'PUT',
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to mark debt as paid ${id}:`, error);
@@ -163,9 +168,10 @@ class DebtsService {
   // PUT /debts/:id/unpay - ביטול סימון שולם
   async markDebtAsUnpaid(id: string): Promise<Debt> {
     try {
-      return await this.apiCall<Debt>(`/debts/${id}/unpay`, {
+      const response = await this.apiCall<Debt>(`/debts/${id}/unpay`, {
         method: 'PUT',
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to mark debt as unpaid ${id}:`, error);

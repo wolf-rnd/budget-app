@@ -34,7 +34,7 @@ class AssetsService {
   private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
     const url = `${this.baseURL}${endpoint}`;
     const token = localStorage.getItem('authToken');
     
@@ -90,7 +90,8 @@ class AssetsService {
   // GET /assets/latest - קבלת תמונת המצב האחרונה
   async getLatestAssetSnapshot(): Promise<AssetSnapshot | null> {
     try {
-      return await this.apiCall<AssetSnapshot>('/assets/latest');
+      const response = await this.apiCall<AssetSnapshot>('/assets/latest');
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch latest asset snapshot:', error);
@@ -102,7 +103,8 @@ class AssetsService {
   // GET /assets/trends/summary - קבלת מגמות נכסים
   async getAssetTrends(): Promise<AssetTrends> {
     try {
-      return await this.apiCall<AssetTrends>('/assets/trends/summary');
+      const response = await this.apiCall<AssetTrends>('/assets/trends/summary');
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch asset trends:', error);
@@ -114,7 +116,8 @@ class AssetsService {
   // GET /assets/:id - קבלת תמונת מצב ספציפית
   async getAssetSnapshotById(id: string): Promise<AssetSnapshot | null> {
     try {
-      return await this.apiCall<AssetSnapshot>(`/assets/${id}`);
+      const response = await this.apiCall<AssetSnapshot>(`/assets/${id}`);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to fetch asset snapshot ${id}:`, error);
@@ -126,10 +129,11 @@ class AssetsService {
   // POST /assets - יצירת תמונת מצב חדשה
   async createAssetSnapshot(data: CreateAssetSnapshotRequest): Promise<AssetSnapshot> {
     try {
-      return await this.apiCall<AssetSnapshot>('/assets', {
+      const response = await this.apiCall<AssetSnapshot>('/assets', {
         method: 'POST',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create asset snapshot:', error);
@@ -141,10 +145,11 @@ class AssetsService {
   // PUT /assets/:id - עדכון תמונת מצב
   async updateAssetSnapshot(id: string, data: UpdateAssetSnapshotRequest): Promise<AssetSnapshot> {
     try {
-      return await this.apiCall<AssetSnapshot>(`/assets/${id}`, {
+      const response = await this.apiCall<AssetSnapshot>(`/assets/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to update asset snapshot ${id}:`, error);

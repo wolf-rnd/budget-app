@@ -34,7 +34,7 @@ class TasksService {
   private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
     const url = `${this.baseURL}${endpoint}`;
     console.log('options.headers', options.headers);
     
@@ -100,7 +100,8 @@ class TasksService {
   // GET /tasks/summary - קבלת סיכום משימות
   async getTaskSummary(): Promise<TaskSummary> {
     try {
-      return await this.apiCall<TaskSummary>('/tasks/summary');
+      const response = await this.apiCall<TaskSummary>('/tasks/summary');
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch task summary:', error);
@@ -112,7 +113,8 @@ class TasksService {
   // GET /tasks/:id - קבלת משימה ספציפית
   async getTaskById(id: string): Promise<Task | null> {
     try {
-      return await this.apiCall<Task>(`/tasks/${id}`);
+      const response = await this.apiCall<Task>(`/tasks/${id}`);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to fetch task ${id}:`, error);
@@ -124,10 +126,11 @@ class TasksService {
   // POST /tasks - יצירת משימה חדשה
   async createTask(data: CreateTaskRequest): Promise<Task> {
     try {
-      return await this.apiCall<Task>('/tasks', {
+      const response = await this.apiCall<Task>('/tasks', {
         method: 'POST',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create task:', error);
@@ -139,10 +142,11 @@ class TasksService {
   // PUT /tasks/:id - עדכון משימה
   async updateTask(id: string, data: UpdateTaskRequest): Promise<Task> {
     try {
-      return await this.apiCall<Task>(`/tasks/${id}`, {
+      const response = await this.apiCall<Task>(`/tasks/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to update task ${id}:`, error);
@@ -154,9 +158,10 @@ class TasksService {
   // PUT /tasks/:id/toggle - שינוי סטטוס השלמת משימה
   async toggleTaskCompletion(id: string): Promise<Task> {
     try {
-      return await this.apiCall<Task>(`/tasks/${id}/toggle`, {
+      const response = await this.apiCall<Task>(`/tasks/${id}/toggle`, {
         method: 'PUT',
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to toggle task completion ${id}:`, error);

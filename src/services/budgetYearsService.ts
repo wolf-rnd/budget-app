@@ -26,7 +26,7 @@ class BudgetYearsService {
   private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
     const url = `${this.baseURL}${endpoint}`;
     const token = localStorage.getItem('authToken');
     
@@ -59,7 +59,7 @@ class BudgetYearsService {
   // GET /budget-years - קבלת כל שנות התקציב
   async getAllBudgetYears(): Promise<BudgetYear[]> {
     try {
-      const response = await this.apiCall<{ data: BudgetYear[] }>('/budget-years');
+      const response = await this.apiCall<BudgetYear[]>('/budget-years');
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -72,7 +72,8 @@ class BudgetYearsService {
   // GET /budget-years/active - קבלת שנת התקציב הפעילה
   async getActiveBudgetYear(): Promise<BudgetYear | null> {
     try {
-      return await this.apiCall<BudgetYear>('/budget-years/active');
+      const response = await this.apiCall<BudgetYear>('/budget-years/active');
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch active budget year:', error);
@@ -84,7 +85,8 @@ class BudgetYearsService {
   // GET /budget-years/:id - קבלת שנת תקציב ספציפית
   async getBudgetYearById(id: string): Promise<BudgetYear | null> {
     try {
-      return await this.apiCall<BudgetYear>(`/budget-years/${id}`);
+      const response = await this.apiCall<BudgetYear>(`/budget-years/${id}`);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to fetch budget year ${id}:`, error);
@@ -96,10 +98,11 @@ class BudgetYearsService {
   // POST /budget-years - יצירת שנת תקציב חדשה
   async createBudgetYear(data: CreateBudgetYearRequest): Promise<BudgetYear> {
     try {
-      return await this.apiCall<BudgetYear>('/budget-years', {
+      const response = await this.apiCall<BudgetYear>('/budget-years', {
         method: 'POST',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create budget year:', error);
@@ -111,10 +114,11 @@ class BudgetYearsService {
   // PUT /budget-years/:id - עדכון שנת תקציב
   async updateBudgetYear(id: string, data: UpdateBudgetYearRequest): Promise<BudgetYear> {
     try {
-      return await this.apiCall<BudgetYear>(`/budget-years/${id}`, {
+      const response = await this.apiCall<BudgetYear>(`/budget-years/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to update budget year ${id}:`, error);
@@ -126,9 +130,10 @@ class BudgetYearsService {
   // PUT /budget-years/:id/activate - הפעלת שנת תקציב
   async activateBudgetYear(id: string): Promise<BudgetYear> {
     try {
-      return await this.apiCall<BudgetYear>(`/budget-years/${id}/activate`, {
+      const response = await this.apiCall<BudgetYear>(`/budget-years/${id}/activate`, {
         method: 'PUT',
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to activate budget year ${id}:`, error);

@@ -46,7 +46,7 @@ class ExpensesService {
   private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
     const url = `${this.baseURL}${endpoint}`;
     const token = localStorage.getItem('authToken');
     
@@ -108,7 +108,8 @@ class ExpensesService {
   // GET /expenses/:id - קבלת הוצאה ספציפית
   async getExpenseById(id: string): Promise<Expense | null> {
     try {
-      return await this.apiCall<Expense>(`/expenses/${id}`);
+      const response = await this.apiCall<Expense>(`/expenses/${id}`);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to fetch expense ${id}:`, error);
@@ -121,7 +122,8 @@ class ExpensesService {
   async getExpenseSummary(budgetYearId?: string): Promise<ExpenseSummary> {
     try {
       const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
-      return await this.apiCall<ExpenseSummary>(`/expenses/stats/summary${params}`);
+      const response = await this.apiCall<ExpenseSummary>(`/expenses/stats/summary${params}`);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch expense summary:', error);
@@ -133,10 +135,11 @@ class ExpensesService {
   // POST /expenses - יצירת הוצאה חדשה
   async createExpense(data: CreateExpenseRequest): Promise<Expense> {
     try {
-      return await this.apiCall<Expense>('/expenses', {
+      const response = await this.apiCall<Expense>('/expenses', {
         method: 'POST',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create expense:', error);
@@ -148,10 +151,11 @@ class ExpensesService {
   // PUT /expenses/:id - עדכון הוצאה
   async updateExpense(id: string, data: UpdateExpenseRequest): Promise<Expense> {
     try {
-      return await this.apiCall<Expense>(`/expenses/${id}`, {
+      const response = await this.apiCall<Expense>(`/expenses/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to update expense ${id}:`, error);

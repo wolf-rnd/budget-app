@@ -43,7 +43,7 @@ class IncomesService {
   private baseURL = ENV.API_BASE_URL;
 
   // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<{ data: T }> {
     const url = `${this.baseURL}${endpoint}`;
     const token = localStorage.getItem('authToken');
     
@@ -101,7 +101,8 @@ class IncomesService {
   // GET /incomes/:id - קבלת הכנסה ספציפית
   async getIncomeById(id: string): Promise<Income | null> {
     try {
-      return await this.apiCall<Income>(`/incomes/${id}`);
+      const response = await this.apiCall<Income>(`/incomes/${id}`);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to fetch income ${id}:`, error);
@@ -114,7 +115,8 @@ class IncomesService {
   async getIncomeSummary(budgetYearId?: string): Promise<IncomeSummary> {
     try {
       const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
-      return await this.apiCall<IncomeSummary>(`/incomes/stats/summary${params}`);
+      const response = await this.apiCall<IncomeSummary>(`/incomes/stats/summary${params}`);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch income summary:', error);
@@ -126,10 +128,11 @@ class IncomesService {
   // POST /incomes - יצירת הכנסה חדשה
   async createIncome(data: CreateIncomeRequest): Promise<Income> {
     try {
-      return await this.apiCall<Income>('/incomes', {
+      const response = await this.apiCall<Income>('/incomes', {
         method: 'POST',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create income:', error);
@@ -141,10 +144,11 @@ class IncomesService {
   // PUT /incomes/:id - עדכון הכנסה
   async updateIncome(id: string, data: UpdateIncomeRequest): Promise<Income> {
     try {
-      return await this.apiCall<Income>(`/incomes/${id}`, {
+      const response = await this.apiCall<Income>(`/incomes/${id}`, {
         method: 'PUT',
         body: JSON.stringify(data),
       });
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error(`Failed to update income ${id}:`, error);
