@@ -12,14 +12,27 @@ export default defineConfig({
         secure: true,
         timeout: 30000,
         configure: (proxy, _options) => {
-          proxy.on('error', (err, _req, _res) => {
-            console.log('Proxy error:', err);
+          proxy.on('error', (err, _req, res) => {
+            console.log('Proxy error:', err.message);
+            // Send a proper error response instead of letting the connection hang
+            if (res && !res.headersSent) {
+              res.writeHead(503, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ 
+                error: 'Backend service unavailable', 
+                message: 'The API server is currently experiencing issues. Please try again later.',
+                fallback: true 
+              }));
+            }
           });
           proxy.on('proxyReq', (proxyReq, req, _res) => {
-            console.log('Sending Request to the Target:', req.method, req.url);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Sending Request to the Target:', req.method, req.url);
+            }
           });
           proxy.on('proxyRes', (proxyRes, req, _res) => {
-            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+            }
           });
         },
       }

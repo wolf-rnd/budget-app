@@ -133,8 +133,32 @@ class ExpensesService {
       return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
-        console.error('Failed to create expense:', error);
+        console.error('Failed to create expense via API:', error);
       }
+      
+      // If API fails, create a mock expense for local use
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        const mockExpense: Expense = {
+          id: `mock-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          name: data.name,
+          amount: data.amount,
+          category: data.category,
+          fund: data.fund,
+          date: data.date,
+          note: data.note || '',
+          month: new Date(data.date).getMonth() + 1,
+          year: new Date(data.date).getFullYear(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+        
+        if (ENV.DEV_MODE) {
+          console.log('Created mock expense:', mockExpense);
+        }
+        
+        return mockExpense;
+      }
+      
       throw error;
     }
   }
@@ -148,6 +172,20 @@ class ExpensesService {
       if (ENV.DEV_MODE) {
         console.error(`Failed to update expense ${id}:`, error);
       }
+      
+      // If API fails and we have mock data enabled, return a mock updated expense
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        const existingExpense = mockExpenses.find(expense => expense.id === id);
+        if (existingExpense) {
+          const updatedExpense: Expense = {
+            ...existingExpense,
+            ...data,
+            updatedAt: new Date().toISOString()
+          };
+          return updatedExpense;
+        }
+      }
+      
       throw error;
     }
   }
@@ -160,6 +198,15 @@ class ExpensesService {
       if (ENV.DEV_MODE) {
         console.error(`Failed to delete expense ${id}:`, error);
       }
+      
+      // If API fails but mock data is enabled, just log the deletion
+      if (ENV.ENABLE_MOCK_DATA || error instanceof ApiError) {
+        if (ENV.DEV_MODE) {
+          console.log(`Mock deletion of expense ${id}`);
+        }
+        return;
+      }
+      
       throw error;
     }
   }

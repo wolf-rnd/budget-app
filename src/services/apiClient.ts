@@ -20,6 +20,8 @@ export class ApiError extends Error {
 export class ApiClient {
   private baseURL: string;
   private timeout: number;
+  private retryAttempts: number = 2;
+  private retryDelay: number = 1000;
 
   constructor() {
     this.baseURL = ENV.API_BASE_URL;
@@ -28,7 +30,8 @@ export class ApiClient {
 
   private async makeRequest<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    attempt: number = 1
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     const token = localStorage.getItem('authToken');
@@ -53,6 +56,15 @@ export class ApiClient {
       clearTimeout(timeoutId);
       
       if (!response.ok) {
+        // Handle specific HTTP status codes
+        if (response.status >= 500 && attempt <= this.retryAttempts) {
+          if (ENV.DEV_MODE) {
+            console.warn(`Server error (${response.status}), retrying attempt ${attempt}/${this.retryAttempts}`);
+          }
+          await this.delay(this.retryDelay * attempt);
+          return this.makeRequest(endpoint, options, attempt + 1);
+        }
+        
         throw new ApiError(
           `HTTP error! status: ${response.status}`,
           response.status
@@ -72,7 +84,27 @@ export class ApiClient {
       }
       
       if (error.name === 'AbortError') {
-        throw new ApiError('Request timeout', 408, 'TIMEOUT');
+        if (attempt <= this.retryAttempts) {
+          if (ENV.DEV_MODE) {
+            console.warn(`Request timeout, retrying attempt ${attempt}/${this.retryAttempts}`);
+          }
+          await this.delay(this.retryDelay * attempt);
+          return this.makeRequest(endpoint, options, attempt + 1);
+        }
+        throw new ApiError('Request timeout after retries', 408, 'TIMEOUT');
+      }
+      
+      // Handle network errors with retry
+      if (attempt <= this.retryAttempts && (
+        error.message.includes('fetch') || 
+        error.message.includes('network') ||
+        error.message.includes('socket hang up')
+      )) {
+        if (ENV.DEV_MODE) {
+          console.warn(`Network error, retrying attempt ${attempt}/${this.retryAttempts}:`, error.message);
+        }
+        await this.delay(this.retryDelay * attempt);
+        return this.makeRequest(endpoint, options, attempt + 1);
       }
       
       throw new ApiError(
@@ -81,6 +113,10 @@ export class ApiClient {
         'NETWORK_ERROR'
       );
     }
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   private generateUserId(): string {

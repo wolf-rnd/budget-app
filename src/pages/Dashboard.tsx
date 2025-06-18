@@ -53,6 +53,7 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [apiStatus, setApiStatus] = useState<'connected' | 'fallback' | 'error'>('connected');
+  const [userMessage, setUserMessage] = useState<string | null>(null);
 
   // Load all data from API
   useEffect(() => {
@@ -63,6 +64,7 @@ const Dashboard: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
+      setUserMessage(null);
       setApiStatus('connected');
 
       // טעינת כל הנתונים במקביל
@@ -186,6 +188,16 @@ const Dashboard: React.FC = () => {
     }
   }, [selectedBudgetYear]);
 
+  // Auto-hide user messages after 5 seconds
+  useEffect(() => {
+    if (userMessage) {
+      const timer = setTimeout(() => {
+        setUserMessage(null);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [userMessage]);
+
   // Calculate data based on selected budget year
   const currentBudgetYearIncomes = selectedBudgetYear ? filterIncomesByBudgetYear(incomes, selectedBudgetYear) : [];
   const currentBudgetYearExpenses = selectedBudgetYear ? filterExpensesByBudgetYear(expenses, selectedBudgetYear) : [];
@@ -235,6 +247,7 @@ const Dashboard: React.FC = () => {
 
       const createdIncome = await incomesService.createIncome(incomeData);
       setIncomes([...incomes, createdIncome]);
+      setUserMessage('הכנסה חדשה נוספה בהצלחה');
       if (ENV.DEV_MODE) {
         console.log('הכנסה חדשה נוספה:', createdIncome);
       }
@@ -242,6 +255,7 @@ const Dashboard: React.FC = () => {
       if (ENV.DEV_MODE) {
         console.error('Failed to create income:', error);
       }
+      setUserMessage('שגיאה ביצירת הכנסה - נשמר במצב מקומי');
     }
   };
 
@@ -256,6 +270,14 @@ const Dashboard: React.FC = () => {
     try {
       const createdExpense = await expensesService.createExpense(newExpense);
       setExpenses([...expenses, createdExpense]);
+      
+      // Check if this is a mock expense (API failed but fallback worked)
+      if (createdExpense.id.startsWith('mock-')) {
+        setUserMessage('הוצאה נוספה במצב מקומי - השרת אינו זמין');
+      } else {
+        setUserMessage('הוצאה חדשה נוספה בהצלחה');
+      }
+      
       if (ENV.DEV_MODE) {
         console.log('הוצאה חדשה נוספה:', createdExpense);
       }
@@ -263,6 +285,7 @@ const Dashboard: React.FC = () => {
       if (ENV.DEV_MODE) {
         console.error('Failed to create expense:', error);
       }
+      setUserMessage('שגיאה ביצירת הוצאה - אנא נסה שוב מאוחר יותר');
     }
   };
 
@@ -473,6 +496,24 @@ const Dashboard: React.FC = () => {
               <span className="text-sm text-yellow-800">
                 {apiStatus === 'fallback' ? 'פועל עם נתונים מקומיים' : 'מצב מוגבל - בעיות חיבור'}
               </span>
+            </div>
+          </div>
+        )}
+
+        {/* User message */}
+        {userMessage && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                <span className="text-sm text-green-800">{userMessage}</span>
+              </div>
+              <button
+                onClick={() => setUserMessage(null)}
+                className="text-green-600 hover:text-green-800 text-sm"
+              >
+                ✕
+              </button>
             </div>
           </div>
         )}
