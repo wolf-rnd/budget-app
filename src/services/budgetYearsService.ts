@@ -59,7 +59,8 @@ class BudgetYearsService {
   // GET /budget-years - קבלת כל שנות התקציב
   async getAllBudgetYears(): Promise<BudgetYear[]> {
     try {
-      return await this.apiCall<BudgetYear[]>('/budget-years');
+      const response = await this.apiCall<{ data: BudgetYear[] }>('/budget-years');
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch budget years:', error);

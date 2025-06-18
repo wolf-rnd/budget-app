@@ -87,7 +87,8 @@ class TasksService {
       const queryString = params.toString();
       const endpoint = queryString ? `/tasks?${queryString}` : '/tasks';
       
-      return await this.apiCall<Task[]>(endpoint);
+      const response = await this.apiCall<Task[]>(endpoint);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch tasks:', error);

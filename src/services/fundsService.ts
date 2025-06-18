@@ -61,7 +61,8 @@ class FundsService {
   async getAllFunds(budgetYearId?: string): Promise<Fund[]> {
     try {
       const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
-      return await this.apiCall<Fund[]>(`/funds${params}`);
+      const response = await this.apiCall<{ data: Fund[] }>(`/funds${params}`);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch funds:', error);

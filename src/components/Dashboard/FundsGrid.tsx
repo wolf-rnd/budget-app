@@ -10,17 +10,25 @@ interface FundsGridProps {
   onMonthChange: (month: number) => void;
 }
 
-const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onCloseDailyFund, onAddMoneyToEnvelope, onMonthChange }) => {
-  const [showEnvelopeInput, setShowEnvelopeInput] = useState(false);
-  const [envelopeAmount, setEnvelopeAmount] = useState('');
-  const [showClosureInput, setShowClosureInput] = useState(false);
-  const [remainingAmount, setRemainingAmount] = useState('');
+const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onCloseDailyFund, onAddMoneyToEnvelope, onMonthCha  // State for 'I am owed' section
+  const [showOwedEnvelopeInput, setShowOwedEnvelopeInput] = useState(false);
+  const [owedEnvelopeAmount, setOwedEnvelopeAmount] = useState('');
+  const [showOwedClosureInput, setShowOwedClosureInput] = useState(false);
+  const [owedRemainingAmount, setOwedRemainingAmount] = useState('');
+
+  // State for 'I owe' section
+  const [showOweEnvelopeInput, setShowOweEnvelopeInput] = useState(false);
+  const [oweEnvelopeAmount, setOweEnvelopeAmount] = useState('');
+  const [showOweClosureInput, setShowOweClosureInput] = useState(false);
+  const [oweRemainingAmount, setOweRemainingAmount] = useState('');
 
   const level1Funds = funds.filter(fund => fund.level === 1);
   const level2Funds = funds.filter(fund => fund.level === 2);
   const level3Funds = funds.filter(fund => fund.level === 3);
-
-  const formatCurrency = (amount: number) => amount.toLocaleString('he-IL');
+  const formatCurrency = (amount: number | undefined | null) => {
+    if (amount === undefined || amount === null) return '0.00';
+    return amount.toLocaleString('he-IL');
+  };
 
   const getMonthName = (monthNumber: number) => {
     const months = [
@@ -44,38 +52,72 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onClo
     return <DollarSign size={18} className="text-gray-600" />;
   };
 
-  const handleEnvelopeSubmit = () => {
-    if (envelopeAmount && Number(envelopeAmount) > 0) {
-      onAddMoneyToEnvelope(Number(envelopeAmount));
-      setEnvelopeAmount('');
-      setShowEnvelopeInput(false);
+  // Handlers for 'I am owed' section
+  const handleOwedEnvelopeSubmit = () => {
+    if (owedEnvelopeAmount && Number(owedEnvelopeAmount) > 0) {
+      onAddMoneyToEnvelope(Number(owedEnvelopeAmount));
+      setOwedEnvelopeAmount('');
+      setShowOwedEnvelopeInput(false);
     }
   };
 
-  const handleEnvelopeCancel = () => {
-    setEnvelopeAmount('');
-    setShowEnvelopeInput(false);
+  const handleOwedEnvelopeCancel = () => {
+    setOwedEnvelopeAmount('');
+    setShowOwedEnvelopeInput(false);
   };
 
-  const handleClosureSubmit = () => {
-    if (remainingAmount && Number(remainingAmount) >= 0) {
-      onCloseDailyFund(Number(remainingAmount));
-      setRemainingAmount('');
-      setShowClosureInput(false);
+  const handleOwedClosureSubmit = () => {
+    if (owedRemainingAmount && Number(owedRemainingAmount) >= 0) {
+      onCloseDailyFund(Number(owedRemainingAmount));
+      setOwedRemainingAmount('');
+      setShowOwedClosureInput(false);
     }
   };
 
-  const handleClosureCancel = () => {
-    setRemainingAmount('');
-    setShowClosureInput(false);
+  const handleOwedClosureCancel = () => {
+    setOwedRemainingAmount('');
+    setShowOwedClosureInput(false);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent, action: 'envelope' | 'closure') => {
+  // Handlers for 'I owe' section
+  const handleOweEnvelopeSubmit = () => {
+    if (oweEnvelopeAmount && Number(oweEnvelopeAmount) > 0) {
+      onAddMoneyToEnvelope(Number(oweEnvelopeAmount));
+      setOweEnvelopeAmount('');
+      setShowOweEnvelopeInput(false);
+    }
+  };
+
+  const handleOweEnvelopeCancel = () => {
+    setOweEnvelopeAmount('');
+    setShowOweEnvelopeInput(false);
+  };
+
+  const handleOweClosureSubmit = () => {
+    if (oweRemainingAmount && Number(oweRemainingAmount) >= 0) {
+      onCloseDailyFund(Number(oweRemainingAmount));
+      setOweRemainingAmount('');
+      setShowOweClosureInput(false);
+    }
+  };
+
+  const handleOweClosureCancel = () => {
+    setOweRemainingAmount('');
+    setShowOweClosureInput(false);
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent, action: 'owedEnvelope' | 'owedClosure' | 'oweEnvelope' | 'oweClosure') => {
     if (e.key === 'Enter') {
-      if (action === 'envelope') {
-        handleEnvelopeSubmit();
-      } else {
-        handleClosureSubmit();
+      if (action === 'owedEnvelope') handleOwedEnvelopeSubmit();
+      else if (action === 'owedClosure') handleOwedClosureSubmit();
+      else if (action === 'oweEnvelope') handleOweEnvelopeSubmit();
+      else if (action === 'oweClosure') handleOweClosureSubmit();
+    } else if (e.key === 'Escape') {
+      if (action === 'owedEnvelope') handleOwedEnvelopeCancel();
+      else if (action === 'owedClosure') handleOwedClosureCancel();
+      else if (action === 'oweEnvelope') handleOweEnvelopeCancel();
+      else if (action === 'oweClosure') handleOweClosureCancel();
+andleClosureSubmit();
       }
     } else if (e.key === 'Escape') {
       if (action === 'envelope') {
@@ -102,76 +144,153 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onClo
               <div>
                 <h3 className="text-lg font-bold text-emerald-800">{fund.name}</h3>
                 <p className="text-sm text-emerald-600 font-medium">
-                  חודש {getMonthName(currentDisplayMonth)} {String(currentDisplayMonth).padStart(2, '0')}
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              {!showEnvelopeInput && !showClosureInput ? (
-                <>
-                  <button
-                    onClick={() => setShowEnvelopeInput(true)}
-                    className="bg-gray-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-600 transition-colors flex items-center gap-2 shadow-md"
-                  >
-                    <PlusCircle size={16} />
-                    הוספה למעטפה
-                  </button>
-                  <button
-                    onClick={() => setShowClosureInput(true)}
-                    className="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors flex items-center gap-2 shadow-md"
-                  >
-                    <Calendar size={16} />
-                    סגירת חודש
-                  </button>
-                </>
-              ) : showEnvelopeInput ? (
-                <div className="flex items-center gap-2 bg-white rounded-lg p-2 shadow-md border-2 border-emerald-300">
-                  <input
-                    type="number"
-                    value={envelopeAmount}
-                    onChange={(e) => setEnvelopeAmount(e.target.value)}
-                    onKeyDown={(e) => handleKeyPress(e, 'envelope')}
-                    placeholder="סכום"
-                    className="w-24 p-1 border border-emerald-200 rounded text-sm focus:border-emerald-400 focus:ring-1 focus:ring-emerald-200"
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleEnvelopeSubmit}
-                    className="bg-emerald-500 text-white p-1 rounded hover:bg-emerald-600 transition-colors"
-                    title="אישור"
-                  >
-                    <Check size={14} />
-                  </button>
-                  <button
-                    onClick={handleEnvelopeCancel}
-                    className="bg-gray-400 text-white p-1 rounded hover:bg-gray-500 transition-colors"
-                    title="ביטול"
-                  >
-                    <X size={14} />
-                  </button>
-                </div>
+                  חודש {getMonth              {fund.name.includes('חייבים לי') ? (
+                /* I am owed section */
+                !showOwedEnvelopeInput && !showOwedClosureInput ? (
+                  <>
+                    <button
+                      onClick={() => setShowOwedEnvelopeInput(true)}
+                      className="bg-gray-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-600 transition-colors flex items-center gap-2 shadow-md"
+                    >
+                      <PlusCircle size={16} />
+                      הוספה למעטפה
+                    </button>
+                    <button
+                      onClick={() => setShowOwedClosureInput(true)}
+                      className="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors flex items-center gap-2 shadow-md"
+                    >
+                      <Calendar size={16} />
+                      סגירת חודש
+                    </button>
+                  </>
+                ) : showOwedEnvelopeInput ? (
+                  <div className="flex items-center gap-2 bg-white rounded-lg p-2 shadow-md border-2 border-emerald-300">
+                    <input
+                      type="number"
+                      value={owedEnvelopeAmount}
+                      onChange={(e) => setOwedEnvelopeAmount(e.target.value)}
+                      onKeyDown={(e) => handleKeyPress(e, 'owedEnvelope')}
+                      placeholder="סכום"
+                      className="w-24 p-1 border border-emerald-200 rounded text-sm focus:border-emerald-400 focus:ring-1 focus:ring-emerald-200"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleOwedEnvelopeSubmit}
+                      className="bg-emerald-500 text-white p-1 rounded hover:bg-emerald-600 transition-colors"
+                      title="אישור"
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      onClick={handleOwedEnvelopeCancel}
+                      className="bg-gray-400 text-white p-1 rounded hover:bg-gray-500 transition-colors"
+                      title="ביטול"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 bg-white rounded-lg p-2 shadow-md border-2 border-orange-300">
+                    <span className="text-xs text-gray-600 whitespace-nowrap">נותר במעטפה:</span>
+                    <input
+                      type="number"
+                      value={owedRemainingAmount}
+                      onChange={(e) => setOwedRemainingAmount(e.target.value)}
+                      onKeyDown={(e) => handleKeyPress(e, 'owedClosure')}
+                      placeholder="0"
+                      className="w-20 p-1 border border-orange-200 rounded text-sm focus:border-orange-400 focus:ring-1 focus:ring-orange-200"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleOwedClosureSubmit}
+                      className="bg-orange-500 text-white p-1 rounded hover:bg-orange-600 transition-colors"
+                      title="סגירת חודש"
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      onClick={handleOwedClosureCancel}
+                      className="bg-gray-400 text-white p-1 rounded hover:bg-gray-500 transition-colors"
+                      title="ביטול"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )
               ) : (
-                <div className="flex items-center gap-2 bg-white rounded-lg p-2 shadow-md border-2 border-orange-300">
-                  <span className="text-xs text-gray-600 whitespace-nowrap">נותר במעטפה:</span>
-                  <input
-                    type="number"
-                    value={remainingAmount}
-                    onChange={(e) => setRemainingAmount(e.target.value)}
-                    onKeyDown={(e) => handleKeyPress(e, 'closure')}
-                    placeholder="0"
-                    className="w-20 p-1 border border-orange-200 rounded text-sm focus:border-orange-400 focus:ring-1 focus:ring-orange-200"
-                    autoFocus
-                  />
-                  <button
-                    onClick={handleClosureSubmit}
-                    className="bg-orange-500 text-white p-1 rounded hover:bg-orange-600 transition-colors"
-                    title="סגירת חודש"
-                  >
-                    <Check size={14} />
-                  </button>
-                  <button
-                    onClick={handleClosureCancel}
-                    className="bg-gray-400 text-white p-1 rounded hover:bg-gray-500 transition-colors"
+                /* I owe section */
+                !showOweEnvelopeInput && !showOweClosureInput ? (
+                  <>
+                    <button
+                      onClick={() => setShowOweEnvelopeInput(true)}
+                      className="bg-gray-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-600 transition-colors flex items-center gap-2 shadow-md"
+                    >
+                      <PlusCircle size={16} />
+                      הוספה למעטפה
+                    </button>
+                    <button
+                      onClick={() => setShowOweClosureInput(true)}
+                      className="bg-gray-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-700 transition-colors flex items-center gap-2 shadow-md"
+                    >
+                      <Calendar size={16} />
+                      סגירת חודש
+                    </button>
+                  </>
+                ) : showOweEnvelopeInput ? (
+                  <div className="flex items-center gap-2 bg-white rounded-lg p-2 shadow-md border-2 border-emerald-300">
+                    <input
+                      type="number"
+                      value={oweEnvelopeAmount}
+                      onChange={(e) => setOweEnvelopeAmount(e.target.value)}
+                      onKeyDown={(e) => handleKeyPress(e, 'oweEnvelope')}
+                      placeholder="סכום"
+                      className="w-24 p-1 border border-emerald-200 rounded text-sm focus:border-emerald-400 focus:ring-1 focus:ring-emerald-200"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleOweEnvelopeSubmit}
+                      className="bg-emerald-500 text-white p-1 rounded hover:bg-emerald-600 transition-colors"
+                      title="אישור"
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      onClick={handleOweEnvelopeCancel}
+                      className="bg-gray-400 text-white p-1 rounded hover:bg-gray-500 transition-colors"
+                      title="ביטול"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 bg-white rounded-lg p-2 shadow-md border-2 border-orange-300">
+                    <span className="text-xs text-gray-600 whitespace-nowrap">נותר במעטפה:</span>
+                    <input
+                      type="number"
+                      value={oweRemainingAmount}
+                      onChange={(e) => setOweRemainingAmount(e.target.value)}
+                      onKeyDown={(e) => handleKeyPress(e, 'oweClosure')}
+                      placeholder="0"
+                      className="w-20 p-1 border border-orange-200 rounded text-sm focus:border-orange-400 focus:ring-1 focus:ring-orange-200"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleOweClosureSubmit}
+                      className="bg-orange-500 text-white p-1 rounded hover:bg-orange-600 transition-colors"
+                      title="סגירת חודש"
+                    >
+                      <Check size={14} />
+                    </button>
+                    <button
+                      onClick={handleOweClosureCancel}
+                      className="bg-gray-400 text-white p-1 rounded hover:bg-gray-500 transition-colors"
+                      title="ביטול"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                )
+ver:bg-gray-500 transition-colors"
                     title="ביטול"
                   >
                     <X size={14} />
@@ -236,6 +355,38 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onClo
               </div>
               
               {/* נותר */}
+              <div className="p-1 bg-gray-50 rounded-lg border border-gray-200 w-[70px] h-full">
+                <div className="flex items-center justify-center gap-1 mb-2">
+                  <Coins size={14} className="text-green-600" />
+                  <p className="text-xs text-gray-600 font-medium">נותר</p>
+                </div>
+                <p className="font-bold text-green-600 text-center">{formatCurrency(fund.amount - (fund.spent || 0))}</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* שורה שלישית - קופות עודפים */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {level3Funds.map(fund => (
+          <div key={fund.id} className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-200 hover:shadow-xl hover:border-yellow-300 transition-all duration-300">
+            <div className="flex items-center gap-3 mb-3">
+              {getFundIcon(fund.name)}
+              <h3 className="text-lg font-bold text-gray-800">{fund.name}</h3>
+            </div>
+            <div className="flex items-center justify-center gap-2">
+              <DollarSign size={20} className="text-yellow-600" />
+              <p className="text-xl font-bold text-gray-800 text-center">{formatCurrency(fund.amount)}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export default FundsGrid;
               <div className="p-1 bg-gray-50 rounded-lg border border-gray-200 w-[70px] h-full">
                 <div className="flex items-center justify-center gap-1 mb-2">
                   <Coins size={14} className="text-green-600" />

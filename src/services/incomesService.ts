@@ -88,7 +88,8 @@ class IncomesService {
       const queryString = params.toString();
       const endpoint = queryString ? `/incomes?${queryString}` : '/incomes';
       
-      return await this.apiCall<Income[]>(endpoint);
+      const response = await this.apiCall<Income[]>(endpoint);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch incomes:', error);

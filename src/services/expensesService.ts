@@ -95,7 +95,8 @@ class ExpensesService {
       const queryString = params.toString();
       const endpoint = queryString ? `/expenses?${queryString}` : '/expenses';
       
-      return await this.apiCall<Expense[]>(endpoint);
+      const response = await this.apiCall<Expense[]>(endpoint);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch expenses:', error);

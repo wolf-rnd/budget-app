@@ -80,7 +80,8 @@ class TitheService {
       const queryString = params.toString();
       const endpoint = queryString ? `/tithe?${queryString}` : '/tithe';
       
-      return await this.apiCall<TitheGiven[]>(endpoint);
+      const response = await this.apiCall<TitheGiven[]>(endpoint);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch tithes:', error);

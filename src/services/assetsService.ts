@@ -77,7 +77,8 @@ class AssetsService {
       const queryString = params.toString();
       const endpoint = queryString ? `/assets?${queryString}` : '/assets';
       
-      return await this.apiCall<AssetSnapshot[]>(endpoint);
+      const response = await this.apiCall<AssetSnapshot[]>(endpoint);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch asset snapshots:', error);

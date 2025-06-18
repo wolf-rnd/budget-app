@@ -85,6 +85,18 @@ const Dashboard: React.FC = () => {
         assetsService.getAllAssetSnapshots(),
         categoriesService.getAllCategories()
       ]);
+      console.log('budgetYearsData:', budgetYearsData);
+
+      // Ensure budgetYearsData is an array
+      const years = Array.isArray(budgetYearsData)
+      ? budgetYearsData
+      : (budgetYearsData && Array.isArray(budgetYearsData.data))
+        ? budgetYearsData.data
+        : [];
+    if (years.length === 0) {
+      throw new Error('Invalid budget years data format');
+    }
+    setBudgetYears(years);
 
       setBudgetYears(budgetYearsData);
       setFunds(fundsData);
@@ -100,11 +112,11 @@ const Dashboard: React.FC = () => {
       const savedBudgetYearId = localStorage.getItem('selectedBudgetYearId');
       let initialBudgetYear: BudgetYear | null = null;
 
-      if (savedBudgetYearId) {
+      if (savedBudgetYearId && Array.isArray(budgetYearsData)) {
         initialBudgetYear = budgetYearsData.find(year => year.id === savedBudgetYearId) || null;
       }
 
-      if (!initialBudgetYear) {
+      if (!initialBudgetYear && Array.isArray(budgetYearsData)) {
         initialBudgetYear = getActiveBudgetYear(budgetYearsData) || getLatestBudgetYear(budgetYearsData);
       }
 

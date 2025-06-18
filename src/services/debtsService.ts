@@ -82,7 +82,8 @@ class DebtsService {
       const queryString = params.toString();
       const endpoint = queryString ? `/debts?${queryString}` : '/debts';
       
-      return await this.apiCall<Debt[]>(endpoint);
+      const response = await this.apiCall<Debt[]>(endpoint);
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch debts:', error);

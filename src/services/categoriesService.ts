@@ -21,7 +21,8 @@ export interface UpdateCategoryRequest {
 }
 
 class CategoriesService {
-  private baseURL = '/api'; // Using proxy path for development
+  private baseURL = ENV.API_BASE_URL;
+  
 
   // Helper method for making API calls
   private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -57,7 +58,8 @@ class CategoriesService {
   // GET /categories - קבלת כל הקטגוריות
   async getAllCategories(): Promise<Category[]> {
     try {
-      return await this.apiCall<Category[]>('/categories');
+      const response = await this.apiCall<Category[]>('/categories');
+      return response.data;
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to fetch categories:', error);
