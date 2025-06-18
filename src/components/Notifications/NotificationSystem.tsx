@@ -1,5 +1,5 @@
 import React, { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { X, AlertCircle, Wifi, WifiOff, Server, Clock } from 'lucide-react';
+import { X, AlertCircle, Wifi, WifiOff, Server, Clock, CheckCircle } from 'lucide-react';
 
 export interface Notification {
   id: string;
@@ -42,14 +42,14 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
       ...notification,
       id: `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date(),
-      autoHide: notification.autoHide ?? true,
-      duration: notification.duration ?? 8000,
+      autoHide: notification.autoHide ?? (notification.type === 'success'),
+      duration: notification.duration ?? (notification.type === 'error' ? 0 : 6000),
     };
 
-    setNotifications(prev => [newNotification, ...prev]);
+    setNotifications(prev => [newNotification, ...prev.slice(0, 4)]); // Keep max 5 notifications
 
     // Auto-hide notification if enabled
-    if (newNotification.autoHide) {
+    if (newNotification.autoHide && newNotification.duration > 0) {
       setTimeout(() => {
         removeNotification(newNotification.id);
       }, newNotification.duration);
@@ -85,13 +85,13 @@ const NotificationContainer: React.FC = () => {
   return (
     <div className="fixed top-4 left-4 z-50 space-y-3 max-w-md">
       {notifications.length > 1 && (
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-xs text-gray-500 font-medium">
+        <div className="flex justify-between items-center mb-2 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1 shadow-sm border">
+          <span className="text-xs text-gray-600 font-medium">
             {notifications.length} התראות
           </span>
           <button
             onClick={clearAll}
-            className="text-xs text-gray-500 hover:text-gray-700 underline"
+            className="text-xs text-gray-500 hover:text-gray-700 underline transition-colors"
           >
             נקה הכל
           </button>
@@ -147,7 +147,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onRem
       case 'info':
         return <Wifi size={20} className="text-blue-500" />;
       case 'success':
-        return <Wifi size={20} className="text-green-500" />;
+        return <CheckCircle size={20} className="text-green-500" />;
       default:
         return <AlertCircle size={20} className="text-gray-500" />;
     }
@@ -175,15 +175,15 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onRem
   const getColorClasses = () => {
     switch (notification.type) {
       case 'error':
-        return 'bg-red-50 border-red-200 text-red-800';
+        return 'bg-red-50 border-red-300 text-red-800 shadow-red-100';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200 text-yellow-800';
+        return 'bg-yellow-50 border-yellow-300 text-yellow-800 shadow-yellow-100';
       case 'info':
-        return 'bg-blue-50 border-blue-200 text-blue-800';
+        return 'bg-blue-50 border-blue-300 text-blue-800 shadow-blue-100';
       case 'success':
-        return 'bg-green-50 border-green-200 text-green-800';
+        return 'bg-green-50 border-green-300 text-green-800 shadow-green-100';
       default:
-        return 'bg-gray-50 border-gray-200 text-gray-800';
+        return 'bg-gray-50 border-gray-300 text-gray-800 shadow-gray-100';
     }
   };
 
@@ -196,9 +196,9 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onRem
       `}
     >
       <div className={`
-        rounded-lg border-2 shadow-lg p-4 max-w-md
+        rounded-xl border-2 shadow-lg p-4 max-w-md backdrop-blur-sm
         ${getColorClasses()}
-        hover:shadow-xl transition-shadow duration-200
+        hover:shadow-xl transition-all duration-200
       `}>
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 mt-0.5">
@@ -208,27 +208,27 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onRem
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <h4 className="text-sm font-bold mb-1">
+                <h4 className="text-sm font-bold mb-1 flex items-center gap-2">
                   {notification.title}
                   {notification.status && (
-                    <span className="mr-2 text-xs font-normal opacity-75">
-                      ({notification.status})
+                    <span className="text-xs font-normal opacity-75 bg-black/10 px-2 py-0.5 rounded-full">
+                      {notification.status}
                     </span>
                   )}
                 </h4>
                 
-                <p className="text-sm opacity-90 break-words">
+                <p className="text-sm opacity-90 break-words leading-relaxed">
                   {notification.message}
                 </p>
                 
                 {notification.status && (
-                  <p className="text-xs opacity-75 mt-1 font-medium">
+                  <p className="text-xs opacity-75 mt-2 font-medium bg-black/5 px-2 py-1 rounded">
                     {getStatusText()}
                   </p>
                 )}
                 
                 {notification.endpoint && (
-                  <p className="text-xs opacity-60 mt-1 font-mono break-all">
+                  <p className="text-xs opacity-60 mt-2 font-mono break-all bg-black/5 px-2 py-1 rounded">
                     {notification.endpoint}
                   </p>
                 )}
@@ -236,33 +236,34 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onRem
               
               <button
                 onClick={handleRemove}
-                className="flex-shrink-0 text-current opacity-60 hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-black/10"
+                className="flex-shrink-0 text-current opacity-60 hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-black/10"
                 title="סגור התראה"
               >
                 <X size={16} />
               </button>
             </div>
             
-            <div className="flex items-center justify-between mt-2 text-xs opacity-60">
-              <span>
+            <div className="flex items-center justify-between mt-3 text-xs opacity-60">
+              <span className="font-medium">
                 {notification.timestamp.toLocaleTimeString('he-IL', {
                   hour: '2-digit',
-                  minute: '2-digit'
+                  minute: '2-digit',
+                  second: '2-digit'
                 })}
               </span>
               
-              {notification.autoHide && (
-                <span>נסגר אוטומטי</span>
+              {notification.autoHide && notification.duration > 0 && (
+                <span className="bg-black/10 px-2 py-0.5 rounded">נסגר אוטומטי</span>
               )}
             </div>
           </div>
         </div>
         
         {/* Progress bar for auto-hide */}
-        {notification.autoHide && (
-          <div className="mt-3 w-full bg-black/10 rounded-full h-1">
+        {notification.autoHide && notification.duration > 0 && (
+          <div className="mt-3 w-full bg-black/10 rounded-full h-1.5">
             <div 
-              className="bg-current h-1 rounded-full animate-progress-bar opacity-40"
+              className="bg-current h-1.5 rounded-full animate-progress-bar opacity-40"
               style={{
                 animationDuration: `${notification.duration}ms`
               }}

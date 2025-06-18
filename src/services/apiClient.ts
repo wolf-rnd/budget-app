@@ -48,7 +48,7 @@ export class ApiClient {
         message,
         status,
         endpoint,
-        autoHide: type !== 'error', // Errors stay visible until manually closed
+        autoHide: type === 'success',
         duration: type === 'error' ? 0 : 6000
       });
     }
@@ -71,7 +71,7 @@ export class ApiClient {
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
-        'x-user-id': this.generateUserId(),
+        'x-user-id': '11111111-1111-1111-1111-111111111111',
         ...(token && { 'Authorization': `Bearer ${token}` }),
         ...options.headers,
       },
@@ -101,15 +101,6 @@ export class ApiClient {
           response.status,
           endpoint
         );
-        
-        // Handle specific HTTP status codes with retry
-        if (response.status >= 500 && attempt <= this.retryAttempts) {
-          if (ENV.DEV_MODE) {
-            console.warn(`Server error (${response.status}), retrying attempt ${attempt}/${this.retryAttempts}`);
-          }
-          await this.delay(this.retryDelay * attempt);
-          return this.makeRequest(endpoint, options, attempt + 1);
-        }
         
         throw new ApiError(
           serverMessage || errorMessage,
@@ -160,13 +151,6 @@ export class ApiClient {
           endpoint
         );
         
-        if (attempt <= this.retryAttempts) {
-          if (ENV.DEV_MODE) {
-            console.warn(`Request timeout, retrying attempt ${attempt}/${this.retryAttempts}`);
-          }
-          await this.delay(this.retryDelay * attempt);
-          return this.makeRequest(endpoint, options, attempt + 1);
-        }
         throw new ApiError(timeoutMessage, 408, 'TIMEOUT', endpoint);
       }
       
@@ -189,19 +173,6 @@ export class ApiClient {
         endpoint
       );
       
-      // Handle network errors with retry
-      if (attempt <= this.retryAttempts && (
-        error.message.includes('fetch') || 
-        error.message.includes('network') ||
-        error.message.includes('socket hang up')
-      )) {
-        if (ENV.DEV_MODE) {
-          console.warn(`Network error, retrying attempt ${attempt}/${this.retryAttempts}:`, error.message);
-        }
-        await this.delay(this.retryDelay * attempt);
-        return this.makeRequest(endpoint, options, attempt + 1);
-      }
-      
       throw new ApiError(
         networkMessage,
         0,
@@ -209,21 +180,6 @@ export class ApiClient {
         endpoint
       );
     }
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
-  private generateUserId(): string {
-    // Try to get user ID from localStorage, or generate a consistent one
-    let userId = localStorage.getItem('userId');
-    if (!userId) {
-      // Generate a more realistic UUID-like string
-      userId = 'user-' + Math.random().toString(36).substr(2, 9) + '-' + Date.now().toString(36);
-      localStorage.setItem('userId', userId);
-    }
-    return userId;
   }
 
   async get<T>(endpoint: string): Promise<ApiResponse<T>> {

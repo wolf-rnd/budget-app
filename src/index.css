@@ -92,7 +92,7 @@ textarea:focus {
 }
 
 .animate-progress-bar {
-  animation: progress-bar 3s linear;
+  animation: progress-bar linear;
 }
 
 .animate-pulse-glow {

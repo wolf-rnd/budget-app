@@ -11,6 +11,7 @@ import AssetsSection from '../components/Dashboard/AssetsSection';
 import QuickAddButtons from '../components/Dashboard/QuickAddButtons';
 import IncomeModal from '../components/Modals/IncomeModal';
 import ExpenseModal from '../components/Modals/ExpenseModal';
+import { useNotifications } from '../components/Notifications/NotificationSystem';
 
 import { 
   getActiveBudgetYear, 
@@ -34,6 +35,7 @@ import { tasksService } from '../services/tasksService';
 import { assetsService } from '../services/assetsService';
 import { categoriesService } from '../services/categoriesService';
 import { fundsService } from '../services/fundsService';
+import { apiClient } from '../services/apiClient';
 
 const Dashboard: React.FC = () => {
   // State management
@@ -52,8 +54,13 @@ const Dashboard: React.FC = () => {
   const [currentDisplayMonth, setCurrentDisplayMonth] = useState<number>(new Date().getMonth() + 1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [apiStatus, setApiStatus] = useState<'connected' | 'fallback' | 'error'>('connected');
-  const [userMessage, setUserMessage] = useState<string | null>(null);
+
+  const { addNotification } = useNotifications();
+
+  // Setup API client notification callback
+  useEffect(() => {
+    apiClient.setNotificationCallback(addNotification);
+  }, [addNotification]);
 
   // Load all data from API
   useEffect(() => {
@@ -64,10 +71,8 @@ const Dashboard: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      setUserMessage(null);
-      setApiStatus('connected');
 
-      // טעינת כל הנתונים במקביל
+      // טעינת כל הנתונים במקביל - ללא fallback למידע מקומי
       const [
         budgetYearsData,
         fundsData,
@@ -79,57 +84,19 @@ const Dashboard: React.FC = () => {
         assetsData,
         categoriesData
       ] = await Promise.all([
-        budgetYearsService.getAllBudgetYears().catch(err => {
-          console.warn('Budget years service failed, using fallback');
-          setApiStatus('fallback');
-          return [];
-        }),
-        fundsService.getAllFunds().catch(err => {
-          console.warn('Funds service failed, using fallback');
-          return [];
-        }),
-        incomesService.getAllIncomes().catch(err => {
-          console.warn('Incomes service failed, using fallback');
-          return [];
-        }),
-        expensesService.getAllExpenses().catch(err => {
-          console.warn('Expenses service failed, using fallback');
-          return [];
-        }),
-        titheService.getAllTithes().catch(err => {
-          console.warn('Tithe service failed, using fallback');
-          return [];
-        }),
-        debtsService.getAllDebts().catch(err => {
-          console.warn('Debts service failed, using fallback');
-          return [];
-        }),
-        tasksService.getAllTasks().catch(err => {
-          console.warn('Tasks service failed, using fallback');
-          return [];
-        }),
-        assetsService.getAllAssetSnapshots().catch(err => {
-          console.warn('Assets service failed, using fallback');
-          return [];
-        }),
-        categoriesService.getAllCategories().catch(err => {
-          console.warn('Categories service failed, using fallback');
-          return [];
-        })
+        budgetYearsService.getAllBudgetYears(),
+        fundsService.getAllFunds(),
+        incomesService.getAllIncomes(),
+        expensesService.getAllExpenses(),
+        titheService.getAllTithes(),
+        debtsService.getAllDebts(),
+        tasksService.getAllTasks(),
+        assetsService.getAllAssetSnapshots(),
+        categoriesService.getAllCategories()
       ]);
 
       if (ENV.DEV_MODE) {
-        console.log('Loaded data:', {
-          budgetYears: budgetYearsData.length,
-          funds: fundsData.length,
-          incomes: incomesData.length,
-          expenses: expensesData.length,
-          tithes: titheData.length,
-          debts: debtsData.length,
-          tasks: tasksData.length,
-          assets: assetsData.length,
-          categories: categoriesData.length
-        });
+        console.log('Loaded data successfully from API');
       }
 
       // Ensure budgetYearsData is an array
@@ -138,13 +105,6 @@ const Dashboard: React.FC = () => {
         : (budgetYearsData && Array.isArray(budgetYearsData.data))
           ? budgetYearsData.data
           : [];
-
-      if (years.length === 0) {
-        setApiStatus('fallback');
-        if (ENV.DEV_MODE) {
-          console.warn('No budget years available, application will run with limited functionality');
-        }
-      }
 
       setBudgetYears(years);
       setFunds(fundsData);
@@ -174,8 +134,7 @@ const Dashboard: React.FC = () => {
       if (ENV.DEV_MODE) {
         console.error('Failed to load dashboard data:', err);
       }
-      setError('שגיאה בטעינת נתוני הדשבורד - האפליקציה פועלת במצב מוגבל');
-      setApiStatus('error');
+      setError('שגיאה בטעינת נתוני הדשבורד');
     } finally {
       setLoading(false);
     }
@@ -187,16 +146,6 @@ const Dashboard: React.FC = () => {
       localStorage.setItem('selectedBudgetYearId', selectedBudgetYear.id);
     }
   }, [selectedBudgetYear]);
-
-  // Auto-hide user messages after 5 seconds
-  useEffect(() => {
-    if (userMessage) {
-      const timer = setTimeout(() => {
-        setUserMessage(null);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [userMessage]);
 
   // Calculate data based on selected budget year
   const currentBudgetYearIncomes = selectedBudgetYear ? filterIncomesByBudgetYear(incomes, selectedBudgetYear) : [];
@@ -247,7 +196,7 @@ const Dashboard: React.FC = () => {
 
       const createdIncome = await incomesService.createIncome(incomeData);
       setIncomes([...incomes, createdIncome]);
-      setUserMessage('הכנסה חדשה נוספה בהצלחה');
+      
       if (ENV.DEV_MODE) {
         console.log('הכנסה חדשה נוספה:', createdIncome);
       }
@@ -255,7 +204,6 @@ const Dashboard: React.FC = () => {
       if (ENV.DEV_MODE) {
         console.error('Failed to create income:', error);
       }
-      setUserMessage('שגיאה ביצירת הכנסה - נשמר במצב מקומי');
     }
   };
 
@@ -271,13 +219,6 @@ const Dashboard: React.FC = () => {
       const createdExpense = await expensesService.createExpense(newExpense);
       setExpenses([...expenses, createdExpense]);
       
-      // Check if this is a mock expense (API failed but fallback worked)
-      if (createdExpense.id.startsWith('mock-')) {
-        setUserMessage('הוצאה נוספה במצב מקומי - השרת אינו זמין');
-      } else {
-        setUserMessage('הוצאה חדשה נוספה בהצלחה');
-      }
-      
       if (ENV.DEV_MODE) {
         console.log('הוצאה חדשה נוספה:', createdExpense);
       }
@@ -285,7 +226,6 @@ const Dashboard: React.FC = () => {
       if (ENV.DEV_MODE) {
         console.error('Failed to create expense:', error);
       }
-      setUserMessage('שגיאה ביצירת הוצאה - אנא נסה שוב מאוחר יותר');
     }
   };
 
@@ -437,29 +377,29 @@ const Dashboard: React.FC = () => {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <h2 className="text-xl font-bold text-gray-800 mb-2">טוען נתונים...</h2>
-          <p className="text-gray-600">אנא המתן בזמן טעינת הנתונים</p>
+          <p className="text-gray-600">מתחבר לשרת ומביא נתונים עדכניים</p>
         </div>
       </div>
     );
   }
 
-  if (error && apiStatus === 'error') {
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center max-w-md">
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-4">
-            <h2 className="text-xl font-bold text-yellow-800 mb-2">מצב מוגבל</h2>
-            <p className="text-yellow-700 mb-4">{error}</p>
-            <div className="text-sm text-yellow-600">
-              <p>האפליקציה פועלת עם נתונים מקומיים בלבד.</p>
-              <p>חלק מהפונקציות עלולות להיות מוגבלות.</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
+            <h2 className="text-xl font-bold text-red-800 mb-2">שגיאה בטעינת הנתונים</h2>
+            <p className="text-red-700 mb-4">{error}</p>
+            <div className="text-sm text-red-600">
+              <p>לא ניתן להתחבר לשרת או לטעון נתונים.</p>
+              <p>אנא בדוק את החיבור לאינטרנט ונסה שוב.</p>
             </div>
           </div>
           <button
             onClick={loadAllData}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            נסה להתחבר שוב
+            נסה שוב
           </button>
         </div>
       </div>
@@ -469,10 +409,10 @@ const Dashboard: React.FC = () => {
   if (!selectedBudgetYear && budgetYears.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-4">
-            <h2 className="text-xl font-bold text-blue-800 mb-2">אין שנות תקציב מוגדרות</h2>
-            <p className="text-blue-700">האפליקציה פועלת במצב הדגמה עם נתונים לדוגמה</p>
+        <div className="text-center max-w-md">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-4">
+            <h2 className="text-xl font-bold text-yellow-800 mb-2">אין שנות תקציב מוגדרות</h2>
+            <p className="text-yellow-700">אנא הגדר שנת תקציב בהגדרות המערכת</p>
           </div>
           <button
             onClick={loadAllData}
@@ -488,36 +428,6 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
-        {/* Status indicator */}
-        {apiStatus !== 'connected' && (
-          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-center">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
-              <span className="text-sm text-yellow-800">
-                {apiStatus === 'fallback' ? 'פועל עם נתונים מקומיים' : 'מצב מוגבל - בעיות חיבור'}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* User message */}
-        {userMessage && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                <span className="text-sm text-green-800">{userMessage}</span>
-              </div>
-              <button
-                onClick={() => setUserMessage(null)}
-                className="text-green-600 hover:text-green-800 text-sm"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-        )}
-
         <TopActions
            selectedBudgetYear={selectedBudgetYear}
            budgetYears={budgetYears}
@@ -551,7 +461,7 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
-              מצב קופות - {selectedBudgetYear?.name || 'נתונים לדוגמה'}
+              מצב קופות - {selectedBudgetYear?.name}
             </h2>
             <FundsGrid
               funds={funds}
