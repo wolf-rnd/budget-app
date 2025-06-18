@@ -10,6 +10,7 @@ export const getBudgetYearByDate = (date: string, budgetYears: BudgetYear[]): Bu
   }) || null;
 };
 
+
 export const getActiveBudgetYear = (budgetYears: BudgetYear[]): BudgetYear | null => {
   return budgetYears.find(year => year.isActive) || budgetYears[0] || null;
 };
