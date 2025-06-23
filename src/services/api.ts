@@ -1,5 +1,5 @@
 // Base API configuration and utilities
-const API_BASE_URL = 'https://messing-family-budget-api.netlify.app/api';
+const API_BASE_URL = 'https://budget-server-y649.onrender.com/api';
 
 // HTTP client utility - DEPRECATED
 // This file is kept for backward compatibility but should not be used

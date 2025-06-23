@@ -11,6 +11,7 @@ import AssetsSection from '../components/Dashboard/AssetsSection';
 import QuickAddButtons from '../components/Dashboard/QuickAddButtons';
 import IncomeModal from '../components/Modals/IncomeModal';
 import ExpenseModal from '../components/Modals/ExpenseModal';
+import { useNotifications } from '../components/Notifications/NotificationSystem';
 
 import { 
   getActiveBudgetYear, 
@@ -34,6 +35,7 @@ import { tasksService } from '../services/tasksService';
 import { assetsService } from '../services/assetsService';
 import { categoriesService } from '../services/categoriesService';
 import { fundsService } from '../services/fundsService';
+import { apiClient } from '../services/apiClient';
 
 const Dashboard: React.FC = () => {
   // State management
@@ -53,6 +55,13 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const { addNotification } = useNotifications();
+
+  // Setup API client notification callback
+  useEffect(() => {
+    apiClient.setNotificationCallback(addNotification);
+  }, [addNotification]);
+
   // Load all data from API
   useEffect(() => {
     loadAllData();
@@ -63,7 +72,7 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // טעינת כל הנתונים במקביל
+      // טעינת כל הנתונים במקביל - ללא fallback למידע מקומי
       const [
         budgetYearsData,
         fundsData,
@@ -86,7 +95,18 @@ const Dashboard: React.FC = () => {
         categoriesService.getAllCategories()
       ]);
 
-      setBudgetYears(budgetYearsData);
+      if (ENV.DEV_MODE) {
+        console.log('Loaded data successfully from API');
+      }
+
+      // Ensure budgetYearsData is an array
+      const years = Array.isArray(budgetYearsData)
+        ? budgetYearsData
+        : (budgetYearsData && Array.isArray(budgetYearsData.data))
+          ? budgetYearsData.data
+          : [];
+
+      setBudgetYears(years);
       setFunds(fundsData);
       setIncomes(incomesData);
       setExpenses(expensesData);
@@ -100,12 +120,12 @@ const Dashboard: React.FC = () => {
       const savedBudgetYearId = localStorage.getItem('selectedBudgetYearId');
       let initialBudgetYear: BudgetYear | null = null;
 
-      if (savedBudgetYearId) {
-        initialBudgetYear = budgetYearsData.find(year => year.id === savedBudgetYearId) || null;
+      if (savedBudgetYearId && Array.isArray(years)) {
+        initialBudgetYear = years.find(year => year.id === savedBudgetYearId) || null;
       }
 
-      if (!initialBudgetYear) {
-        initialBudgetYear = getActiveBudgetYear(budgetYearsData) || getLatestBudgetYear(budgetYearsData);
+      if (!initialBudgetYear && Array.isArray(years)) {
+        initialBudgetYear = getActiveBudgetYear(years) || getLatestBudgetYear(years);
       }
 
       setSelectedBudgetYear(initialBudgetYear);
@@ -114,7 +134,9 @@ const Dashboard: React.FC = () => {
       if (ENV.DEV_MODE) {
         console.error('Failed to load dashboard data:', err);
       }
-      setError('שגיאה בטעינת נתוני הדשבורד');
+      // Use the specific error message from the API client instead of a generic message
+      const errorMessage = err instanceof Error ? err.message : 'שגיאה בטעינת נתוני הדשבורד';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -176,6 +198,7 @@ const Dashboard: React.FC = () => {
 
       const createdIncome = await incomesService.createIncome(incomeData);
       setIncomes([...incomes, createdIncome]);
+      
       if (ENV.DEV_MODE) {
         console.log('הכנסה חדשה נוספה:', createdIncome);
       }
@@ -197,6 +220,7 @@ const Dashboard: React.FC = () => {
     try {
       const createdExpense = await expensesService.createExpense(newExpense);
       setExpenses([...expenses, createdExpense]);
+      
       if (ENV.DEV_MODE) {
         console.log('הוצאה חדשה נוספה:', createdExpense);
       }
@@ -355,7 +379,7 @@ const Dashboard: React.FC = () => {
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <h2 className="text-xl font-bold text-gray-800 mb-2">טוען נתונים...</h2>
-          <p className="text-gray-600">אנא המתן בזמן טעינת הנתונים מהשרת</p>
+          <p className="text-gray-600">מתחבר לשרת ומביא נתונים עדכניים</p>
         </div>
       </div>
     );
@@ -364,9 +388,15 @@ const Dashboard: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-red-800 mb-2">שגיאה בטעינת הנתונים</h2>
-          <p className="text-red-600 mb-4">{error}</p>
+        <div className="text-center max-w-md">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
+            <h2 className="text-xl font-bold text-red-800 mb-2">שגיאה בטעינת הנתונים</h2>
+            <p className="text-red-700 mb-4">{error}</p>
+            <div className="text-sm text-red-600">
+              <p>לא ניתן להתחבר לשרת או לטעון נתונים.</p>
+              <p>אנא בדוק את החיבור לאינטרנט ונסה שוב.</p>
+            </div>
+          </div>
           <button
             onClick={loadAllData}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -378,12 +408,20 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  if (!selectedBudgetYear) {
+  if (!selectedBudgetYear && budgetYears.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-xl font-bold text-gray-800 mb-2">אין שנות תקציב מוגדרות</h2>
-          <p className="text-gray-600">אנא הגדר שנת תקציב בהגדרות המערכת</p>
+        <div className="text-center max-w-md">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-4">
+            <h2 className="text-xl font-bold text-yellow-800 mb-2">אין שנות תקציב מוגדרות</h2>
+            <p className="text-yellow-700">אנא הגדר שנת תקציב בהגדרות המערכת</p>
+          </div>
+          <button
+            onClick={loadAllData}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            רענן נתונים
+          </button>
         </div>
       </div>
     );
@@ -425,7 +463,7 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
-              מצב קופות - {selectedBudgetYear.name}
+              מצב קופות - {selectedBudgetYear?.name}
             </h2>
             <FundsGrid
               funds={funds}
@@ -441,7 +479,7 @@ const Dashboard: React.FC = () => {
               totalBudget={totalBudget}
               totalIncome={totalIncome}
               totalExpenses={totalExpenses}
-              budgetYearMonths={calculateBudgetYearMonths(selectedBudgetYear)}
+              budgetYearMonths={selectedBudgetYear ? calculateBudgetYearMonths(selectedBudgetYear) : 12}
             />
           </div>
         </div>

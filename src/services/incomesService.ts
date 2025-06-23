@@ -1,5 +1,6 @@
 import { Income } from '../types';
 import { ENV } from '../config/env';
+import { apiClient } from './apiClient';
 
 export interface CreateIncomeRequest {
   name: string;
@@ -40,130 +41,56 @@ export interface IncomeSummary {
 }
 
 class IncomesService {
-  private baseURL = ENV.API_BASE_URL;
-
-  // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-    const token = localStorage.getItem('authToken');
-    
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': '11111111-1111-1111-1111-111111111111',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-        ...options.headers,
-      },
-    };
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('API request failed:', error);
-      }
-      throw error;
-    }
-  }
-
   // GET /incomes - קבלת כל ההכנסות (עם פילטרים)
   async getAllIncomes(filters?: IncomeFilters): Promise<Income[]> {
-    try {
-      const params = new URLSearchParams();
-      
-      if (filters?.budgetYearId) params.append('budgetYearId', filters.budgetYearId);
-      if (filters?.month) params.append('month', filters.month.toString());
-      if (filters?.year) params.append('year', filters.year.toString());
-      if (filters?.source) params.append('source', filters.source);
-      if (filters?.page) params.append('page', filters.page.toString());
-      if (filters?.limit) params.append('limit', filters.limit.toString());
+    const params = new URLSearchParams();
+    
+    if (filters?.budgetYearId) params.append('budgetYearId', filters.budgetYearId);
+    if (filters?.month) params.append('month', filters.month.toString());
+    if (filters?.year) params.append('year', filters.year.toString());
+    if (filters?.source) params.append('source', filters.source);
+    if (filters?.page) params.append('page', filters.page.toString());
+    if (filters?.limit) params.append('limit', filters.limit.toString());
 
-      const queryString = params.toString();
-      const endpoint = queryString ? `/incomes?${queryString}` : '/incomes';
-      
-      return await this.apiCall<Income[]>(endpoint);
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('Failed to fetch incomes:', error);
-      }
-      throw error;
-    }
+    const queryString = params.toString();
+    const endpoint = queryString ? `/incomes?${queryString}` : '/incomes';
+    
+    const response = await apiClient.get<Income[]>(endpoint);
+    return response.data;
   }
 
   // GET /incomes/:id - קבלת הכנסה ספציפית
   async getIncomeById(id: string): Promise<Income | null> {
     try {
-      return await this.apiCall<Income>(`/incomes/${id}`);
+      const response = await apiClient.get<Income>(`/incomes/${id}`);
+      return response.data;
     } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error(`Failed to fetch income ${id}:`, error);
-      }
       return null;
     }
   }
 
   // GET /incomes/stats/summary - קבלת סטטיסטיקות הכנסות
   async getIncomeSummary(budgetYearId?: string): Promise<IncomeSummary> {
-    try {
-      const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
-      return await this.apiCall<IncomeSummary>(`/incomes/stats/summary${params}`);
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('Failed to fetch income summary:', error);
-      }
-      throw error;
-    }
+    const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
+    const response = await apiClient.get<IncomeSummary>(`/incomes/stats/summary${params}`);
+    return response.data;
   }
 
   // POST /incomes - יצירת הכנסה חדשה
   async createIncome(data: CreateIncomeRequest): Promise<Income> {
-    try {
-      return await this.apiCall<Income>('/incomes', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('Failed to create income:', error);
-      }
-      throw error;
-    }
+    const response = await apiClient.post<Income>('/incomes', data);
+    return response.data;
   }
 
   // PUT /incomes/:id - עדכון הכנסה
   async updateIncome(id: string, data: UpdateIncomeRequest): Promise<Income> {
-    try {
-      return await this.apiCall<Income>(`/incomes/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error(`Failed to update income ${id}:`, error);
-      }
-      throw error;
-    }
+    const response = await apiClient.put<Income>(`/incomes/${id}`, data);
+    return response.data;
   }
 
   // DELETE /incomes/:id - מחיקת הכנסה
   async deleteIncome(id: string): Promise<void> {
-    try {
-      await this.apiCall<void>(`/incomes/${id}`, {
-        method: 'DELETE',
-      });
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error(`Failed to delete income ${id}:`, error);
-      }
-      throw error;
-    }
+    await apiClient.delete<void>(`/incomes/${id}`);
   }
 }
 

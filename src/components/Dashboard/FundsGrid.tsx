@@ -19,8 +19,10 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onClo
   const level1Funds = funds.filter(fund => fund.level === 1);
   const level2Funds = funds.filter(fund => fund.level === 2);
   const level3Funds = funds.filter(fund => fund.level === 3);
-
-  const formatCurrency = (amount: number) => amount.toLocaleString('he-IL');
+  const formatCurrency = (amount: number | undefined | null): string => {
+    if (amount === undefined || amount === null) return '0.00';
+    return amount.toLocaleString('he-IL');
+  };
 
   const getMonthName = (monthNumber: number) => {
     const months = [

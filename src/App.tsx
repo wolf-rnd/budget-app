@@ -6,6 +6,7 @@ import Income from './pages/Income';
 import Charity from './pages/Charity';
 import Funds from './pages/Funds';
 import Settings from './pages/Settings';
+import { NotificationProvider } from './components/Notifications/NotificationSystem';
 import './index.css';
 
 function App() {
@@ -31,9 +32,11 @@ function App() {
   };
 
   return (
-    <Layout currentPage={currentPage} onPageChange={setCurrentPage}>
-      {renderPage()}
-    </Layout>
+    <NotificationProvider>
+      <Layout currentPage={currentPage} onPageChange={setCurrentPage}>
+        {renderPage()}
+      </Layout>
+    </NotificationProvider>
   );
 }
 

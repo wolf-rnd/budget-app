@@ -1,5 +1,6 @@
 import { Expense } from '../types';
 import { ENV } from '../config/env';
+import { apiClient } from './apiClient';
 
 export interface CreateExpenseRequest {
   name: string;
@@ -43,134 +44,60 @@ export interface ExpenseSummary {
 }
 
 class ExpensesService {
-  private baseURL = ENV.API_BASE_URL;
-
-  // Helper method for making API calls
-  private async apiCall<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-    const token = localStorage.getItem('authToken');
-    
-    const config: RequestInit = {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-user-id': '11111111-1111-1111-1111-111111111111',
-        ...(token && { 'Authorization': `Bearer ${token}` }),
-        ...options.headers,
-      },
-    };
-
-    try {
-      const response = await fetch(url, config);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('API request failed:', error);
-      }
-      throw error;
-    }
-  }
-
   // GET /expenses - קבלת כל ההוצאות (עם פילטרים)
   async getAllExpenses(filters?: ExpenseFilters): Promise<Expense[]> {
-    try {
-      const params = new URLSearchParams();
-      
-      if (filters?.budgetYearId) params.append('budgetYearId', filters.budgetYearId);
-      if (filters?.category) params.append('category', filters.category);
-      if (filters?.fund) params.append('fund', filters.fund);
-      if (filters?.startDate) params.append('startDate', filters.startDate);
-      if (filters?.endDate) params.append('endDate', filters.endDate);
-      if (filters?.minAmount) params.append('minAmount', filters.minAmount.toString());
-      if (filters?.maxAmount) params.append('maxAmount', filters.maxAmount.toString());
-      if (filters?.search) params.append('search', filters.search);
-      if (filters?.page) params.append('page', filters.page.toString());
-      if (filters?.limit) params.append('limit', filters.limit.toString());
+    const params = new URLSearchParams();
+    
+    if (filters?.budgetYearId) params.append('budgetYearId', filters.budgetYearId);
+    if (filters?.category) params.append('category', filters.category);
+    if (filters?.fund) params.append('fund', filters.fund);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.minAmount) params.append('minAmount', filters.minAmount.toString());
+    if (filters?.maxAmount) params.append('maxAmount', filters.maxAmount.toString());
+    if (filters?.search) params.append('search', filters.search);
+    if (filters?.page) params.append('page', filters.page.toString());
+    if (filters?.limit) params.append('limit', filters.limit.toString());
 
-      const queryString = params.toString();
-      const endpoint = queryString ? `/expenses?${queryString}` : '/expenses';
-      
-      return await this.apiCall<Expense[]>(endpoint);
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('Failed to fetch expenses:', error);
-      }
-      throw error;
-    }
+    const queryString = params.toString();
+    const endpoint = queryString ? `/expenses?${queryString}` : '/expenses';
+    
+    const response = await apiClient.get<Expense[]>(endpoint);
+    return response.data;
   }
 
   // GET /expenses/:id - קבלת הוצאה ספציפית
   async getExpenseById(id: string): Promise<Expense | null> {
     try {
-      return await this.apiCall<Expense>(`/expenses/${id}`);
+      const response = await apiClient.get<Expense>(`/expenses/${id}`);
+      return response.data;
     } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error(`Failed to fetch expense ${id}:`, error);
-      }
       return null;
     }
   }
 
   // GET /expenses/stats/summary - קבלת סטטיסטיקות הוצאות
   async getExpenseSummary(budgetYearId?: string): Promise<ExpenseSummary> {
-    try {
-      const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
-      return await this.apiCall<ExpenseSummary>(`/expenses/stats/summary${params}`);
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('Failed to fetch expense summary:', error);
-      }
-      throw error;
-    }
+    const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
+    const response = await apiClient.get<ExpenseSummary>(`/expenses/stats/summary${params}`);
+    return response.data;
   }
 
   // POST /expenses - יצירת הוצאה חדשה
   async createExpense(data: CreateExpenseRequest): Promise<Expense> {
-    try {
-      return await this.apiCall<Expense>('/expenses', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error('Failed to create expense:', error);
-      }
-      throw error;
-    }
+    const response = await apiClient.post<Expense>('/expenses', data);
+    return response.data;
   }
 
   // PUT /expenses/:id - עדכון הוצאה
   async updateExpense(id: string, data: UpdateExpenseRequest): Promise<Expense> {
-    try {
-      return await this.apiCall<Expense>(`/expenses/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      });
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error(`Failed to update expense ${id}:`, error);
-      }
-      throw error;
-    }
+    const response = await apiClient.put<Expense>(`/expenses/${id}`, data);
+    return response.data;
   }
 
   // DELETE /expenses/:id - מחיקת הוצאה
   async deleteExpense(id: string): Promise<void> {
-    try {
-      await this.apiCall<void>(`/expenses/${id}`, {
-        method: 'DELETE',
-      });
-    } catch (error) {
-      if (ENV.DEV_MODE) {
-        console.error(`Failed to delete expense ${id}:`, error);
-      }
-      throw error;
-    }
+    await apiClient.delete<void>(`/expenses/${id}`);
   }
 }
 
