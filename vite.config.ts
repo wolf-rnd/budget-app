@@ -10,7 +10,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: process.env.VITE_API_BASE_URL || 'https://budget-server-y649.onrender.com',
+        target: process.env.VITE_API_BASE_URL || 'https://budget-server-y649.onrender.com/api',
         changeOrigin: true,
         secure: true,
         timeout: 30000,
