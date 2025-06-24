@@ -61,8 +61,7 @@ export class ApiClient {
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
     const token = localStorage.getItem('authToken');
-    
-    // Create abort controller for timeout
+
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
@@ -80,20 +79,18 @@ export class ApiClient {
     try {
       const response = await fetch(url, config);
       clearTimeout(timeoutId);
-      
+
       if (!response.ok) {
         let errorMessage = `שגיאת שרת: ${response.status}`;
         let serverMessage = '';
-        
+
         try {
           const errorData = await response.json();
           serverMessage = errorData.message || errorData.error || '';
         } catch {
-          // If we can't parse the error response, use status text
           serverMessage = response.statusText;
         }
-        
-        // Show notification for HTTP errors
+
         this.showNotification(
           'error',
           `שגיאה בקריאה לשרת`,
@@ -101,7 +98,7 @@ export class ApiClient {
           response.status,
           endpoint
         );
-        
+
         throw new ApiError(
           serverMessage || errorMessage,
           response.status,
@@ -111,15 +108,14 @@ export class ApiClient {
       }
 
       const result = await response.json();
-      
-      // Show success notification for write operations
+
       if (['POST', 'PUT', 'DELETE'].includes(options.method || 'GET')) {
         const operationNames = {
           'POST': 'נוצר',
-          'PUT': 'עודכן', 
+          'PUT': 'עודכן',
           'DELETE': 'נמחק'
         };
-        
+
         this.showNotification(
           'success',
           'פעולה הושלמה בהצלחה',
@@ -128,21 +124,22 @@ export class ApiClient {
           endpoint
         );
       }
-      
+
       return {
         data: result.data || result,
         success: true
       };
-    } catch (error) {
+
+    } catch (error: unknown) {
       clearTimeout(timeoutId);
-      
+
       if (error instanceof ApiError) {
         throw error;
       }
-      
-      if (error.name === 'AbortError') {
+
+      if (error instanceof Error && error.name === 'AbortError') {
         const timeoutMessage = 'הבקשה לשרת לקחה יותר מדי זמן';
-        
+
         this.showNotification(
           'error',
           'תם הזמן הקצוב',
@@ -150,21 +147,22 @@ export class ApiClient {
           408,
           endpoint
         );
-        
+
         throw new ApiError(timeoutMessage, 408, 'TIMEOUT', endpoint);
       }
-      
-      // Handle network errors
+
+      const message = error instanceof Error ? error.message : String(error);
+
       let networkMessage = 'בעיית רשת - לא ניתן להתחבר לשרת';
-      
-      if (error.message.includes('socket hang up')) {
+
+      if (message.includes('socket hang up')) {
         networkMessage = 'השרת סגר את החיבור באופן בלתי צפוי';
-      } else if (error.message.includes('fetch')) {
+      } else if (message.includes('fetch')) {
         networkMessage = 'לא ניתן להתחבר לשרת - בדוק את החיבור לאינטרנט';
-      } else if (error.message.includes('network')) {
+      } else if (message.includes('network')) {
         networkMessage = 'בעיית רשת - אין חיבור לאינטרנט';
       }
-      
+
       this.showNotification(
         'error',
         'בעיית חיבור',
@@ -172,7 +170,7 @@ export class ApiClient {
         0,
         endpoint
       );
-      
+
       throw new ApiError(
         networkMessage,
         0,
