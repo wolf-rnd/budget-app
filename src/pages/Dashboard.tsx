@@ -100,7 +100,6 @@ const Dashboard: React.FC = () => {
       }
 
       setBudgetYears(budgetYearsData);
-      setBudgetYears(years);
       setFunds(fundsData);
       setIncomes(incomesData);
       setExpenses(expensesData);
