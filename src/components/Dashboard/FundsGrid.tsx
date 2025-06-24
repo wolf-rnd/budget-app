@@ -7,7 +7,7 @@ interface FundsGridProps {
   currentDisplayMonth: number;
   onCloseDailyFund: (remainingAmount: number) => void;
   onAddMoneyToEnvelope: (amount: number) => void;
-//  onMonthChange: (month: number) => void;
+  onMonthChange: (month: number) => void;
 }
 
 const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onCloseDailyFund, onAddMoneyToEnvelope }) => {
