@@ -252,7 +252,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onRem
                 })}
               </span>
               
-              {notification.autoHide && notification.duration > 0 && (
+              {notification.autoHide && (notification.duration??0) > 0 && (
                 <span className="bg-black/10 px-2 py-0.5 rounded">נסגר אוטומטי</span>
               )}
             </div>
@@ -260,7 +260,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notification, onRem
         </div>
         
         {/* Progress bar for auto-hide */}
-        {notification.autoHide && notification.duration > 0 && (
+        {notification.autoHide && (notification.duration??0) > 0 && (
           <div className="mt-3 w-full bg-black/10 rounded-full h-1.5">
             <div 
               className="bg-current h-1.5 rounded-full animate-progress-bar opacity-40"
