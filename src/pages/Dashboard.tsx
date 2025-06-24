@@ -99,12 +99,7 @@ const Dashboard: React.FC = () => {
         console.log('Loaded data successfully from API');
       }
 
-      // Ensure budgetYearsData is an array
-      const years = Array.isArray(budgetYearsData)
-        ? budgetYearsData
-        : (budgetYearsData && Array.isArray(budgetYearsData.data))
-          ? budgetYearsData.data
-          : [];
+      setBudgetYears(budgetYearsData);
 
       setBudgetYears(years);
       setFunds(fundsData);
