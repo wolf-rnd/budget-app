@@ -49,7 +49,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     setNotifications(prev => [newNotification, ...prev.slice(0, 4)]); // Keep max 5 notifications
 
     // Auto-hide notification if enabled
-    if (newNotification.autoHide && newNotification.duration > 0) {
+    if (newNotification.autoHide && (newNotification.duration ?? 0) > 0) {
       setTimeout(() => {
         removeNotification(newNotification.id);
       }, newNotification.duration);
