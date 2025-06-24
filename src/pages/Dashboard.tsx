@@ -100,7 +100,6 @@ const Dashboard: React.FC = () => {
       }
 
       setBudgetYears(budgetYearsData);
-
       setBudgetYears(years);
       setFunds(fundsData);
       setIncomes(incomesData);
@@ -115,13 +114,10 @@ const Dashboard: React.FC = () => {
       const savedBudgetYearId = localStorage.getItem('selectedBudgetYearId');
       let initialBudgetYear: BudgetYear | null = null;
 
-      if (savedBudgetYearId && Array.isArray(years)) {
-        initialBudgetYear = years.find(year => year.id === savedBudgetYearId) || null;
-      }
+       initialBudgetYear = budgetYearsData.find(year => year.id === savedBudgetYearId) || null;
 
-      if (!initialBudgetYear && Array.isArray(years)) {
-        initialBudgetYear = getActiveBudgetYear(years) || getLatestBudgetYear(years);
-      }
+        initialBudgetYear = getActiveBudgetYear(budgetYearsData) || getLatestBudgetYear(budgetYearsData);
+
 
       setSelectedBudgetYear(initialBudgetYear);
 
