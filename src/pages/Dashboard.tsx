@@ -116,7 +116,7 @@ const Dashboard: React.FC = () => {
 
        initialBudgetYear = budgetYearsData.find(year => year.id === savedBudgetYearId) || null;
 
-        initialBudgetYear = getActiveBudgetYear(budgetYearsData) || getLatestBudgetYear(budgetYearsData);
+       initialBudgetYear = getActiveBudgetYear(budgetYearsData) || getLatestBudgetYear(budgetYearsData);
 
 
       setSelectedBudgetYear(initialBudgetYear);
