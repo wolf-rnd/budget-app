@@ -1,7 +1,7 @@
 // Environment configuration
 export const ENV = {
   // API Configuration - Always use the full URL from environment variable
-  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'https://budget-server-y649.onrender.com/api',
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api',
   
   // Application Settings
   APP_NAME: import.meta.env.VITE_APP_NAME || 'תקציב-בית',

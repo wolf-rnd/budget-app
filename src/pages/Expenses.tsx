@@ -5,7 +5,7 @@ import ExpenseModal from '../components/Modals/ExpenseModal';
 import { filterExpensesByBudgetYear } from '../utils/budgetUtils';
 
 // Import services instead of JSON data
-import { expensesService } from '../services/expensesService';
+import { CreateExpenseRequest, expensesService } from '../services/expensesService';
 import { categoriesService } from '../services/categoriesService';
 import { budgetYearsService } from '../services/budgetYearsService';
 
@@ -61,7 +61,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
     }
   };
 
-  const currentBudgetYear = selectedBudgetYear || budgetYears.find(year => year.isActive) || budgetYears[0];
+  const currentBudgetYear = selectedBudgetYear || budgetYears.find(year => year.is_active) || budgetYears[0];
 
   const categoryColors: Record<string, string> = {
     'מזון': 'bg-green-100 text-green-800 border-green-300',
@@ -139,14 +139,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
     setIsExpenseModalOpen(true);
   };
 
-  const handleExpenseModalSubmit = async (newExpense: {
-    name: string;
-    amount: number;
-    category: string;
-    fund: string;
-    date: string;
-    note?: string;
-  }) => {
+  const handleExpenseModalSubmit = async (newExpense: CreateExpenseRequest) => {
     try {
       const createdExpense = await expensesService.createExpense(newExpense);
       setExpenses([createdExpense, ...expenses]);
@@ -495,6 +488,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
         <ExpenseModal
           isOpen={isExpenseModalOpen}
           onClose={() => {
+            debugger
             setIsExpenseModalOpen(false);
             setEditingExpense(null);
           }}

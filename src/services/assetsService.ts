@@ -17,18 +17,18 @@ export interface UpdateAssetSnapshotRequest {
 }
 
 export interface AssetFilters {
-  startDate?: string;
-  endDate?: string;
+  start_date?: string;
+  end_date?: string;
   page?: number;
   limit?: number;
 }
 
 export interface AssetTrends {
-  netWorthTrend: { date: string; value: number }[];
-  assetsTrend: { date: string; value: number }[];
-  liabilitiesTrend: { date: string; value: number }[];
-  monthlyChange: number;
-  yearlyChange: number;
+  net_worth_trend: { date: string; value: number }[];
+  assets_trend: { date: string; value: number }[];
+  liabilities_trend: { date: string; value: number }[];
+  monthly_change: number;
+  yearly_change: number;
 }
 
 class AssetsService {
@@ -36,8 +36,8 @@ class AssetsService {
   async getAllAssetSnapshots(filters?: AssetFilters): Promise<AssetSnapshot[]> {
     const params = new URLSearchParams();
     
-    if (filters?.startDate) params.append('startDate', filters.startDate);
-    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.start_date) params.append('start_date', filters.start_date);
+    if (filters?.end_date) params.append('end_date', filters.end_date);
     if (filters?.page) params.append('page', filters.page.toString());
     if (filters?.limit) params.append('limit', filters.limit.toString());
 

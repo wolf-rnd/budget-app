@@ -196,14 +196,14 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onClo
                 <TrendingUp size={16} className="text-green-600" />
                 <p className="text-sm text-green-700 font-bold">ניתן בפועל</p>
               </div>
-              <p className="text-lg font-bold text-green-600 text-center">{formatCurrency(fund.amountGiven || 0)}</p>
+              <p className="text-lg font-bold text-green-600 text-center">{formatCurrency(fund.amount_given || 0)}</p>
             </div>
             <div className="text-center p-4 bg-white/80 rounded-lg border-2 border-amber-200 shadow-sm">
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Coins size={16} className="text-amber-600" />
                 <p className="text-sm text-amber-700 font-bold">נותר לתת</p>
               </div>
-              <p className="text-lg font-bold text-amber-600 text-center">{formatCurrency(fund.amount - (fund.amountGiven || 0))}</p>
+              <p className="text-lg font-bold text-amber-600 text-center">{formatCurrency(fund.amount - (fund.amount_given || 0))}</p>
             </div>
           </div>
         </div>

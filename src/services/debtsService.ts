@@ -7,7 +7,7 @@ export interface CreateDebtRequest {
   amount: number;
   note?: string;
   type: 'owed_to_me' | 'i_owe';
-  isPaid?: boolean;
+  is_paid?: boolean;
 }
 
 export interface UpdateDebtRequest {
@@ -15,24 +15,24 @@ export interface UpdateDebtRequest {
   amount?: number;
   note?: string;
   type?: 'owed_to_me' | 'i_owe';
-  isPaid?: boolean;
+  is_paid?: boolean;
 }
 
 export interface DebtFilters {
   type?: 'owed_to_me' | 'i_owe';
-  isPaid?: boolean;
+  is_paid?: boolean;
   search?: string;
   page?: number;
   limit?: number;
 }
 
 export interface DebtSummary {
-  totalDebtsIOwe: number;
-  totalDebtsOwedToMe: number;
-  netDebtPosition: number;
-  paidDebts: number;
-  unpaidDebts: number;
-  recentDebts: Debt[];
+  total_debts_iowe: number;
+  total_debts_owed_to_me: number;
+  net_debt_position: number;
+  paid_debts: number;
+  unpaid_debts: number;
+  recent_debts: Debt[];
 }
 
 class DebtsService {
@@ -41,7 +41,7 @@ class DebtsService {
     const params = new URLSearchParams();
     
     if (filters?.type) params.append('type', filters.type);
-    if (filters?.isPaid !== undefined) params.append('isPaid', filters.isPaid.toString());
+    if (filters?.is_paid !== undefined) params.append('is_paid', filters.is_paid.toString());
     if (filters?.search) params.append('search', filters.search);
     if (filters?.page) params.append('page', filters.page.toString());
     if (filters?.limit) params.append('limit', filters.limit.toString());

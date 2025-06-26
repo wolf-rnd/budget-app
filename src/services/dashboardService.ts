@@ -2,14 +2,14 @@ import { Fund, Income, Expense, Debt, Task } from '../types';
 import { ENV } from '../config/env';
 
 export interface DashboardSummary {
-  totalIncome: number;
-  totalExpenses: number;
-  totalBudget: number;
+  total_income: number;
+  total_expenses: number;
+  total_budget: number;
   balance: number;
-  totalDebts: number;
+  total_debts: number;
   funds: Fund[];
-  recentExpenses: Expense[];
-  pendingTasks: Task[];
+  recent_expenses: Expense[];
+  pending_tasks: Task[];
   titheRequired: number;
   titheGiven: number;
   titheRemaining: number;

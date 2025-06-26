@@ -17,20 +17,20 @@ export interface UpdateTitheRequest {
 }
 
 export interface TitheFilters {
-  startDate?: string;
-  endDate?: string;
+  start_date?: string;
+  end_date?: string;
   search?: string;
   page?: number;
   limit?: number;
 }
 
 export interface TitheSummary {
-  totalGiven: number;
-  totalRequired: number;
-  totalRemaining: number;
-  tithePercentage: number;
-  totalIncome: number;
-  recentTithes: TitheGiven[];
+  total_given: number;
+  total_required: number;
+  total_remaining: number;
+  tithe_percentage: number;
+  total_income: number;
+  recent_tithes: TitheGiven[];
 }
 
 class TitheService {
@@ -38,8 +38,8 @@ class TitheService {
   async getAllTithes(filters?: TitheFilters): Promise<TitheGiven[]> {
     const params = new URLSearchParams();
     
-    if (filters?.startDate) params.append('startDate', filters.startDate);
-    if (filters?.endDate) params.append('endDate', filters.endDate);
+    if (filters?.start_date) params.append('start_date', filters.start_date);
+    if (filters?.end_date) params.append('end_date', filters.end_date);
     if (filters?.search) params.append('search', filters.search);
     if (filters?.page) params.append('page', filters.page.toString());
     if (filters?.limit) params.append('limit', filters.limit.toString());

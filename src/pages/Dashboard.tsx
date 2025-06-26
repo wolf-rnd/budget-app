@@ -28,7 +28,7 @@ import { ENV } from '../config/env';
 // Import services instead of JSON data
 import { budgetYearsService } from '../services/budgetYearsService';
 import { incomesService } from '../services/incomesService';
-import { expensesService } from '../services/expensesService';
+import { CreateExpenseRequest, expensesService } from '../services/expensesService';
 import { titheService } from '../services/titheService';
 import { debtsService } from '../services/debtsService';
 import { tasksService } from '../services/tasksService';
@@ -62,75 +62,72 @@ const Dashboard: React.FC = () => {
     apiClient.setNotificationCallback(addNotification);
   }, [addNotification]);
 
-  // Load all data from API
+  // טעינת כל הדאטה הראשונית (כולל בחירת שנת תקציב)
   useEffect(() => {
-    loadAllData();
-  }, []);
-
-  const loadAllData = async () => {
-    try {
+    const loadInitialData = async () => {
       setLoading(true);
       setError(null);
+      try {
+        const [
+          budgetYearsData,
+          incomesData,
+          expensesData,
+          titheData,
+          debtsData,
+          tasksData,
+          assetsData,
+          categoriesData
+        ] = await Promise.all([
+          budgetYearsService.getAllBudgetYears(),
+          incomesService.getAllIncomes(),
+          expensesService.getAllExpenses(),
+          titheService.getAllTithes(),
+          debtsService.getAllDebts(),
+          tasksService.getAllTasks(),
+          assetsService.getAllAssetSnapshots(),
+          categoriesService.getAllCategories()
+        ]);
+        setBudgetYears(budgetYearsData);
+        setIncomes(incomesData);
+        setExpenses(expensesData);
+        setTitheGiven(titheData);
+        setDebts(debtsData);
+        setTasks(tasksData);
+        setAssetSnapshots(assetsData);
+        setCategories(categoriesData);
 
-      // טעינת כל הנתונים במקביל - ללא fallback למידע מקומי
-      const [
-        budgetYearsData,
-        fundsData,
-        incomesData,
-        expensesData,
-        titheData,
-        debtsData,
-        tasksData,
-        assetsData,
-        categoriesData
-      ] = await Promise.all([
-        budgetYearsService.getAllBudgetYears(),
-        fundsService.getAllFunds(),
-        incomesService.getAllIncomes(),
-        expensesService.getAllExpenses(),
-        titheService.getAllTithes(),
-        debtsService.getAllDebts(),
-        tasksService.getAllTasks(),
-        assetsService.getAllAssetSnapshots(),
-        categoriesService.getAllCategories()
-      ]);
-
-      if (ENV.DEV_MODE) {
-        console.log('Loaded data successfully from API');
+        // הגדרת שנת תקציב ראשונית
+        const savedBudgetYearId = localStorage.getItem('selectedBudgetYearId');
+        let initialBudgetYear: BudgetYear | null = null;
+        initialBudgetYear = budgetYearsData.find(year => year.id === savedBudgetYearId) || null;
+        initialBudgetYear = initialBudgetYear || getActiveBudgetYear(budgetYearsData) || getLatestBudgetYear(budgetYearsData);
+        setSelectedBudgetYear(initialBudgetYear);
+      } catch (err) {
+        setError('שגיאה בטעינת נתוני הדשבורד');
+      } finally {
+        setLoading(false);
       }
+    };
+    loadInitialData();
+  }, []);
 
-      setBudgetYears(budgetYearsData);
-      setFunds(fundsData);
-      setIncomes(incomesData);
-      setExpenses(expensesData);
-      setTitheGiven(titheData);
-      setDebts(debtsData);
-      setTasks(tasksData);
-      setAssetSnapshots(assetsData);
-      setCategories(categoriesData);
-
-      // הגדרת שנת תקציב ראשונית
-      const savedBudgetYearId = localStorage.getItem('selectedBudgetYearId');
-      let initialBudgetYear: BudgetYear | null = null;
-
-       initialBudgetYear = budgetYearsData.find(year => year.id === savedBudgetYearId) || null;
-
-       initialBudgetYear = getActiveBudgetYear(budgetYearsData) || getLatestBudgetYear(budgetYearsData);
-
-
-      setSelectedBudgetYear(initialBudgetYear);
-
-    } catch (err) {
-      if (ENV.DEV_MODE) {
-        console.error('Failed to load dashboard data:', err);
+  // טען רק funds בכל החלפת שנת תקציב
+  useEffect(() => {
+    const loadFunds = async () => {
+      if (!selectedBudgetYear) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const fundsData = await fundsService.getAllFunds(selectedBudgetYear.id);
+        setFunds(fundsData);
+      } catch (err) {
+        setError('שגיאה בטעינת קופות');
+      } finally {
+        setLoading(false);
       }
-      // Use the specific error message from the API client instead of a generic message
-      const errorMessage = err instanceof Error ? err.message : 'שגיאה בטעינת נתוני הדשבורד';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+    loadFunds();
+  }, [selectedBudgetYear]);
 
   // Save selected budget year to localStorage
   useEffect(() => {
@@ -146,7 +143,7 @@ const Dashboard: React.FC = () => {
 
   // Calculate totals
   const totalBudget = funds
-    .filter(fund => fund.includeInBudget)
+    .filter(fund => fund.include_in_budget)
     .reduce((sum, fund) => {
       return sum + (fund.type === 'monthly' ? fund.amount * 12 : fund.amount);
     }, 0);
@@ -156,8 +153,10 @@ const Dashboard: React.FC = () => {
   const totalIncomesForTithe = allIncomesForTithe.reduce((sum, income) => sum + income.amount, 0);
 
   // Handlers
-  const handleBudgetYearChange = (budgetYear: BudgetYear) => {
-    setSelectedBudgetYear(budgetYear);
+  const handleBudgetYearChange = (yearId: string) => {
+    const year = budgetYears.find(y => y.id === yearId) || null;
+    setSelectedBudgetYear(year);
+    // טעינת קופות תתבצע אוטומטית דרך useEffect
   };
 
   const handleAddExpense = () => {
@@ -199,14 +198,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleExpenseModalSubmit = async (newExpense: {
-    name: string;
-    amount: number;
-    category: string;
-    fund: string;
-    date: string;
-    note?: string;
-  }) => {
+  const handleExpenseModalSubmit = async (newExpense: CreateExpenseRequest) => {
     try {
       const createdExpense = await expensesService.createExpense(newExpense);
       setExpenses([...expenses, createdExpense]);
@@ -419,6 +411,8 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
+<h1 >{categories[0].fund_id} </h1>
+
       <div className="max-w-7xl mx-auto">
         <TopActions
            selectedBudgetYear={selectedBudgetYear}
@@ -455,6 +449,7 @@ const Dashboard: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
               מצב קופות - {selectedBudgetYear?.name}
             </h2>
+            {/* to do print to screen the funds */}
             <FundsGrid
               funds={funds}
               onCloseDailyFund={handleCloseDailyFund}
@@ -463,7 +458,7 @@ const Dashboard: React.FC = () => {
               onMonthChange={setCurrentDisplayMonth}
             />
           </div>
-
+          
           <div>
             <BudgetChart
               totalBudget={totalBudget}
@@ -492,12 +487,12 @@ const Dashboard: React.FC = () => {
           onClose={() => setIsIncomeModalOpen(false)}
           onAddIncome={handleIncomeModalSubmit}
         />
-
         <ExpenseModal
           isOpen={isExpenseModalOpen}
           onClose={() => setIsExpenseModalOpen(false)}
           onAddExpense={handleExpenseModalSubmit}
           categories={categories}
+          selectedBudgetYear={selectedBudgetYear}
         />
       </div>
     </div>

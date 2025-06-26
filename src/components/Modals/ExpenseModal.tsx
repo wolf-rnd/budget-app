@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, TrendingDown, Plus, DollarSign, FileText, Tag, Calendar } from 'lucide-react';
-import { Expense } from '../../types';
+import { BudgetYear, Category, Expense } from '../../types';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -21,21 +21,25 @@ interface ExpenseModalProps {
     date: string;
     note?: string;
   }) => void;
-  categories: { name: string; fund: string }[];
+  categories: Category[];
   editingExpense?: Expense | null;
+  selectedBudgetYear: BudgetYear | null; // prop חדש
 }
 
-const ExpenseModal: React.FC<ExpenseModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  onAddExpense, 
+const ExpenseModal: React.FC<ExpenseModalProps> = ({
+  isOpen,
+  onClose,
+  onAddExpense,
   onEditExpense,
-  categories, 
-  editingExpense 
+  categories,
+  editingExpense,
+  selectedBudgetYear // prop חדש
 }) => {
   const [name, setName] = useState(editingExpense?.name || '');
   const [amount, setAmount] = useState(editingExpense?.amount.toString() || '');
   const [selectedCategory, setSelectedCategory] = useState(editingExpense?.category || '');
+  const [selectedFund, setSelectedFund] = useState(editingExpense?.fund || '');
+  const [takenFromMainFund, setTakenFromMainFund] = useState(false);
   const [date, setDate] = useState(editingExpense?.date || new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState(editingExpense?.note || '');
 
@@ -44,14 +48,18 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       setName(editingExpense.name);
       setAmount(formatNumber(editingExpense.amount.toString()));
       setSelectedCategory(editingExpense.category);
+      setSelectedFund(editingExpense.fund || '');
       setDate(editingExpense.date);
       setNote(editingExpense.note || '');
+      setTakenFromMainFund(false);
     } else {
       setName('');
       setAmount('');
       setSelectedCategory('');
+      setSelectedFund('');
       setDate(new Date().toISOString().split('T')[0]);
       setNote('');
+      setTakenFromMainFund(false);
     }
   }, [editingExpense, isOpen]);
 
@@ -75,28 +83,44 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim() && amount && selectedCategory && date) {
-      const category = categories.find(cat => cat.name === selectedCategory);
-      if (category) {
-        const expenseData = {
-          name: name.trim(),
-          amount: Number(cleanNumber(amount)),
-          category: selectedCategory,
-          fund: category.fund,
-          date,
-          note: note.trim() || undefined
-        };
 
-        if (editingExpense && onEditExpense) {
-          onEditExpense(editingExpense.id, expenseData);
-        } else if (onAddExpense) {
-          onAddExpense(expenseData);
-        }
-        
-        onClose();
-      }
+    // ודא ש-selectedBudgetYear קיים ב-props
+    if (!selectedBudgetYear) {
+      alert('יש לבחור שנת תקציב');
+      return;
     }
+
+    // הגנה נוספת: ודא של-selectedBudgetYear יש id
+    if (!selectedBudgetYear.id) {
+      alert('שנת התקציב שנבחרה אינה תקינה');
+      return;
+    }
+    const selectedCategoryObj = categories.find(cat => cat.name === selectedCategory);
+    const categoryId = selectedCategoryObj ? selectedCategoryObj.id : undefined;
+    // אם יש לך מערך funds עם id ו-name, תוכל לעשות אותו דבר לפאנד
+    // const selectedFundObj = funds?.find(fund => fund.name === selectedFund);
+    // const fundId = selectedFundObj ? selectedFundObj.id : undefined;
+
+    const expenseData: CreateExpenseRequest = {
+      name: name.trim(),
+      amount: Number(cleanNumber(amount)),
+      budget_year_id: selectedBudgetYear.id,
+      category_id: categoryId,
+      fund_id: selectedCategoryObj?.fund_id || 0,
+      date,
+      note: note.trim() || undefined
+      // ניתן להוסיף שדות נוספים במידת הצורך
+    };
+
+    if (editingExpense && onEditExpense) {
+      onEditExpense(editingExpense.id, expenseData);
+    } else if (onAddExpense) {
+      onAddExpense(expenseData);
+    }
+    debugger
+    onClose();
   };
+
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -110,16 +134,17 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+   if (!isOpen) return null;
 
   const isEditing = !!editingExpense;
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" 
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       onKeyDown={handleKeyPress}
       onClick={handleOverlayClick}
     >
+
       <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-6 rounded-t-xl">
           <div className="flex justify-between items-center">
@@ -179,19 +204,42 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             <div>
               <label className="block text-sm font-bold text-gray-700 mb-2">
                 <Tag size={16} className="inline ml-2" />
-                קטגוריה *
+                קטגוריה (אופציונלי)
               </label>
               <select
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  if (e.target.value) {
+                    // אם בוחרים קטגוריה, קופה תתמלא אוטומטית
+                    const cat = categories.find(cat => cat.name === e.target.value);
+                    if (cat) setSelectedFund(cat.funds?.name || cat.fund || '');
+                  }
+                }}
                 className="w-full p-3 border-2 border-amber-200 rounded-lg text-sm focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
                 required
               >
-                <option value="">בחר קטגוריה</option>
+                <option value="">בחר קטגוריה (לא חובה)</option>
                 {categories.map(category => (
                   <option key={category.name} value={category.name}>
-                    {category.name} (מקופת: {category.fund})
+                    {category.name} (מקופת: {category.funds?.name || category.fund})
                   </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                קופה
+              </label>
+              <select
+                value={selectedFund ?? ''}
+                onChange={(e) => setSelectedFund(e.target.value)}
+                className="w-full p-3 border-2 border-amber-200 rounded-lg text-sm focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
+                disabled={!!selectedCategory} // אם בחרו קטגוריה, הקופה נבחרת אוטומטית
+              >
+                <option value="">בחר קופה</option>
+                {[...new Set(categories.map(cat => cat.funds?.name || cat.fund))].map(fundName => (
+                  <option key={fundName} value={fundName}>{fundName}</option>
                 ))}
               </select>
             </div>
@@ -235,7 +283,17 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             </div>
           )}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+          <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={takenFromMainFund}
+                onChange={() => setTakenFromMainFund(!takenFromMainFund)}
+                className="form-checkbox h-5 w-5 text-amber-600"
+              />
+              <span className="text-sm font-medium text-gray-700">נלקח מהשוטף</span>
+            </label>
+            <div className="flex-1" />
             <button
               type="button"
               onClick={onClose}
@@ -256,5 +314,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     </div>
   );
 };
+
 
 export default ExpenseModal;

@@ -4,23 +4,23 @@ import { apiClient } from './apiClient';
 export interface BudgetYear {
   id: string;
   name: string;
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CreateBudgetYearRequest {
   name: string;
-  startDate: string;
-  endDate: string;
+  start_date: string;
+  end_date: string;
 }
 
 export interface UpdateBudgetYearRequest {
   name?: string;
-  startDate?: string;
-  endDate?: string;
+  start_date?: string;
+  end_date?: string;
 }
 
 class BudgetYearsService {

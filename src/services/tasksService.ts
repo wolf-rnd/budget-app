@@ -23,12 +23,12 @@ export interface TaskFilters {
 }
 
 export interface TaskSummary {
-  totalTasks: number;
-  completedTasks: number;
-  pendingTasks: number;
-  importantTasks: number;
-  completionRate: number;
-  recentTasks: Task[];
+  total_tasks: number;
+  completed_tasks: number;
+  pending_tasks: number;
+  important_tasks: number;
+  completion_rate: number;
+  recent_tasks: Task[];
 }
 
 class TasksService {

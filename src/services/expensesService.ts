@@ -2,14 +2,17 @@ import { Expense } from '../types';
 import { ENV } from '../config/env';
 import { apiClient } from './apiClient';
 
+
 export interface CreateExpenseRequest {
   name: string;
   amount: number;
-  category: string;
-  fund: string;
+  budget_year_id: string;
+  category_id: string;
+  fund_id: string;
   date: string;
   note?: string;
 }
+
 
 export interface UpdateExpenseRequest {
   name?: string;
@@ -21,13 +24,13 @@ export interface UpdateExpenseRequest {
 }
 
 export interface ExpenseFilters {
-  budgetYearId?: string;
+  budget_year_id?: string;
   category?: string;
   fund?: string;
-  startDate?: string;
-  endDate?: string;
-  minAmount?: number;
-  maxAmount?: number;
+  start_date?: string;
+  end_date?: string;
+  min_amount?: number;
+  max_amount?: number;
   search?: string;
   page?: number;
   limit?: number;
@@ -47,21 +50,21 @@ class ExpensesService {
   // GET /expenses - קבלת כל ההוצאות (עם פילטרים)
   async getAllExpenses(filters?: ExpenseFilters): Promise<Expense[]> {
     const params = new URLSearchParams();
-    
-    if (filters?.budgetYearId) params.append('budgetYearId', filters.budgetYearId);
+
+    if (filters?.budget_year_id) params.append('budget_year_id', filters.budget_year_id);
     if (filters?.category) params.append('category', filters.category);
     if (filters?.fund) params.append('fund', filters.fund);
-    if (filters?.startDate) params.append('startDate', filters.startDate);
-    if (filters?.endDate) params.append('endDate', filters.endDate);
-    if (filters?.minAmount) params.append('minAmount', filters.minAmount.toString());
-    if (filters?.maxAmount) params.append('maxAmount', filters.maxAmount.toString());
+    if (filters?.start_date) params.append('start_date', filters.start_date);
+    if (filters?.end_date) params.append('end_date', filters.end_date);
+    if (filters?.min_amount) params.append('min_amount', filters.min_amount.toString());
+    if (filters?.max_amount) params.append('max_amount', filters.max_amount.toString());
     if (filters?.search) params.append('search', filters.search);
     if (filters?.page) params.append('page', filters.page.toString());
     if (filters?.limit) params.append('limit', filters.limit.toString());
 
     const queryString = params.toString();
     const endpoint = queryString ? `/expenses?${queryString}` : '/expenses';
-    
+
     const response = await apiClient.get<Expense[]>(endpoint);
     return response.data;
   }

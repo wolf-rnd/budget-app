@@ -84,21 +84,21 @@ const AssetsSection: React.FC<AssetsSectionProps> = ({ snapshots, onAddSnapshot 
   // חישוב סכומים מהנתונים האחרונים
   const totalAssets = latestSnapshot?.assets ? 
     Object.values(latestSnapshot.assets).reduce((sum, amount) => sum + amount, 0) : 
-    latestSnapshot?.totalSavings || 0;
+    latestSnapshot?.total_savings || 0;
 
   const totalLiabilities = latestSnapshot?.liabilities ? 
     Object.values(latestSnapshot.liabilities).reduce((sum, amount) => sum + amount, 0) : 
-    latestSnapshot?.totalLiabilities || 0;
+    latestSnapshot?.total_liabilities || 0;
 
   const netWorth = totalAssets - totalLiabilities;
   
   const previousTotalAssets = previousSnapshot?.assets ? 
     Object.values(previousSnapshot.assets).reduce((sum, amount) => sum + amount, 0) : 
-    previousSnapshot?.totalSavings || 0;
+    previousSnapshot?.total_savings || 0;
 
   const previousTotalLiabilities = previousSnapshot?.liabilities ? 
     Object.values(previousSnapshot.liabilities).reduce((sum, amount) => sum + amount, 0) : 
-    previousSnapshot?.totalLiabilities || 0;
+    previousSnapshot?.total_liabilities || 0;
 
   const previousNetWorth = previousTotalAssets - previousTotalLiabilities;
   const netWorthChange = latestSnapshot && previousSnapshot ? netWorth - previousNetWorth : 0;

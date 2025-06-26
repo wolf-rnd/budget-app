@@ -5,20 +5,20 @@ export interface Category {
   id?: string;
   name: string;
   fund: string;
-  fundId?: string;
-  isActive?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
+  fund_id?: string;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface CreateCategoryRequest {
   name: string;
-  fundId: string;
+  fund_id: string;
 }
 
 export interface UpdateCategoryRequest {
   name?: string;
-  fundId?: string;
+  fund_id?: string;
 }
 
 class CategoriesService {

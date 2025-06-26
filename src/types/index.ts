@@ -2,7 +2,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  createdAt: string;
+  created_at: string;
 }
 
 export interface Fund {
@@ -11,11 +11,11 @@ export interface Fund {
   type: 'monthly' | 'annual' | 'savings';
   amount: number;
   level: 1 | 2 | 3;
-  includeInBudget: boolean;
-  amountGiven?: number;
+  include_in_budget: boolean;
+  amount_given?: number;
   spent?: number;
   categories: string[];
-  budgetYearId?: string; // קישור לשנת תקציב
+  budget_year_id?: string; // קישור לשנת תקציב
 }
 
 export interface Income {
@@ -27,7 +27,7 @@ export interface Income {
   date: string;
   source?: string;
   note?: string;
-  budgetYearId?: string; // קישור לשנת תקציב
+  budget_year_id?: string; // קישור לשנת תקציב
 }
 
 export interface ExpectedIncome {
@@ -45,7 +45,7 @@ export interface Expense {
   fund: string;
   date: string;
   note?: string;
-  budgetYearId?: string; // קישור לשנת תקציב
+  budget_year_id?: string; // קישור לשנת תקציב
 }
 
 export interface TitheGiven {
@@ -73,8 +73,8 @@ export interface Task {
 
 export interface AssetSnapshot {
   id: string;
-  totalSavings?: number;
-  totalLiabilities?: number;
+  total_savings?: number;
+  total_liabilities?: number;
   assets?: Record<string, number>;
   liabilities?: Record<string, number>;
   date: string;
@@ -89,16 +89,17 @@ export interface Category {
 export interface BudgetYear {
   id: string;
   name: string; // פורמט: mm/yy - mm/yy
-  startDate: string;
-  endDate: string;
-  isActive: boolean;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
 }
 
 export interface FundBudget {
   id: string;
-  fundId: string;
-  budgetYearId: string;
+  fund_id: string;
+  budget_year_id: string;
   amount: number;
-  amountGiven?: number;
+  amount_given?: number;
   spent?: number;
 }
+
