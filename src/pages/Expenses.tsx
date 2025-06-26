@@ -1,13 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { TrendingDown, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Undo2, X } from 'lucide-react';
-import { Expense, Category, BudgetYear } from '../types';
 import ExpenseModal from '../components/Modals/ExpenseModal';
 import { filterExpensesByBudgetYear } from '../utils/budgetUtils';
 
 // Import services instead of JSON data
-import { CreateExpenseRequest, expensesService } from '../services/expensesService';
-import { categoriesService } from '../services/categoriesService';
-import { budgetYearsService } from '../services/budgetYearsService';
+import { CreateExpenseRequest, expensesService, GetExpenseRequest, UpdateExpenseRequest } from '../services/expensesService';
+import { categoriesService, GetCategoryRequest } from '../services/categoriesService';
+import { BudgetYear, budgetYearsService } from '../services/budgetYearsService';
+import { useBudgetYearStore } from '../store/budgetYearStore';
+import { mapObject } from '../utils/mappers';
 
 interface UndoNotification {
   expenseId: string;
@@ -15,23 +16,22 @@ interface UndoNotification {
   timeoutId: ReturnType<typeof setTimeout>;
 }
 
-interface ExpensesProps {
-  selectedBudgetYear?: BudgetYear | null;
-}
+// אין צורך ב-selectedBudgetYear כ-prop, הכל מה-store
 
-const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+const Expenses: React.FC = () => {
+  const [expenses, setExpenses] = useState<GetExpenseRequest[]>([]);
+  const [categories, setCategories] = useState<GetCategoryRequest[]>([]);
   const [budgetYears, setBudgetYears] = useState<BudgetYear[]>([]);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
-  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editingExpense, setEditingExpense] = useState<UpdateExpenseRequest | null>(null);
   const [undoNotification, setUndoNotification] = useState<UndoNotification | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedFund, setSelectedFund] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
+
+  const selectedBudgetYearId = useBudgetYearStore(state => state.selectedBudgetYearId);
   const itemsPerPage = 10;
 
   // קיבוץ והרחבה
@@ -64,9 +64,9 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
 
       setCategories(categoriesData);
       setBudgetYears(budgetYearsData);
-      // קבע איזו שנת תקציב רלוונטית
-      const currentYear = selectedBudgetYear || budgetYearsData.find(year => year.is_active) || budgetYearsData[0];
-      const expensesData = await expensesService.getAllExpenses(currentYear ? { budget_year_id: currentYear.id } : undefined);
+      const expensesData = await expensesService.getAllExpenses(
+        selectedBudgetYearId ? { budget_year_id: selectedBudgetYearId } : undefined
+      );
       setExpenses(expensesData);
     } catch (err) {
       console.error('Failed to load expenses data:', err);
@@ -76,7 +76,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
     }
   };
 
-  const currentBudgetYear = selectedBudgetYear || budgetYears.find(year => year.is_active) || budgetYears[0];
+  const currentBudgetYear = selectedBudgetYearId;
 
   const fundColors: Record<string, string> = {
     'קופת שוטף': 'bg-emerald-100 text-emerald-800 border-emerald-300',
@@ -104,7 +104,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
       if (!groups[groupName]) groups[groupName] = [];
       groups[groupName].push(expense);
       return groups;
-    }, {} as Record<string, Expense[]>);
+    }, {} as Record<string, GetExpenseRequest[]>);
   }, [filteredExpenses, groupBy]);
 
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -154,19 +154,16 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
   const handleEditExpense = (id: string) => {
     const expense = expenses.find(exp => exp.id === id);
     if (expense) {
-      setEditingExpense(expense);
+      // שימוש בפונקציה הגנרית להמרה
+      const editingExpense = mapObject<typeof expense, UpdateExpenseRequest>(expense, [
+        'id', 'name', 'amount', 'category_id', 'fund_id', 'date', 'note', 'budget_year_id'
+      ]);
+      setEditingExpense(editingExpense);
       setIsExpenseModalOpen(true);
     }
   };
 
-  const handleExpenseEditSubmit = async (id: string, updatedExpense: {
-    name: string;
-    amount: number;
-    category: string;
-    fund: string;
-    date: string;
-    note?: string;
-  }) => {
+  const handleExpenseEditSubmit = async (id: string, updatedExpense: UpdateExpenseRequest) => {
     try {
       const updated = await expensesService.updateExpense(id, updatedExpense);
       setExpenses(expenses.map(expense =>
@@ -270,7 +267,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
             <div>
               <h1 className="text-2xl font-bold text-gray-800">הוצאות</h1>
               <p className="text-gray-600">
-                ניהול וצפייה בהוצאות - {currentBudgetYear?.name}
+                ניהול וצפייה בהוצאות - {budgetYears.find(year => year.is_active)?.name}
               </p>
             </div>
           </div>
@@ -330,12 +327,14 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
               <div className="flex items-center gap-2 text-sm text-amber-800">
                 <span>פילטרים פעילים:</span>
                 {selectedCategory && (
-                  <span className={`px-2 py-1 rounded-full text-xs border ${categoryColors[selectedCategory] || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
+                  // <span className={`px-2 py-1 rounded-full text-xs border ${expense.categories?.color_class || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs border 'bg-gray-100 text-gray-800 border-gray-300'}`}>
                     {selectedCategory}
                   </span>
                 )}
                 {selectedFund && (
-                  <span className={`px-2 py-1 rounded-full text-xs border ${fundColors[selectedFund] || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
+                  // <span className={`px-2 py-1 rounded-full text-xs border ${fundColors[selectedFund] || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs border 'bg-gray-100 text-gray-800 border-gray-300'}`}>
                     {selectedFund}
                   </span>
                 )}
@@ -382,7 +381,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
                       <td className="px-6 py-4 text-sm text-gray-900">
                         <div>
                           <div className="font-medium">{expense.name}</div>
-                         
+
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">

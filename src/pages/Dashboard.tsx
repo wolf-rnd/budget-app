@@ -13,10 +13,10 @@ import IncomeModal from '../components/Modals/IncomeModal';
 import ExpenseModal from '../components/Modals/ExpenseModal';
 import { useNotifications } from '../components/Notifications/NotificationSystem';
 
-import { 
-  getActiveBudgetYear, 
-  getLatestBudgetYear, 
-  filterIncomesByBudgetYear, 
+import {
+  getActiveBudgetYear,
+  getLatestBudgetYear,
+  filterIncomesByBudgetYear,
   filterExpensesByBudgetYear,
   getAllIncomesForTithe,
   calculateBudgetYearMonths,
@@ -33,7 +33,7 @@ import { titheService } from '../services/titheService';
 import { debtsService } from '../services/debtsService';
 import { tasksService } from '../services/tasksService';
 import { assetsService } from '../services/assetsService';
-import { categoriesService } from '../services/categoriesService';
+import { categoriesService, GetCategoryRequest } from '../services/categoriesService';
 import { fundsService } from '../services/fundsService';
 import { apiClient } from '../services/apiClient';
 
@@ -48,7 +48,7 @@ const Dashboard: React.FC = () => {
   const [debts, setDebts] = useState<Debt[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [assetSnapshots, setAssetSnapshots] = useState<AssetSnapshot[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [categories, setCategories] = useState<GetCategoryRequest[]>([]);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [currentDisplayMonth, setCurrentDisplayMonth] = useState<number>(new Date().getMonth() + 1);
@@ -147,15 +147,15 @@ const Dashboard: React.FC = () => {
     .reduce((sum, fund) => {
       return sum + (fund.type === 'monthly' ? fund.amount * 12 : fund.amount);
     }, 0);
-  
+
   const totalIncome = currentBudgetYearIncomes.reduce((sum, income) => sum + income.amount, 0);
   const totalExpenses = currentBudgetYearExpenses.reduce((sum, expense) => sum + expense.amount, 0);
   const totalIncomesForTithe = allIncomesForTithe.reduce((sum, income) => sum + income.amount, 0);
 
   // Handlers
-  const handleBudgetYearChange = (yearId: string) => {
-    const year = budgetYears.find(y => y.id === yearId) || null;
-    setSelectedBudgetYear(year);
+  const handleBudgetYearChange = (year: BudgetYear) => {
+    const selectedYear = budgetYears.find(y => y.id === year.id) || null;
+    setSelectedBudgetYear(selectedYear);
     // טעינת קופות תתבצע אוטומטית דרך useEffect
   };
 
@@ -187,7 +187,7 @@ const Dashboard: React.FC = () => {
 
       const createdIncome = await incomesService.createIncome(incomeData);
       setIncomes([...incomes, createdIncome]);
-      
+
       if (ENV.DEV_MODE) {
         console.log('הכנסה חדשה נוספה:', createdIncome);
       }
@@ -202,7 +202,7 @@ const Dashboard: React.FC = () => {
     try {
       const createdExpense = await expensesService.createExpense(newExpense);
       setExpenses([...expenses, createdExpense]);
-      
+
       if (ENV.DEV_MODE) {
         console.log('הוצאה חדשה נוספה:', createdExpense);
       }
@@ -379,12 +379,6 @@ const Dashboard: React.FC = () => {
               <p>אנא בדוק את החיבור לאינטרנט ונסה שוב.</p>
             </div>
           </div>
-          <button
-            onClick={loadAllData}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            נסה שוב
-          </button>
         </div>
       </div>
     );
@@ -398,12 +392,7 @@ const Dashboard: React.FC = () => {
             <h2 className="text-xl font-bold text-yellow-800 mb-2">אין שנות תקציב מוגדרות</h2>
             <p className="text-yellow-700">אנא הגדר שנת תקציב בהגדרות המערכת</p>
           </div>
-          <button
-            onClick={loadAllData}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            רענן נתונים
-          </button>
+
         </div>
       </div>
     );
@@ -411,16 +400,14 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
-<h1 >{categories[0].fund_id} </h1>
-
       <div className="max-w-7xl mx-auto">
         <TopActions
-           selectedBudgetYear={selectedBudgetYear}
-           budgetYears={budgetYears}
-           onBudgetYearChange={handleBudgetYearChange}
-           onAddExpense={handleAddExpense}
-           onAddIncome={handleAddIncome}
-         />
+          selectedBudgetYear={selectedBudgetYear}
+          budgetYears={budgetYears}
+          onBudgetYearChange={handleBudgetYearChange}
+          onAddExpense={handleAddExpense}
+          onAddIncome={handleAddIncome}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
           <TitheSection
@@ -429,13 +416,13 @@ const Dashboard: React.FC = () => {
             titheGiven={titheGiven}
             onAddTithe={handleAddTithe}
           />
-          
+
           <DebtsSection
             debts={debts}
             onAddDebt={handleAddDebt}
             onDeleteDebt={handleDeleteDebt}
           />
-          
+
           <TasksSection
             tasks={tasks}
             onAddTask={handleAddTask}
@@ -458,7 +445,7 @@ const Dashboard: React.FC = () => {
               onMonthChange={setCurrentDisplayMonth}
             />
           </div>
-          
+
           <div>
             <BudgetChart
               totalBudget={totalBudget}
@@ -492,7 +479,6 @@ const Dashboard: React.FC = () => {
           onClose={() => setIsExpenseModalOpen(false)}
           onAddExpense={handleExpenseModalSubmit}
           categories={categories}
-          selectedBudgetYear={selectedBudgetYear}
         />
       </div>
     </div>
