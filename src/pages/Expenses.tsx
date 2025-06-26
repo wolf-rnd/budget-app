@@ -1,13 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { TrendingDown, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Undo2, X } from 'lucide-react';
-import { Expense, Category, BudgetYear } from '../types';
 import ExpenseModal from '../components/Modals/ExpenseModal';
 import { filterExpensesByBudgetYear } from '../utils/budgetUtils';
 
 // Import services instead of JSON data
-import { CreateExpenseRequest, expensesService } from '../services/expensesService';
-import { categoriesService } from '../services/categoriesService';
-import { budgetYearsService } from '../services/budgetYearsService';
+import { CreateExpenseRequest, expensesService, GetExpenseRequest, UpdateExpenseRequest } from '../services/expensesService';
+import { categoriesService, GetCategoryRequest } from '../services/categoriesService';
+import { BudgetYear, budgetYearsService } from '../services/budgetYearsService';
+import { useBudgetYearStore } from '../store/budgetYearStore';
+import { mapObject } from '../utils/mappers';
 
 interface UndoNotification {
   expenseId: string;
@@ -15,44 +16,58 @@ interface UndoNotification {
   timeoutId: ReturnType<typeof setTimeout>;
 }
 
-interface ExpensesProps {
-  selectedBudgetYear?: BudgetYear | null;
-}
+// אין צורך ב-selectedBudgetYear כ-prop, הכל מה-store
 
-const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
-  const [expenses, setExpenses] = useState<Expense[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+const Expenses: React.FC = () => {
+  const [expenses, setExpenses] = useState<GetExpenseRequest[]>([]);
+  const [categories, setCategories] = useState<GetCategoryRequest[]>([]);
   const [budgetYears, setBudgetYears] = useState<BudgetYear[]>([]);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
-  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [editingExpense, setEditingExpense] = useState<UpdateExpenseRequest | null>(null);
   const [undoNotification, setUndoNotification] = useState<UndoNotification | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+  const [currentPage, setCurrentPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedFund, setSelectedFund] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
+
+  const selectedBudgetYearId = useBudgetYearStore(state => state.selectedBudgetYearId);
   const itemsPerPage = 10;
+
+  // קיבוץ והרחבה
+  const [groupBy, setGroupBy] = useState<'none' | 'category' | 'fund'>('none');
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   // Load data from API
   useEffect(() => {
     loadData();
   }, []);
 
+  // ברירת מחדל: כל הקבוצות פתוחות כשמשנים קיבוץ
+  useEffect(() => {
+    if (groupBy === 'none') return;
+    const allGroups = Object.keys(groupedExpenses);
+    setExpandedGroups(Object.fromEntries(allGroups.map(g => [g, true])));
+    // eslint-disable-next-line
+  }, [groupBy]);
+
+
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const [expensesData, categoriesData, budgetYearsData] = await Promise.all([
-        expensesService.getAllExpenses(),
+      const [categoriesData, budgetYearsData] = await Promise.all([
         categoriesService.getAllCategories(),
         budgetYearsService.getAllBudgetYears()
       ]);
 
-      setExpenses(expensesData);
       setCategories(categoriesData);
       setBudgetYears(budgetYearsData);
+      const expensesData = await expensesService.getAllExpenses(
+        selectedBudgetYearId ? { budget_year_id: selectedBudgetYearId } : undefined
+      );
+      setExpenses(expensesData);
     } catch (err) {
       console.error('Failed to load expenses data:', err);
       setError('שגיאה בטעינת נתוני ההוצאות');
@@ -61,26 +76,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
     }
   };
 
-  const currentBudgetYear = selectedBudgetYear || budgetYears.find(year => year.is_active) || budgetYears[0];
-
-  const categoryColors: Record<string, string> = {
-    'מזון': 'bg-green-100 text-green-800 border-green-300',
-    'תחבורה': 'bg-blue-100 text-blue-800 border-blue-300',
-    'בילויים קטנים': 'bg-purple-100 text-purple-800 border-purple-300',
-    'שירותים': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-    'תקשורת': 'bg-indigo-100 text-indigo-800 border-indigo-300',
-    'ביגוד': 'bg-pink-100 text-pink-800 border-pink-300',
-    'ריהוט': 'bg-orange-100 text-orange-800 border-orange-300',
-    'מתנות': 'bg-red-100 text-red-800 border-red-300',
-    'דיור': 'bg-gray-100 text-gray-800 border-gray-300',
-    'ביטוח': 'bg-cyan-100 text-cyan-800 border-cyan-300',
-    'בריאות': 'bg-emerald-100 text-emerald-800 border-emerald-300',
-    'חינוך': 'bg-violet-100 text-violet-800 border-violet-300',
-    'נופש': 'bg-teal-100 text-teal-800 border-teal-300',
-    'תחזוקה': 'bg-amber-100 text-amber-800 border-amber-300',
-    'השקעות קטנות': 'bg-lime-100 text-lime-800 border-lime-300',
-    'שונות': 'bg-slate-100 text-slate-800 border-slate-300'
-  };
+  const currentBudgetYear = selectedBudgetYearId;
 
   const fundColors: Record<string, string> = {
     'קופת שוטף': 'bg-emerald-100 text-emerald-800 border-emerald-300',
@@ -89,22 +85,28 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
   };
 
   const uniqueFunds = Array.from(new Set(categories.map(cat => cat.fund)));
-
-  // סינון הוצאות לפי שנת תקציב נוכחית
-  const budgetYearExpenses = useMemo(() => {
-    if (!currentBudgetYear) return expenses;
-    return filterExpensesByBudgetYear(expenses, currentBudgetYear);
-  }, [expenses, currentBudgetYear]);
-
+  // אין צורך בסינון לפי שנת תקציב בקליינט – הסינון מתבצע בשרת
   const filteredExpenses = useMemo(() => {
-    return budgetYearExpenses.filter(expense => {
-      const categoryMatch = !selectedCategory || expense.category === selectedCategory;
-      const fundMatch = !selectedFund || expense.fund === selectedFund;
+    return expenses.filter(expense => {
+      const categoryMatch = !selectedCategory || expense.categories?.name === selectedCategory;
+      const fundMatch = !selectedFund || expense.funds?.name === selectedFund;
       return categoryMatch && fundMatch;
     });
-  }, [budgetYearExpenses, selectedCategory, selectedFund]);
+  }, [expenses, selectedCategory, selectedFund]);
 
   const totalPages = Math.ceil(filteredExpenses.length / itemsPerPage);
+
+  const groupedExpenses = useMemo(() => {
+    if (groupBy === 'none') return {};
+    const key = groupBy === 'category' ? 'categories' : 'funds';
+    return filteredExpenses.reduce((groups, expense) => {
+      const groupName = expense[key]?.name || 'לא ידוע';
+      if (!groups[groupName]) groups[groupName] = [];
+      groups[groupName].push(expense);
+      return groups;
+    }, {} as Record<string, GetExpenseRequest[]>);
+  }, [filteredExpenses, groupBy]);
+
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentExpenses = filteredExpenses.slice(startIndex, endIndex);
@@ -152,22 +154,19 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
   const handleEditExpense = (id: string) => {
     const expense = expenses.find(exp => exp.id === id);
     if (expense) {
-      setEditingExpense(expense);
+      // שימוש בפונקציה הגנרית להמרה
+      const editingExpense = mapObject<typeof expense, UpdateExpenseRequest>(expense, [
+        'id', 'name', 'amount', 'category_id', 'fund_id', 'date', 'note', 'budget_year_id'
+      ]);
+      setEditingExpense(editingExpense);
       setIsExpenseModalOpen(true);
     }
   };
 
-  const handleExpenseEditSubmit = async (id: string, updatedExpense: {
-    name: string;
-    amount: number;
-    category: string;
-    fund: string;
-    date: string;
-    note?: string;
-  }) => {
+  const handleExpenseEditSubmit = async (id: string, updatedExpense: UpdateExpenseRequest) => {
     try {
       const updated = await expensesService.updateExpense(id, updatedExpense);
-      setExpenses(expenses.map(expense => 
+      setExpenses(expenses.map(expense =>
         expense.id === id ? updated : expense
       ));
       console.log('הוצאה עודכנה:', updated);
@@ -205,7 +204,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
         // כאן נוכל להוסיף קריאה ל-API לשחזור ההוצאה
         // לעת עתה נטען מחדש את הנתונים
         await loadData();
-        
+
         clearTimeout(undoNotification.timeoutId);
         setUndoNotification(null);
       } catch (error) {
@@ -268,7 +267,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
             <div>
               <h1 className="text-2xl font-bold text-gray-800">הוצאות</h1>
               <p className="text-gray-600">
-                ניהול וצפייה בהוצאות - {currentBudgetYear?.name}
+                ניהול וצפייה בהוצאות - {budgetYears.find(year => year.is_active)?.name}
               </p>
             </div>
           </div>
@@ -276,7 +275,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">קטגוריה</label>
-              <select 
+              <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
@@ -292,7 +291,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">קופה</label>
-              <select 
+              <select
                 value={selectedFund}
                 onChange={(e) => setSelectedFund(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
@@ -328,12 +327,14 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
               <div className="flex items-center gap-2 text-sm text-amber-800">
                 <span>פילטרים פעילים:</span>
                 {selectedCategory && (
-                  <span className={`px-2 py-1 rounded-full text-xs border ${categoryColors[selectedCategory] || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
+                  // <span className={`px-2 py-1 rounded-full text-xs border ${expense.categories?.color_class || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs border 'bg-gray-100 text-gray-800 border-gray-300'}`}>
                     {selectedCategory}
                   </span>
                 )}
                 {selectedFund && (
-                  <span className={`px-2 py-1 rounded-full text-xs border ${fundColors[selectedFund] || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
+                  // <span className={`px-2 py-1 rounded-full text-xs border ${fundColors[selectedFund] || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
+                  <span className={`px-2 py-1 rounded-full text-xs border 'bg-gray-100 text-gray-800 border-gray-300'}`}>
                     {selectedFund}
                   </span>
                 )}
@@ -366,6 +367,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">קטגוריה</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">קופה</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">סכום</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">הערה</th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">פעולות</th>
                 </tr>
               </thead>
@@ -379,34 +381,35 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
                       <td className="px-6 py-4 text-sm text-gray-900">
                         <div>
                           <div className="font-medium">{expense.name}</div>
-                          {expense.note && (
-                            <div className="text-xs text-gray-500 mt-1">{expense.note}</div>
-                          )}
+
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full border ${categoryColors[expense.category] || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
-                          {expense.category}
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full border ${expense.categories?.color_class || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
+                          {expense.categories?.name}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full border ${fundColors[expense.fund] || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
-                          {expense.fund}
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full border ${expense.funds?.color_class || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
+                          {expense.funds?.name}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-amber-600">
                         {formatCurrency(expense.amount)}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                        {expense.note || ''}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         <div className="flex gap-2">
-                          <button 
+                          <button
                             onClick={() => handleEditExpense(expense.id)}
                             className="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50 transition-colors"
                             title="עריכה"
                           >
                             <Edit size={16} />
                           </button>
-                          <button 
+                          <button
                             onClick={() => handleDeleteExpense(expense.id)}
                             className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50 transition-colors"
                             title="מחיקה"
@@ -438,44 +441,41 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
                 <div className="text-sm text-gray-700">
                   מציג {startIndex + 1}-{Math.min(endIndex, filteredExpenses.length)} מתוך {filteredExpenses.length} הוצאות
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className={`p-2 rounded-lg transition-colors ${
-                      currentPage === 1 
-                        ? 'text-gray-400 cursor-not-allowed' 
-                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
-                    }`}
+                    className={`p-2 rounded-lg transition-colors ${currentPage === 1
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                      }`}
                   >
                     <ChevronRight size={16} />
                   </button>
-                  
+
                   <div className="flex gap-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
                       <button
                         key={page}
                         onClick={() => handlePageChange(page)}
-                        className={`px-3 py-1 rounded-lg text-sm transition-colors ${
-                          page === currentPage
-                            ? 'bg-amber-500 text-white'
-                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
-                        }`}
+                        className={`px-3 py-1 rounded-lg text-sm transition-colors ${page === currentPage
+                          ? 'bg-amber-500 text-white'
+                          : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                          }`}
                       >
                         {page}
                       </button>
                     ))}
                   </div>
-                  
+
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className={`p-2 rounded-lg transition-colors ${
-                      currentPage === totalPages 
-                        ? 'text-gray-400 cursor-not-allowed' 
-                        : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
-                    }`}
+                    className={`p-2 rounded-lg transition-colors ${currentPage === totalPages
+                      ? 'text-gray-400 cursor-not-allowed'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
+                      }`}
                   >
                     <ChevronLeft size={16} />
                   </button>
@@ -488,7 +488,6 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
         <ExpenseModal
           isOpen={isExpenseModalOpen}
           onClose={() => {
-            debugger
             setIsExpenseModalOpen(false);
             setEditingExpense(null);
           }}
@@ -508,7 +507,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
                   <p className="text-xs opacity-90 break-words">"{undoNotification.expenseName}"</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-2 flex-shrink-0">
                 <button
                   onClick={handleUndo}
@@ -517,7 +516,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
                   <Undo2 size={12} />
                   ביטול
                 </button>
-                
+
                 <button
                   onClick={handleCloseNotification}
                   className="text-white hover:text-red-200 transition-colors"
@@ -526,7 +525,7 @@ const Expenses: React.FC<ExpensesProps> = ({ selectedBudgetYear }) => {
                 </button>
               </div>
             </div>
-            
+
             <div className="mt-2 w-full bg-red-500 rounded-full h-1">
               <div className="bg-white h-1 rounded-full animate-progress-bar"></div>
             </div>

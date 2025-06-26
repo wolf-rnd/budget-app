@@ -1,29 +1,17 @@
 import React, { useState } from 'react';
 import { X, TrendingDown, Plus, DollarSign, FileText, Tag, Calendar } from 'lucide-react';
-import { BudgetYear, Category, Expense } from '../../types';
+
+import {  CreateExpenseRequest, UpdateExpenseRequest } from '../../services';
+import { GetCategoryRequest } from '../../services/categoriesService';
+import { useBudgetYearStore } from '../../store/budgetYearStore';
 
 interface ExpenseModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddExpense?: (expense: {
-    name: string;
-    amount: number;
-    category: string;
-    fund: string;
-    date: string;
-    note?: string;
-  }) => void;
-  onEditExpense?: (id: string, expense: {
-    name: string;
-    amount: number;
-    category: string;
-    fund: string;
-    date: string;
-    note?: string;
-  }) => void;
-  categories: Category[];
-  editingExpense?: Expense | null;
-  selectedBudgetYear: BudgetYear | null; // prop חדש
+  onAddExpense?: (expense: CreateExpenseRequest) => void;
+  onEditExpense?: (id: string, expense: UpdateExpenseRequest) => void;
+  categories: GetCategoryRequest[];
+  editingExpense?: UpdateExpenseRequest | null;
 }
 
 const ExpenseModal: React.FC<ExpenseModalProps> = ({
@@ -33,12 +21,11 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
   onEditExpense,
   categories,
   editingExpense,
-  selectedBudgetYear // prop חדש
 }) => {
   const [name, setName] = useState(editingExpense?.name || '');
   const [amount, setAmount] = useState(editingExpense?.amount.toString() || '');
-  const [selectedCategory, setSelectedCategory] = useState(editingExpense?.category || '');
-  const [selectedFund, setSelectedFund] = useState(editingExpense?.fund || '');
+  const [selectedCategory, setSelectedCategory] = useState(editingExpense?.category_id || '');
+  const [selectedFund, setSelectedFund] = useState(editingExpense?.fund_id || '');
   const [takenFromMainFund, setTakenFromMainFund] = useState(false);
   const [date, setDate] = useState(editingExpense?.date || new Date().toISOString().split('T')[0]);
   const [note, setNote] = useState(editingExpense?.note || '');
@@ -47,8 +34,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     if (editingExpense) {
       setName(editingExpense.name);
       setAmount(formatNumber(editingExpense.amount.toString()));
-      setSelectedCategory(editingExpense.category);
-      setSelectedFund(editingExpense.fund || '');
+      setSelectedCategory(editingExpense.category_id);
+      setSelectedFund(editingExpense.fund_id || '');
       setDate(editingExpense.date);
       setNote(editingExpense.note || '');
       setTakenFromMainFund(false);
@@ -85,39 +72,52 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     e.preventDefault();
 
     // ודא ש-selectedBudgetYear קיים ב-props
-    if (!selectedBudgetYear) {
-      alert('יש לבחור שנת תקציב');
-      return;
-    }
+    // if (!selectedBudgetYear) {
+    //   alert('יש לבחור שנת תקציב');
+    //   return;
+    // }
 
-    // הגנה נוספת: ודא של-selectedBudgetYear יש id
-    if (!selectedBudgetYear.id) {
-      alert('שנת התקציב שנבחרה אינה תקינה');
-      return;
-    }
+    // // הגנה נוספת: ודא של-selectedBudgetYear יש id
+    // if (!selectedBudgetYear.id) {
+    //   alert('שנת התקציב שנבחרה אינה תקינה');
+    //   return;
+    // }
     const selectedCategoryObj = categories.find(cat => cat.name === selectedCategory);
-    const categoryId = selectedCategoryObj ? selectedCategoryObj.id : undefined;
-    // אם יש לך מערך funds עם id ו-name, תוכל לעשות אותו דבר לפאנד
-    // const selectedFundObj = funds?.find(fund => fund.name === selectedFund);
-    // const fundId = selectedFundObj ? selectedFundObj.id : undefined;
+    const categoryId = selectedCategoryObj ? selectedCategoryObj.id : "";
 
-    const expenseData: CreateExpenseRequest = {
+
+    // שליפת מזהה שנת התקציב הנבחרת בצורה ריאקטיבית
+    // (הקומפוננטה תתעדכן אוטומטית אם הערך משתנה)
+  const selectedBudgetYearId = useBudgetYearStore(state => state.selectedBudgetYearId);
+
+    // יצירת אובייקט להוספה
+    const createExpenseData: CreateExpenseRequest = {
       name: name.trim(),
       amount: Number(cleanNumber(amount)),
-      budget_year_id: selectedBudgetYear.id,
+      budget_year_id: selectedBudgetYearId || "",
       category_id: categoryId,
-      fund_id: selectedCategoryObj?.fund_id || 0,
+      fund_id: selectedCategoryObj?.fund_id || "",
       date,
       note: note.trim() || undefined
-      // ניתן להוסיף שדות נוספים במידת הצורך
     };
 
-    if (editingExpense && onEditExpense) {
-      onEditExpense(editingExpense.id, expenseData);
+    // יצירת אובייקט לעדכון (כולל id)
+    const updateExpenseData: UpdateExpenseRequest | undefined = editingExpense ? {
+      id: editingExpense.id,
+      name: name.trim(),
+      amount: Number(cleanNumber(amount)),
+      budget_year_id: selectedBudgetYearId || "",
+      category_id: categoryId,
+      fund_id: selectedCategoryObj?.fund_id || "",
+      date,
+      note: note.trim() || undefined
+    } : undefined;
+
+    if (editingExpense && onEditExpense && updateExpenseData) {
+      onEditExpense(editingExpense.id, updateExpenseData);
     } else if (onAddExpense) {
-      onAddExpense(expenseData);
+      onAddExpense(createExpenseData);
     }
-    debugger
     onClose();
   };
 

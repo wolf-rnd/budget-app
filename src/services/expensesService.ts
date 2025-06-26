@@ -3,6 +3,27 @@ import { ENV } from '../config/env';
 import { apiClient } from './apiClient';
 
 
+export interface GetExpenseRequest {
+  id: string;
+  name: string;
+  amount: number;
+  category: string;
+  fund: string;
+  date: string;
+  note?: string;
+  budget_year_id?: string; // קישור לשנת תקציב
+  // API response additions:
+  categories?: {
+    name: string;
+    color_class?: string | null;
+  };
+  funds?: {
+    name: string;
+    type?: string;
+    color_class?: string | null;
+  };
+}
+
 export interface CreateExpenseRequest {
   name: string;
   amount: number;
@@ -15,12 +36,14 @@ export interface CreateExpenseRequest {
 
 
 export interface UpdateExpenseRequest {
-  name?: string;
-  amount?: number;
-  category?: string;
-  fund?: string;
-  date?: string;
+  id: string;
+  name: string;
+  amount: number;
+  category_id: string;
+  fund_id: string;
+  date: string;
   note?: string;
+  budget_year_id?: string; // קישור לשנת תקציב
 }
 
 export interface ExpenseFilters {

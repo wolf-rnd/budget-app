@@ -11,15 +11,15 @@ import {
   Calculator
 } from 'lucide-react';
 import { ENV } from '../../config/env';
+import { NavLink, useLocation } from 'react-router-dom';
 
 interface SidebarProps {
-  currentPage: string;
-  onPageChange: (page: string) => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange, isCollapsed, onToggleCollapse }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse }) => {
+  const location = useLocation();
   const menuItems = [
     {
       id: 'dashboard',
@@ -117,70 +117,45 @@ const Sidebar: React.FC<SidebarProps> = ({ currentPage, onPageChange, isCollapse
         <ul className="space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = currentPage === item.id;
-            
             return (
               <li key={item.id}>
-                <button
-                  onClick={() => onPageChange(item.id)}
-                  className={`
-                    w-full text-right rounded-xl transition-all duration-200 group relative
-                    ${isCollapsed ? 'p-3' : 'p-4'}
+                <NavLink
+                  to={`/${item.id}`}
+                  className={({ isActive }) => `
+                    w-full text-right rounded-xl transition-all duration-200 group relative flex items-center
+                    ${isCollapsed ? 'p-3 justify-center' : 'p-4'}
                     ${isActive 
                       ? 'bg-gradient-to-l from-emerald-500 to-blue-600 text-white shadow-lg' 
                       : 'hover:bg-gray-50 text-gray-700 hover:shadow-md'
                     }
                   `}
                   title={isCollapsed ? item.name : ''}
+                  end={item.id === 'dashboard'}
                 >
                   {isCollapsed ? (
-                    // תצוגה מצומצמת - רק אייקון
-                    <div className="flex items-center justify-center">
+                    <div className="flex items-center justify-center w-full">
                       <Icon 
                         size={20} 
-                        className={`
-                          ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-emerald-600'}
-                          transition-colors duration-200
-                        `} 
+                        className={`transition-colors duration-200`} 
                       />
-                      
-                      {/* אינדיקטור פעיל */}
-                      {isActive && (
-                        <div className="absolute left-1 top-1/2 transform -translate-y-1/2 w-1 h-6 bg-white rounded-full"></div>
-                      )}
                     </div>
                   ) : (
-                    // תצוגה מלאה
-                    <div className="flex items-center gap-4">
+                    <>
                       <Icon 
                         size={20} 
-                        className={`
-                          ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-emerald-600'}
-                          transition-colors duration-200
-                        `} 
+                        className={`mr-3 transition-colors duration-200`} 
                       />
                       <div className="flex-1 min-w-0">
-                        <div className={`
-                          font-semibold text-sm
-                          ${isActive ? 'text-white' : 'text-gray-800'}
-                        `}>
+                        <div className="font-semibold text-sm">
                           {item.name}
                         </div>
-                        <div className={`
-                          text-xs mt-1
-                          ${isActive ? 'text-emerald-100' : 'text-gray-500'}
-                        `}>
+                        <div className="text-xs mt-1 text-gray-500">
                           {item.description}
                         </div>
                       </div>
-                      
-                      {/* אינדיקטור פעיל */}
-                      {isActive && (
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      )}
-                    </div>
+                    </>
                   )}
-                </button>
+                </NavLink>
               </li>
             );
           })}
