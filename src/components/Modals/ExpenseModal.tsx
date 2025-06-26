@@ -117,7 +117,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
     } else if (onAddExpense) {
       onAddExpense(expenseData);
     }
-    debugger
     onClose();
   };
 

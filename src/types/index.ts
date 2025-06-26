@@ -46,6 +46,16 @@ export interface Expense {
   date: string;
   note?: string;
   budget_year_id?: string; // קישור לשנת תקציב
+  // API response additions:
+  categories?: {
+    name: string;
+    color_class?: string | null;
+  };
+  funds?: {
+    name: string;
+    type?: string;
+    color_class?: string | null;
+  };
 }
 
 export interface TitheGiven {
