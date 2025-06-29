@@ -8,6 +8,7 @@ import TitheSection from '../components/Dashboard/TitheSection';
 import DebtsSection from '../components/Dashboard/DebtsSection';
 import TasksSection from '../components/Dashboard/TasksSection';
 import AssetsSection from '../components/Dashboard/AssetsSection';
+import NotesSection, { Note } from '../components/Dashboard/NotesSection';
 import IncomeModal from '../components/Modals/IncomeModal';
 import ExpenseModal from '../components/Modals/ExpenseModal';
 import { useNotifications } from '../components/Notifications/NotificationSystem';
@@ -48,6 +49,7 @@ const Dashboard: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [assetSnapshots, setAssetSnapshots] = useState<AssetSnapshot[]>([]);
   const [categories, setCategories] = useState<GetCategoryRequest[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [currentDisplayMonth, setCurrentDisplayMonth] = useState<number>(new Date().getMonth() + 1);
@@ -100,6 +102,17 @@ const Dashboard: React.FC = () => {
         setTasks(tasksData);
         setAssetSnapshots(assetsData);
         setCategories(categoriesData);
+
+        // טעינת פתקים (mock data לעת עתה)
+        setNotes([
+          {
+            id: '1',
+            title: 'חישובים',
+            content: '1000 + 500 = 1500\nתקציב חודשי: 3000\nנותר: 1500',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        ]);
 
         // הגדרת שנת תקציב ראשונית
         const savedBudgetYearId = localStorage.getItem('selectedBudgetYearId');
@@ -380,6 +393,51 @@ const Dashboard: React.FC = () => {
     }
   }, []);
 
+  // Notes handlers
+  const handleAddNote = useCallback(async (title: string, content: string) => {
+    try {
+      // TODO: Replace with API call when notes service is ready
+      const newNote: Note = {
+        id: Date.now().toString(),
+        title,
+        content,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      setNotes(prev => [...prev, newNote]);
+    } catch (error) {
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create note:', error);
+      }
+    }
+  }, []);
+
+  const handleUpdateNote = useCallback(async (id: string, title: string, content: string) => {
+    try {
+      // TODO: Replace with API call when notes service is ready
+      setNotes(prev => prev.map(note => 
+        note.id === id 
+          ? { ...note, title, content, updated_at: new Date().toISOString() }
+          : note
+      ));
+    } catch (error) {
+      if (ENV.DEV_MODE) {
+        console.error('Failed to update note:', error);
+      }
+    }
+  }, []);
+
+  const handleDeleteNote = useCallback(async (id: string) => {
+    try {
+      // TODO: Replace with API call when notes service is ready
+      setNotes(prev => prev.filter(note => note.id !== id));
+    } catch (error) {
+      if (ENV.DEV_MODE) {
+        console.error('Failed to delete note:', error);
+      }
+    }
+  }, []);
+
   const getMonthName = useCallback((monthNumber: number) => {
     const months = [
       'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
@@ -461,6 +519,16 @@ const Dashboard: React.FC = () => {
             onAddTask={handleAddTask}
             onUpdateTask={handleUpdateTask}
             onDeleteTask={handleDeleteTask}
+          />
+        </div>
+
+        {/* רכיב הפתקים החדש */}
+        <div className="mb-6">
+          <NotesSection
+            notes={notes}
+            onAddNote={handleAddNote}
+            onUpdateNote={handleUpdateNote}
+            onDeleteNote={handleDeleteNote}
           />
         </div>
 

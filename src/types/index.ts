@@ -104,3 +104,13 @@ export interface FundBudget {
   amount_given?: number;
   spent?: number;
 }
+
+// הוספת interface לפתקים
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+}

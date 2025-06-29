@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, CreditCard, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Plus, CreditCard, Trash2, ArrowLeft, ArrowRight, Eye } from 'lucide-react';
 import { Debt } from '../../types';
 
 interface DebtsSectionProps {
@@ -8,12 +8,135 @@ interface DebtsSectionProps {
   onDeleteDebt: (id: string) => void;
 }
 
+interface DebtsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  debts: Debt[];
+  onDeleteDebt: (id: string) => void;
+}
+
+const DebtsModal: React.FC<DebtsModalProps> = ({ isOpen, onClose, debts, onDeleteDebt }) => {
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('he-IL', {
+      style: 'currency',
+      currency: 'ILS',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const debtsOwedToMe = debts.filter(debt => debt.type === 'owed_to_me');
+  const debtsIOwe = debts.filter(debt => debt.type === 'i_owe' || !debt.type);
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="bg-gradient-to-r from-orange-500 to-red-500 p-6 rounded-t-xl">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <CreditCard size={24} className="text-white" />
+              <h2 className="text-xl font-bold text-white">כל החובות</h2>
+            </div>
+            <button
+              onClick={onClose}
+              className="text-white hover:text-orange-200 transition-colors"
+            >
+              <X size={24} />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* חייבים לי */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <div className="w-3 h-3 bg-emerald-400 rounded-full"></div>
+                חייבים לי ({debtsOwedToMe.length})
+              </h3>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {debtsOwedToMe.length > 0 ? (
+                  debtsOwedToMe.map(debt => (
+                    <div key={debt.id} className="group p-4 bg-emerald-50 rounded-lg border border-emerald-100">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-emerald-800 truncate">{debt.description}</p>
+                          {debt.note && (
+                            <p className="text-xs text-emerald-600 mt-1">{debt.note}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-sm font-semibold text-emerald-700">
+                            {formatCurrency(debt.amount)}
+                          </span>
+                          <button
+                            onClick={() => onDeleteDebt(debt.id)}
+                            className="opacity-0 group-hover:opacity-100 text-emerald-400 hover:text-red-500 p-1 rounded transition-all"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-gray-500 py-8">אין חובות שחייבים לי</p>
+                )}
+              </div>
+            </div>
+
+            {/* אני חייבת */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <div className="w-3 h-3 bg-slate-400 rounded-full"></div>
+                אני חייבת ({debtsIOwe.length})
+              </h3>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {debtsIOwe.length > 0 ? (
+                  debtsIOwe.map(debt => (
+                    <div key={debt.id} className="group p-4 bg-slate-50 rounded-lg border border-slate-100">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-slate-800 truncate">{debt.description}</p>
+                          {debt.note && (
+                            <p className="text-xs text-slate-600 mt-1">{debt.note}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-sm font-semibold text-slate-700">
+                            {formatCurrency(debt.amount)}
+                          </span>
+                          <button
+                            onClick={() => onDeleteDebt(debt.id)}
+                            className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 p-1 rounded transition-all"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-center text-gray-500 py-8">אין חובות שאני חייבת</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // הוצאת הקומפוננטות החוצה כדי למנוע re-creation
-const DebtsList = ({ debts, type, emptyMessage, onDeleteDebt }: { 
+const DebtsList = ({ debts, type, emptyMessage, onDeleteDebt, maxItems = 3 }: { 
   debts: Debt[], 
   type: 'owed_to_me' | 'i_owe',
   emptyMessage: string,
-  onDeleteDebt: (id: string) => void
+  onDeleteDebt: (id: string) => void,
+  maxItems?: number
 }) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('he-IL', {
@@ -24,10 +147,12 @@ const DebtsList = ({ debts, type, emptyMessage, onDeleteDebt }: {
     }).format(amount);
   };
 
+  const displayDebts = debts.slice(0, maxItems);
+
   return (
     <div className="space-y-2">
-      {debts.length > 0 ? (
-        debts.map(debt => (
+      {displayDebts.length > 0 ? (
+        displayDebts.map(debt => (
           <div key={debt.id} className="group p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 hover:border-gray-200 transition-all duration-200">
             <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
@@ -151,6 +276,8 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
     note: ''
   });
 
+  const [showAllModal, setShowAllModal] = useState(false);
+
   // הפרדת החובות לשני סוגים
   const debtsOwedToMe = debts.filter(debt => debt.type === 'owed_to_me');
   const debtsIOwe = debts.filter(debt => debt.type === 'i_owe' || !debt.type); // תאימות לאחור
@@ -185,62 +312,89 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
     setIOweForm(prev => ({ ...prev, [field]: value }));
   };
 
+  const totalDebts = debts.length;
+  const showViewAllButton = totalDebts > 6; // 3 מכל סוג
+
   return (
-    <div className="bg-white rounded-xl shadow-sm p-5 border-r-4 border-orange-400 hover:shadow-md transition-all duration-300">
-      <div className="flex items-center justify-center gap-2 mb-5">
-        <CreditCard size={18} className="text-gray-500" />
-        <h3 className="text-lg font-semibold text-gray-700">חובות</h3>
-      </div>
-
-      {/* שתי עמודות של חובות */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* עמודה שמאלית - חייבים לי */}
-        <div>
-          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-            <div className="w-3 h-3 bg-emerald-400 rounded-full"></div>
-            <h4 className="text-sm font-medium text-gray-600">חייבים לי</h4>
+    <>
+      <div className="bg-white rounded-xl shadow-sm p-5 border-r-4 border-orange-400 hover:shadow-md transition-all duration-300" style={{ maxHeight: '500px', overflow: 'hidden' }}>
+        <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center gap-2">
+            <CreditCard size={18} className="text-gray-500" />
+            <h3 className="text-lg font-semibold text-gray-700">חובות</h3>
           </div>
-          <div className="mb-4">
-            <DebtsList 
-              debts={debtsOwedToMe} 
-              type="owed_to_me"
-              emptyMessage="אין חובות שחייבים לי"
-              onDeleteDebt={onDeleteDebt}
-            />
-          </div>
-          <AddDebtForm 
-            type="owed_to_me" 
-            form={owedToMeForm}
-            onUpdateForm={updateOwedToMeForm}
-            onAddDebt={() => handleAddDebt('owed_to_me')}
-            onKeyPress={(e) => handleKeyPress(e, 'owed_to_me')}
-          />
+          
+          {showViewAllButton && (
+            <button
+              onClick={() => setShowAllModal(true)}
+              className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              <Eye size={14} />
+              הצג הכל ({totalDebts})
+            </button>
+          )}
         </div>
 
-        {/* עמודה ימנית - אני חייבת */}
-        <div>
-          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-            <div className="w-3 h-3 bg-slate-400 rounded-full"></div>
-            <h4 className="text-sm font-medium text-gray-600">אני חייבת</h4>
-          </div>
-          <div className="mb-4">
-            <DebtsList 
-              debts={debtsIOwe} 
-              type="i_owe"
-              emptyMessage="אין חובות שאני חייבת"
-              onDeleteDebt={onDeleteDebt}
+        {/* שתי עמודות של חובות */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* עמודה שמאלית - חייבים לי */}
+          <div>
+            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
+              <div className="w-3 h-3 bg-emerald-400 rounded-full"></div>
+              <h4 className="text-sm font-medium text-gray-600">חייבים לי</h4>
+            </div>
+            <div className="mb-4" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+              <DebtsList 
+                debts={debtsOwedToMe} 
+                type="owed_to_me"
+                emptyMessage="אין חובות שחייבים לי"
+                onDeleteDebt={onDeleteDebt}
+                maxItems={3}
+              />
+            </div>
+            <AddDebtForm 
+              type="owed_to_me" 
+              form={owedToMeForm}
+              onUpdateForm={updateOwedToMeForm}
+              onAddDebt={() => handleAddDebt('owed_to_me')}
+              onKeyPress={(e) => handleKeyPress(e, 'owed_to_me')}
             />
           </div>
-          <AddDebtForm 
-            type="i_owe" 
-            form={iOweForm}
-            onUpdateForm={updateIOweForm}
-            onAddDebt={() => handleAddDebt('i_owe')}
-            onKeyPress={(e) => handleKeyPress(e, 'i_owe')}
-          />
+
+          {/* עמודה ימנית - אני חייבת */}
+          <div>
+            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
+              <div className="w-3 h-3 bg-slate-400 rounded-full"></div>
+              <h4 className="text-sm font-medium text-gray-600">אני חייבת</h4>
+            </div>
+            <div className="mb-4" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+              <DebtsList 
+                debts={debtsIOwe} 
+                type="i_owe"
+                emptyMessage="אין חובות שאני חייבת"
+                onDeleteDebt={onDeleteDebt}
+                maxItems={3}
+              />
+            </div>
+            <AddDebtForm 
+              type="i_owe" 
+              form={iOweForm}
+              onUpdateForm={updateIOweForm}
+              onAddDebt={() => handleAddDebt('i_owe')}
+              onKeyPress={(e) => handleKeyPress(e, 'i_owe')}
+            />
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* Modal לכל החובות */}
+      <DebtsModal
+        isOpen={showAllModal}
+        onClose={() => setShowAllModal(false)}
+        debts={debts}
+        onDeleteDebt={onDeleteDebt}
+      />
+    </>
   );
 };
 
