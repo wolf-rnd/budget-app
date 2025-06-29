@@ -8,7 +8,6 @@ import TitheSection from '../components/Dashboard/TitheSection';
 import DebtsSection from '../components/Dashboard/DebtsSection';
 import TasksSection from '../components/Dashboard/TasksSection';
 import AssetsSection from '../components/Dashboard/AssetsSection';
-import QuickAddButtons from '../components/Dashboard/QuickAddButtons';
 import IncomeModal from '../components/Modals/IncomeModal';
 import ExpenseModal from '../components/Modals/ExpenseModal';
 import { useNotifications } from '../components/Notifications/NotificationSystem';
@@ -436,7 +435,6 @@ const Dashboard: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
               מצב קופות - {selectedBudgetYear?.name}
             </h2>
-            {/* to do print to screen the funds */}
             <FundsGrid
               funds={funds}
               onCloseDailyFund={handleCloseDailyFund}
@@ -462,12 +460,6 @@ const Dashboard: React.FC = () => {
             onAddSnapshot={handleAddAssetSnapshot}
           />
         </div>
-
-        <QuickAddButtons
-          onAddTithe={handleAddTithe}
-          onAddDebt={handleAddDebt}
-          onAddTask={handleAddTask}
-        />
 
         <IncomeModal
           isOpen={isIncomeModalOpen}
