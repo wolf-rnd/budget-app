@@ -734,8 +734,8 @@ const Expenses: React.FC = () => {
             {/* סיכום פילטרים פעילים */}
             {(Object.values(filters).some(value => value) || groupBy !== 'none') && (
               <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                <div className="flex items-center gap-2 text-sm text-amber-800">
-                  <span>פילטרים פעילים:</span>
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-gray-600">פילטרים פעילים:</span>
                   {filters.category && (
                     <ColorBadge color="#f59e0b" size="sm">
                       קטגוריה: {filters.category}
