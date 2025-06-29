@@ -500,10 +500,10 @@ const Dashboard: React.FC = () => {
           onAddIncome={handleAddIncome}
         />
 
-        {/* פריסה חדשה לפי הדרישות */}
-        <div className="grid grid-cols-12 gap-6 mb-6">
+        {/* פריסה חדשה לפי הדרישות - עם תיקון z-index */}
+        <div className="grid grid-cols-12 gap-6 mb-6 relative">
           {/* עמודה שמאלית: תזכורות (צרה, גובה מלא 650px) */}
-          <div className="col-span-12 lg:col-span-3">
+          <div className="col-span-12 lg:col-span-3 relative z-10">
             <div style={{ height: '650px' }}>
               <TasksSection
                 tasks={tasks}
@@ -515,7 +515,7 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* עמודה אמצעית: מעשרות ופתקים (מחולקת ל-2 שורות) */}
-          <div className="col-span-12 lg:col-span-4 space-y-6">
+          <div className="col-span-12 lg:col-span-4 space-y-6 relative z-10">
             {/* שורה עליונה: מעשרות (גובה חצי - 300px) */}
             <div style={{ height: '300px' }}>
               <TitheSection
@@ -538,7 +538,7 @@ const Dashboard: React.FC = () => {
           </div>
 
           {/* עמודה ימנית: חובות (רחבה, גובה מלא 650px) */}
-          <div className="col-span-12 lg:col-span-5">
+          <div className="col-span-12 lg:col-span-5 relative z-10">
             <div style={{ height: '650px' }}>
               <DebtsSection
                 debts={debts}
@@ -549,7 +549,8 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        {/* שורה נפרדת לקופות ותרשים - עם מרווח מספיק */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 mt-8 relative z-0">
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
               מצב קופות - {selectedBudgetYear?.name}
@@ -573,13 +574,15 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex justify-center">
+        {/* נכסים בשורה נפרדת - עם מרווח מספיק */}
+        <div className="flex justify-center mt-8 relative z-0">
           <AssetsSection
             snapshots={assetSnapshots}
             onAddSnapshot={handleAddAssetSnapshot}
           />
         </div>
 
+        {/* מודלים עם z-index גבוה */}
         <IncomeModal
           isOpen={isIncomeModalOpen}
           onClose={() => setIsIncomeModalOpen(false)}

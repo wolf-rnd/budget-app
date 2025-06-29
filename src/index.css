@@ -136,3 +136,58 @@ textarea:focus {
   font-weight: 900;
   letter-spacing: 0.5px;
 }
+
+/* תיקון z-index לרכיבים שונים */
+.dashboard-section {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-modal {
+  z-index: 1000;
+}
+
+.dashboard-notification {
+  z-index: 1100;
+}
+
+/* מניעת overflow בגריד */
+.dashboard-grid {
+  overflow: visible;
+}
+
+.dashboard-grid > * {
+  overflow: visible;
+}
+
+/* תיקון לרכיבים עם position absolute */
+.relative-container {
+  position: relative;
+  isolation: isolate;
+}
+
+/* תיקון למודלים */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+}
+
+.modal-content {
+  position: relative;
+  z-index: 1001;
+}
+
+/* תיקון לנוטיפיקציות */
+.notification-container {
+  position: fixed;
+  z-index: 1100;
+}
+
+/* תיקון לטיפטולים */
+.tooltip {
+  z-index: 1200;
+}
