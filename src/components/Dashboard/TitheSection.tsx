@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Heart, DollarSign, TrendingUp, Target, Gift } from 'lucide-react';
+import { Plus, Heart, DollarSign, TrendingUp, Target } from 'lucide-react';
 import { TitheGiven } from '../../types';
 
 interface TitheSectionProps {
@@ -42,100 +42,82 @@ const TitheSection: React.FC<TitheSectionProps> = ({ totalIncome, tithePercentag
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-4 border-r-4 border-pink-500 hover:shadow-xl transition-all duration-300 relative overflow-hidden">
-      {/* דגש עיצובי - פסים אלכסוניים עדינים */}
-      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-pink-100/60 to-transparent rounded-bl-full"></div>
-      <div className="absolute top-0 right-0 w-10 h-10 bg-gradient-to-bl from-pink-200/40 to-transparent rounded-bl-full"></div>
+    <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100 hover:shadow-md transition-all duration-300">
+      <div className="flex items-center justify-center gap-2 mb-5">
+        <Heart size={18} className="text-rose-400" />
+        <h3 className="text-lg font-semibold text-gray-700">מעשרות</h3>
+      </div>
       
-      <div className="relative z-10">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <Heart size={18} className="text-pink-600" />
-          <h3 className="text-lg font-bold text-gray-800">מעשרות</h3>
+      {/* כרטיסי סיכום */}
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+          <div className="flex items-center justify-center gap-1 mb-1">
+            <DollarSign size={12} className="text-gray-500" />
+            <p className="text-xs font-medium text-gray-600">הכנסות</p>
+          </div>
+          <p className="text-sm font-semibold text-gray-700">{formatCurrency(totalIncome)}</p>
         </div>
         
-        {/* כרטיסי סיכום בשורה אחת */}
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          {/* סה"כ הכנסות */}
-          <div className="text-center p-2 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <DollarSign size={12} className="text-blue-600" />
-              <p className="text-xs font-bold text-gray-700">הכנסות</p>
-            </div>
-            <p className="text-xs font-bold text-gray-800">{formatCurrency(totalIncome)}</p>
+        <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+          <div className="flex items-center justify-center gap-1 mb-1">
+            <Target size={12} className="text-gray-500" />
+            <p className="text-xs font-medium text-gray-600">לתת ({tithePercentage}%)</p>
           </div>
-          
-          {/* מעשר לתת */}
-          <div className="text-center p-2 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <Target size={12} className="text-orange-600" />
-              <p className="text-xs font-bold text-gray-700">לתת ({tithePercentage}%)</p>
-            </div>
-            <p className="text-xs font-bold text-orange-600">{formatCurrency(requiredTithe)}</p>
-          </div>
-          
-          {/* נתרם */}
-          <div className="text-center p-2 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
-            <div className="flex items-center justify-center gap-1 mb-1">
-              <TrendingUp size={12} className="text-emerald-600" />
-              <p className="text-xs font-bold text-gray-700">נתרם</p>
-            </div>
-            <p className="text-xs font-bold text-emerald-600">{formatCurrency(givenTithe)}</p>
-          </div>
+          <p className="text-sm font-semibold text-amber-600">{formatCurrency(requiredTithe)}</p>
         </div>
+        
+        <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-100">
+          <div className="flex items-center justify-center gap-1 mb-1">
+            <TrendingUp size={12} className="text-gray-500" />
+            <p className="text-xs font-medium text-gray-600">נתרם</p>
+          </div>
+          <p className="text-sm font-semibold text-emerald-600">{formatCurrency(givenTithe)}</p>
+        </div>
+      </div>
 
-        {/* רכיב סיכום נפרד - חוב למעשרות ללא רקע */}
-        <div className="mb-4 text-center p-2 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Gift size={16} className="text-pink-600" />
-            <p className="text-xs font-bold text-pink-700">חוב למעשרות</p>
-          </div>
-          <p className={`text-xl font-bold ${remainingTithe > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-            {formatCurrency(Math.max(0, remainingTithe))}
-          </p>
+      {/* חוב למעשרות */}
+      <div className="mb-5 text-center p-4 bg-gradient-to-r from-rose-50 to-pink-50 rounded-lg border border-rose-100">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <Heart size={16} className="text-rose-400" />
+          <p className="text-sm font-medium text-rose-700">חוב למעשרות</p>
         </div>
+        <p className={`text-xl font-bold ${remainingTithe > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+          {formatCurrency(Math.max(0, remainingTithe))}
+        </p>
+      </div>
 
-        {/* שדות הוספה מהירים */}
-        <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2">
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="סכום"
-              className="w-full p-2 border-2 border-gray-200 rounded text-xs focus:border-pink-400 focus:ring-1 focus:ring-pink-200 transition-all bg-white"
-            />
-            
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              onKeyDown={handleKeyPress}
-              placeholder="תיאור"
-              className="w-full p-2 border-2 border-gray-200 rounded text-xs focus:border-pink-400 focus:ring-1 focus:ring-pink-200 transition-all bg-white"
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="הערה (אופציונלי)"
-              className="flex-1 p-2 border-2 border-gray-200 rounded text-xs focus:border-pink-400 focus:ring-1 focus:ring-pink-200 transition-all bg-white"
-            />
-            
-            <button
-              onClick={handleAddTithe}
-              disabled={!amount || !description.trim()}
-              className={`px-3 py-2 rounded text-xs font-medium transition-all flex items-center justify-center ${
-                amount && description.trim()
-                  ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-md hover:shadow-lg'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              }`}
-            >
-              <Plus size={14} />
-            </button>
-          </div>
-        </div>
+      {/* טופס הוספה */}
+      <div className="space-y-3 p-3 bg-white border border-gray-100 rounded-lg">
+        <input
+          type="number"
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder="סכום"
+          className="w-full p-2 border border-gray-200 rounded-md text-sm bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all"
+        />
+        
+        <input
+          type="text"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder="תיאור"
+          className="w-full p-2 border border-gray-200 rounded-md text-sm bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all"
+        />
+        
+        <button
+          onClick={handleAddTithe}
+          disabled={!amount || !description.trim()}
+          className={`w-full py-2 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+            amount && description.trim()
+              ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-sm hover:shadow-md'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+          }`}
+        >
+          <Plus size={14} />
+          הוספה
+        </button>
       </div>
     </div>
   );

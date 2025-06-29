@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, AlertTriangle, CreditCard, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Plus, CreditCard, Trash2, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Debt } from '../../types';
 
 interface DebtsSectionProps {
@@ -25,61 +25,51 @@ const DebtsList = ({ debts, type, emptyMessage, onDeleteDebt }: {
   };
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-2">
       {debts.length > 0 ? (
         debts.map(debt => (
-          <div key={debt.id} className={`p-1.5 bg-white rounded-lg shadow-sm border-r-2 hover:shadow-md transition-all duration-200 ${
-            type === 'owed_to_me' ? 'border-green-500 hover:border-green-600' : 'border-red-500 hover:border-red-600'
-          }`}>
-            <div className="flex justify-between items-center">
+          <div key={debt.id} className="group p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 hover:border-gray-200 transition-all duration-200">
+            <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2 mb-1">
                   {type === 'owed_to_me' ? (
-                    <ArrowLeft size={10} className="text-green-500 flex-shrink-0" />
+                    <div className="w-2 h-2 bg-emerald-400 rounded-full flex-shrink-0"></div>
                   ) : (
-                    <ArrowRight size={10} className="text-red-500 flex-shrink-0" />
+                    <div className="w-2 h-2 bg-slate-400 rounded-full flex-shrink-0"></div>
                   )}
-                  <p className="text-xs font-medium text-gray-800 truncate">{debt.description}</p>
+                  <p className="text-sm font-medium text-gray-800 truncate">{debt.description}</p>
                 </div>
                 {debt.note && (
-                  <p className="text-xs text-gray-600 opacity-75 truncate mr-3 mt-0.5">{debt.note}</p>
+                  <p className="text-xs text-gray-500 truncate mr-4">{debt.note}</p>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
-                <div className="text-left">
-                  <span className={`text-xs font-bold block ${
-                    type === 'owed_to_me' ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {formatCurrency(debt.amount)}
-                  </span>
-                </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className={`text-sm font-semibold ${
+                  type === 'owed_to_me' ? 'text-emerald-600' : 'text-slate-600'
+                }`}>
+                  {formatCurrency(debt.amount)}
+                </span>
                 
                 <button
                   onClick={() => onDeleteDebt(debt.id)}
-                  className={`transition-colors p-0.5 rounded-md ${
-                    type === 'owed_to_me' 
-                      ? 'text-green-500 hover:text-green-700 hover:bg-green-50' 
-                      : 'text-red-500 hover:text-red-700 hover:bg-red-50'
-                  }`}
+                  className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-all duration-200"
                   title="מחיקת חוב"
                 >
-                  <Trash2 size={10} />
+                  <Trash2 size={12} />
                 </button>
               </div>
             </div>
           </div>
         ))
       ) : (
-        <div className={`text-center py-3 rounded-lg border ${
-          type === 'owed_to_me' 
-            ? 'text-green-600 bg-green-50 border-green-200' 
-            : 'text-gray-600 bg-gray-50 border-gray-200'
-        }`}>
-          {type === 'owed_to_me' ? (
-            <ArrowLeft size={16} className="mx-auto mb-2 opacity-50 text-green-500" />
-          ) : (
-            <AlertTriangle size={16} className="mx-auto mb-2 opacity-50 text-gray-500" />
-          )}
+        <div className="text-center py-6 text-gray-400">
+          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+            {type === 'owed_to_me' ? (
+              <ArrowLeft size={14} className="text-gray-400" />
+            ) : (
+              <ArrowRight size={14} className="text-gray-400" />
+            )}
+          </div>
           <p className="text-xs font-medium">{emptyMessage}</p>
         </div>
       )}
@@ -101,19 +91,15 @@ const AddDebtForm = ({
   onKeyPress: (e: React.KeyboardEvent) => void
 }) => {
   return (
-    <div className="space-y-2">
-      <div className="grid grid-cols-2 gap-2">
+    <div className="space-y-3 p-3 bg-white border border-gray-100 rounded-lg">
+      <div className="space-y-2">
         <input
           type="number"
           value={form.amount}
           onChange={(e) => onUpdateForm('amount', e.target.value)}
           onKeyDown={onKeyPress}
           placeholder="סכום"
-          className={`w-full p-2 border-2 rounded text-xs transition-all bg-white ${
-            type === 'owed_to_me'
-              ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
-              : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
-          }`}
+          className="w-full p-2 border border-gray-200 rounded-md text-sm bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all"
         />
         
         <input
@@ -122,42 +108,31 @@ const AddDebtForm = ({
           onChange={(e) => onUpdateForm('description', e.target.value)}
           onKeyDown={onKeyPress}
           placeholder="תיאור"
-          className={`w-full p-2 border-2 rounded text-xs transition-all bg-white ${
-            type === 'owed_to_me'
-              ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
-              : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
-          }`}
+          className="w-full p-2 border border-gray-200 rounded-md text-sm bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all"
         />
-      </div>
-      
-      <div className="flex gap-2 flex-nowrap">
+        
         <input
           type="text"
           value={form.note}
           onChange={(e) => onUpdateForm('note', e.target.value)}
           onKeyDown={onKeyPress}
           placeholder="הערה (אופציונלי)"
-          className={`w-20 md:w-28 p-2 border-2 rounded text-xs transition-all bg-white ${
-            type === 'owed_to_me'
-              ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
-              : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
-          }`}
+          className="w-full p-2 border border-gray-200 rounded-md text-sm bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all"
         />
-        
-        <button
-          onClick={onAddDebt}
-          disabled={!form.amount || !form.description.trim()}
-          className={`px-3 py-2 rounded text-xs font-medium transition-all flex items-center justify-center ${
-            form.amount && form.description.trim()
-              ? type === 'owed_to_me'
-                ? 'bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg'
-                : 'bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-          }`}
-        >
-          <Plus size={14} />
-        </button>
       </div>
+      
+      <button
+        onClick={onAddDebt}
+        disabled={!form.amount || !form.description.trim()}
+        className={`w-full py-2 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+          form.amount && form.description.trim()
+            ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-sm hover:shadow-md'
+            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+        }`}
+      >
+        <Plus size={14} />
+        הוספה
+      </button>
     </div>
   );
 };
@@ -211,64 +186,58 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg p-4 border-r-4 border-orange-500 hover:shadow-xl transition-all duration-300 relative overflow-hidden">
-      {/* דגש עיצובי */}
-      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-orange-100/60 to-transparent rounded-bl-full"></div>
-      <div className="absolute top-0 right-0 w-10 h-10 bg-gradient-to-bl from-orange-200/40 to-transparent rounded-bl-full"></div>
-      
-      <div className="relative z-10">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <CreditCard size={18} className="text-orange-600" />
-          <h3 className="text-lg font-bold text-gray-800">חובות</h3>
+    <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100 hover:shadow-md transition-all duration-300">
+      <div className="flex items-center justify-center gap-2 mb-5">
+        <CreditCard size={18} className="text-gray-500" />
+        <h3 className="text-lg font-semibold text-gray-700">חובות</h3>
+      </div>
+
+      {/* שתי עמודות של חובות */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* עמודה שמאלית - חייבים לי */}
+        <div>
+          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
+            <div className="w-3 h-3 bg-emerald-400 rounded-full"></div>
+            <h4 className="text-sm font-medium text-gray-600">חייבים לי</h4>
+          </div>
+          <div className="mb-4">
+            <DebtsList 
+              debts={debtsOwedToMe} 
+              type="owed_to_me"
+              emptyMessage="אין חובות שחייבים לי"
+              onDeleteDebt={onDeleteDebt}
+            />
+          </div>
+          <AddDebtForm 
+            type="owed_to_me" 
+            form={owedToMeForm}
+            onUpdateForm={updateOwedToMeForm}
+            onAddDebt={() => handleAddDebt('owed_to_me')}
+            onKeyPress={(e) => handleKeyPress(e, 'owed_to_me')}
+          />
         </div>
 
-        {/* שתי עמודות של חובות */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          {/* עמודה שמאלית - חייבים לי */}
-          <div>
-            <div className="flex items-center gap-1 mb-2">
-              <ArrowLeft size={14} className="text-green-600" />
-              <h4 className="text-sm font-bold text-green-700">חייבים לי</h4>
-            </div>
-            <div className="mb-3">
-              <DebtsList 
-                debts={debtsOwedToMe} 
-                type="owed_to_me"
-                emptyMessage="אין חובות שחייבים לי"
-                onDeleteDebt={onDeleteDebt}
-              />
-            </div>
-            <AddDebtForm 
-              type="owed_to_me" 
-              form={owedToMeForm}
-              onUpdateForm={updateOwedToMeForm}
-              onAddDebt={() => handleAddDebt('owed_to_me')}
-              onKeyPress={(e) => handleKeyPress(e, 'owed_to_me')}
+        {/* עמודה ימנית - אני חייבת */}
+        <div>
+          <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
+            <div className="w-3 h-3 bg-slate-400 rounded-full"></div>
+            <h4 className="text-sm font-medium text-gray-600">אני חייבת</h4>
+          </div>
+          <div className="mb-4">
+            <DebtsList 
+              debts={debtsIOwe} 
+              type="i_owe"
+              emptyMessage="אין חובות שאני חייבת"
+              onDeleteDebt={onDeleteDebt}
             />
           </div>
-
-          {/* עמודה ימנית - אני חייבת */}
-          <div>
-            <div className="flex items-center gap-1 mb-2">
-              <ArrowRight size={14} className="text-red-600" />
-              <h4 className="text-sm font-bold text-red-700">אני חייבת</h4>
-            </div>
-            <div className="mb-3">
-              <DebtsList 
-                debts={debtsIOwe} 
-                type="i_owe"
-                emptyMessage="אין חובות שאני חייבת"
-                onDeleteDebt={onDeleteDebt}
-              />
-            </div>
-            <AddDebtForm 
-              type="i_owe" 
-              form={iOweForm}
-              onUpdateForm={updateIOweForm}
-              onAddDebt={() => handleAddDebt('i_owe')}
-              onKeyPress={(e) => handleKeyPress(e, 'i_owe')}
-            />
-          </div>
+          <AddDebtForm 
+            type="i_owe" 
+            form={iOweForm}
+            onUpdateForm={updateIOweForm}
+            onAddDebt={() => handleAddDebt('i_owe')}
+            onKeyPress={(e) => handleKeyPress(e, 'i_owe')}
+          />
         </div>
       </div>
     </div>
