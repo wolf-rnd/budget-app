@@ -563,11 +563,15 @@ const Expenses: React.FC = () => {
                   פילטרים
                 </button>
 
-                {/* קיבוץ */}
+                {/* קיבוץ - עם הדגשה כשפעיל */}
                 <select
                   value={groupBy}
                   onChange={(e) => setGroupBy(e.target.value as GroupBy)}
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
+                  className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400 transition-colors ${
+                    groupBy !== 'none' 
+                      ? 'bg-amber-100 border-amber-300 text-amber-700' 
+                      : 'bg-white border-gray-300 text-gray-700'
+                  }`}
                 >
                   <option value="none">ללא קיבוץ</option>
                   <option value="category">קיבוץ לפי קטגוריה</option>
@@ -675,7 +679,7 @@ const Expenses: React.FC = () => {
             )}
 
             {/* סיכום פילטרים פעילים */}
-            {Object.values(filters).some(value => value) && (
+            {(Object.values(filters).some(value => value) || groupBy !== 'none') && (
               <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
                 <div className="flex items-center gap-2 text-sm text-amber-800">
                   <span>פילטרים פעילים:</span>
@@ -692,6 +696,11 @@ const Expenses: React.FC = () => {
                   {filters.search && (
                     <ColorBadge color="#6b7280" size="sm">
                       חיפוש: {filters.search}
+                    </ColorBadge>
+                  )}
+                  {groupBy !== 'none' && (
+                    <ColorBadge color="#f59e0b" size="sm">
+                      קיבוץ: {groupBy === 'category' ? 'קטגוריה' : 'קופה'}
                     </ColorBadge>
                   )}
                   <span className="text-amber-600">
