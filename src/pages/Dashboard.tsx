@@ -502,22 +502,24 @@ const Dashboard: React.FC = () => {
 
         {/* עימוד חדש לפי הדרישות */}
         <div className="grid grid-cols-12 gap-6 mb-6">
-          {/* עמודה שמאלית: תזכורות (צרה) */}
-          <div className="col-span-12 md:col-span-3">
-            <TasksSection
-              tasks={tasks}
-              onAddTask={handleAddTask}
-              onUpdateTask={handleUpdateTask}
-              onDeleteTask={handleDeleteTask}
-            />
+          {/* עמודה שמאלית: תזכורות (צרה, גובה מלא) */}
+          <div className="col-span-12 lg:col-span-3">
+            <div style={{ height: '650px' }}>
+              <TasksSection
+                tasks={tasks}
+                onAddTask={handleAddTask}
+                onUpdateTask={handleUpdateTask}
+                onDeleteTask={handleDeleteTask}
+              />
+            </div>
           </div>
 
           {/* עמודה ימנית: מעשרות, חובות ופתקים */}
-          <div className="col-span-12 md:col-span-9 space-y-6">
-            {/* שורה 1: מעשרות + חובות (2 עמודות) - עם התאמת רוחב */}
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-              {/* מעשרות - רוחב קטן יותר (2 מתוך 5) */}
-              <div className="md:col-span-2">
+          <div className="col-span-12 lg:col-span-9 space-y-6">
+            {/* שורה 1: מעשרות + חובות (גובה חצי - 300px) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{ height: '300px' }}>
+              {/* מעשרות - גובה חצי */}
+              <div style={{ height: '300px' }}>
                 <TitheSection
                   totalIncome={totalIncomesForTithe}
                   tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
@@ -526,8 +528,8 @@ const Dashboard: React.FC = () => {
                 />
               </div>
 
-              {/* חובות - רוחב גדול יותר (3 מתוך 5) */}
-              <div className="md:col-span-3">
+              {/* חובות - גובה מלא */}
+              <div style={{ height: '650px' }}>
                 <DebtsSection
                   debts={debts}
                   onAddDebt={handleAddDebt}
@@ -536,8 +538,8 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* שורה 2: פתקים (רוחב מלא) */}
-            <div>
+            {/* שורה 2: פתקים (גובה חצי - 300px) */}
+            <div style={{ height: '300px' }}>
               <NotesSection
                 notes={notes}
                 onAddNote={handleAddNote}
