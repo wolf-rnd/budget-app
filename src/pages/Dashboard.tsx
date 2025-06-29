@@ -500,9 +500,9 @@ const Dashboard: React.FC = () => {
           onAddIncome={handleAddIncome}
         />
 
-        {/* עימוד חדש לפי הדרישות */}
+        {/* פריסה חדשה לפי הדרישות */}
         <div className="grid grid-cols-12 gap-6 mb-6">
-          {/* עמודה שמאלית: תזכורות (צרה, גובה מלא) */}
+          {/* עמודה שמאלית: תזכורות (צרה, גובה מלא 650px) */}
           <div className="col-span-12 lg:col-span-3">
             <div style={{ height: '650px' }}>
               <TasksSection
@@ -514,37 +514,36 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* עמודה ימנית: מעשרות, חובות ופתקים */}
-          <div className="col-span-12 lg:col-span-9 space-y-6">
-            {/* שורה 1: מעשרות + חובות (גובה חצי - 300px) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6" style={{ height: '300px' }}>
-              {/* מעשרות - גובה חצי */}
-              <div style={{ height: '300px' }}>
-                <TitheSection
-                  totalIncome={totalIncomesForTithe}
-                  tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
-                  titheGiven={titheGiven}
-                  onAddTithe={handleAddTithe}
-                />
-              </div>
-
-              {/* חובות - גובה מלא */}
-              <div style={{ height: '650px' }}>
-                <DebtsSection
-                  debts={debts}
-                  onAddDebt={handleAddDebt}
-                  onDeleteDebt={handleDeleteDebt}
-                />
-              </div>
+          {/* עמודה אמצעית: מעשרות ופתקים (מחולקת ל-2 שורות) */}
+          <div className="col-span-12 lg:col-span-4 space-y-6">
+            {/* שורה עליונה: מעשרות (גובה חצי - 300px) */}
+            <div style={{ height: '300px' }}>
+              <TitheSection
+                totalIncome={totalIncomesForTithe}
+                tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
+                titheGiven={titheGiven}
+                onAddTithe={handleAddTithe}
+              />
             </div>
 
-            {/* שורה 2: פתקים (גובה חצי - 300px) */}
+            {/* שורה תחתונה: פתקים (גובה חצי - 300px) */}
             <div style={{ height: '300px' }}>
               <NotesSection
                 notes={notes}
                 onAddNote={handleAddNote}
                 onUpdateNote={handleUpdateNote}
                 onDeleteNote={handleDeleteNote}
+              />
+            </div>
+          </div>
+
+          {/* עמודה ימנית: חובות (רחבה, גובה מלא 650px) */}
+          <div className="col-span-12 lg:col-span-5">
+            <div style={{ height: '650px' }}>
+              <DebtsSection
+                debts={debts}
+                onAddDebt={handleAddDebt}
+                onDeleteDebt={handleDeleteDebt}
               />
             </div>
           </div>
