@@ -591,29 +591,29 @@ const Expenses: React.FC = () => {
 
   const renderExpenseRow = (expense: GetExpenseRequest) => (
     <tr key={expense.id} className="hover:bg-gray-50">
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
         {formatDate(expense.date)}
       </td>
-      <td className="px-6 py-4 text-sm text-gray-900">
+      <td className="px-4 py-2 text-sm text-gray-900">
         <InlineEditCell expense={expense} field="name" value={expense.name} />
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 py-2 whitespace-nowrap">
         <ColorBadge color={expense.categories?.color_class}>
           {expense.categories?.name}
         </ColorBadge>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap">
+      <td className="px-4 py-2 whitespace-nowrap">
         <ColorBadge color={expense.funds?.color_class}>
           {expense.funds?.name}
         </ColorBadge>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-amber-600">
+      <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-amber-600">
         <InlineEditCell expense={expense} field="amount" value={expense.amount} type="number" />
       </td>
-      <td className="px-6 py-4 text-sm text-gray-700">
+      <td className="px-4 py-2 text-sm text-gray-700">
         <InlineEditCell expense={expense} field="note" value={expense.note || ''} />
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
         <div className="flex gap-2">
           <button
             onClick={() => handleEditExpense(expense.id)}
@@ -666,26 +666,22 @@ const Expenses: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        {/* כותרת העמוד */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6 mx-4 mt-4">
-          <div className="flex items-center gap-3 mb-4">
-            <TrendingDown size={28} className="text-amber-500" />
+        {/* כותרת העמוד - קומפקטית */}
+        <div className="bg-white rounded-lg shadow-md p-4 mb-4 mx-4 mt-4">
+          <div className="flex items-center gap-3">
+            <TrendingDown size={24} className="text-amber-500" />
             <div>
-              <h1 className="text-2xl font-bold text-gray-800">הוצאות</h1>
-              <p className="text-gray-600">
-                ניהול וצפייה בהוצאות - {budgetYears.find(year => year.is_active)?.name}
-              </p>
-              <p className="text-xs text-blue-600 mt-1">💡 טיפ: לחץ פעמיים על שדה לעריכה מהירה</p>
+              <h1 className="text-xl font-bold text-gray-800">הוצאות</h1>
             </div>
           </div>
         </div>
 
         {/* רכיב חיפוש ופילטרים */}
-        <div className="sticky top-0 z-40 bg-white shadow-md border-b border-gray-200 mx-4 rounded-lg mb-6">
-          <div className="p-6">
+        <div className="sticky top-0 z-40 bg-white shadow-md border-b border-gray-200 mx-4 rounded-lg mb-4">
+          <div className="p-4">
             {/* כלי בקרה עליונים */}
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+              <div className="flex items-center gap-3">
                 {/* חיפוש */}
                 <div className="relative">
                   <Search size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -790,10 +786,10 @@ const Expenses: React.FC = () => {
 
             {/* פילטרים מתקדמים */}
             {showFilters && (
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">קטגוריה</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">קטגוריה</label>
                     <select
                       value={filters.category}
                       onChange={(e) => handleFilterChange('category', e.target.value)}
@@ -809,7 +805,7 @@ const Expenses: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">קופה</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">קופה</label>
                     <select
                       value={filters.fund}
                       onChange={(e) => handleFilterChange('fund', e.target.value)}
@@ -825,7 +821,7 @@ const Expenses: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">סכום מינימלי</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">סכום מינימלי</label>
                     <input
                       type="number"
                       value={filters.minAmount}
@@ -836,7 +832,7 @@ const Expenses: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">סכום מקסימלי</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">סכום מקסימלי</label>
                     <input
                       type="number"
                       value={filters.maxAmount}
@@ -847,7 +843,7 @@ const Expenses: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">מתאריך</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">מתאריך</label>
                     <input
                       type="date"
                       value={filters.startDate}
@@ -857,7 +853,7 @@ const Expenses: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">עד תאריך</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">עד תאריך</label>
                     <input
                       type="date"
                       value={filters.endDate}
@@ -880,7 +876,7 @@ const Expenses: React.FC = () => {
 
             {/* סיכום פילטרים פעילים */}
             {(Object.values(filters).some(value => value) || groupBy !== 'none') && (
-              <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+              <div className="mt-3 p-2 bg-gray-100 rounded-lg border border-gray-200">
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-gray-600">פילטרים פעילים:</span>
                   {filters.category && (
@@ -914,32 +910,12 @@ const Expenses: React.FC = () => {
 
         {/* תוכן הטבלה */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden mx-4">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold text-gray-800">
-                רשימת הוצאות ({expenses.length} הוצאות נטענו)
-                {groupBy !== 'none' && ` - מקובצות לפי ${groupBy === 'category' ? 'קטגוריה' : 'קופה'}`}
-              </h2>
-              <div className="text-sm text-gray-500">
-                {groupBy === 'none' ? (
-                  <div className="text-center">
-                    <div>📊 Pagination: צד שרת</div>
-                    <div>🔄 Infinite Scroll: {pagination.hasMore ? 'זמין' : 'הסתיים'}</div>
-                    <div>📄 עמוד: {pagination.page}</div>
-                  </div>
-                ) : (
-                  `${Object.keys(groupedExpenses).length} קבוצות`
-                )}
-              </div>
-            </div>
-          </div>
-
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 sticky top-0 z-30">
                 <tr>
                   <th 
-                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSortChange('date')}
                   >
                     <div className="flex items-center gap-1">
@@ -948,7 +924,7 @@ const Expenses: React.FC = () => {
                     </div>
                   </th>
                   <th 
-                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSortChange('name')}
                   >
                     <div className="flex items-center gap-1">
@@ -957,7 +933,7 @@ const Expenses: React.FC = () => {
                     </div>
                   </th>
                   <th 
-                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSortChange('category')}
                   >
                     <div className="flex items-center gap-1">
@@ -966,7 +942,7 @@ const Expenses: React.FC = () => {
                     </div>
                   </th>
                   <th 
-                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSortChange('fund')}
                   >
                     <div className="flex items-center gap-1">
@@ -975,7 +951,7 @@ const Expenses: React.FC = () => {
                     </div>
                   </th>
                   <th 
-                    className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSortChange('amount')}
                   >
                     <div className="flex items-center gap-1">
@@ -983,8 +959,8 @@ const Expenses: React.FC = () => {
                       {getSortIcon('amount')}
                     </div>
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">הערה</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">פעולות</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">הערה</th>
+                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">פעולות</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -1009,7 +985,7 @@ const Expenses: React.FC = () => {
                     Object.entries(groupedExpenses).map(([groupName, groupExpenses]) => (
                       <React.Fragment key={groupName}>
                         <tr className="bg-gray-100 hover:bg-gray-200 cursor-pointer" onClick={() => toggleGroup(groupName)}>
-                          <td colSpan={7} className="px-6 py-4">
+                          <td colSpan={7} className="px-4 py-3">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 {expandedGroups[groupName] ? (
@@ -1052,7 +1028,7 @@ const Expenses: React.FC = () => {
           {groupBy === 'none' && (
             <div 
               ref={loadingRef}
-              className="px-6 py-4 border-t border-gray-200 bg-gray-50"
+              className="px-4 py-3 border-t border-gray-200 bg-gray-50"
             >
               {pagination.loading ? (
                 <div className="flex items-center justify-center gap-2">
