@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Fund, Income, Expense, TitheGiven, Debt, Task, AssetSnapshot, Category, BudgetYear, FundBudget } from '../types';
 import TopActions from '../components/Dashboard/TopActions';
 
@@ -53,20 +53,24 @@ const Dashboard: React.FC = () => {
   const [currentDisplayMonth, setCurrentDisplayMonth] = useState<number>(new Date().getMonth() + 1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   const { addNotification } = useNotifications();
 
-  // Setup API client notification callback
+  // Setup API client notification callback - רק פעם אחת
   useEffect(() => {
     apiClient.setNotificationCallback(addNotification);
   }, [addNotification]);
 
-  // טעינת כל הדאטה הראשונית (כולל בחירת שנת תקציב)
+  // טעינת כל הדאטה הראשונית - עם מניעת קריאות כפולות
   useEffect(() => {
+    if (dataLoaded) return; // מניעת טעינה כפולה
+    
     const loadInitialData = async () => {
       setLoading(true);
       setError(null);
       try {
+        // טעינה מקבילה של כל הנתונים הבסיסיים
         const [
           budgetYearsData,
           incomesData,
@@ -86,6 +90,8 @@ const Dashboard: React.FC = () => {
           assetsService.getAllAssetSnapshots(),
           categoriesService.getAllCategories()
         ]);
+
+        // עדכון State בבת אחת
         setBudgetYears(budgetYearsData);
         setIncomes(incomesData);
         setExpenses(expensesData);
@@ -101,72 +107,102 @@ const Dashboard: React.FC = () => {
         initialBudgetYear = budgetYearsData.find(year => year.id === savedBudgetYearId) || null;
         initialBudgetYear = initialBudgetYear || getActiveBudgetYear(budgetYearsData) || getLatestBudgetYear(budgetYearsData);
         setSelectedBudgetYear(initialBudgetYear);
+
+        setDataLoaded(true); // סימון שהנתונים נטענו
       } catch (err) {
         setError('שגיאה בטעינת נתוני הדשבורד');
+        console.error('Dashboard data loading error:', err);
       } finally {
         setLoading(false);
       }
     };
-    loadInitialData();
-  }, []);
 
-  // טען רק funds בכל החלפת שנת תקציב
+    loadInitialData();
+  }, [dataLoaded]); // תלות ב-dataLoaded למניעת קריאות כפולות
+
+  // טען רק funds בכל החלפת שנת תקציב - עם מניעת קריאות כפולות
   useEffect(() => {
+    if (!selectedBudgetYear || !dataLoaded) return;
+    
+    let isMounted = true; // מניעת race conditions
+    
     const loadFunds = async () => {
-      if (!selectedBudgetYear) return;
-      setLoading(true);
-      setError(null);
       try {
         const fundsData = await fundsService.getAllFunds(selectedBudgetYear.id);
-        setFunds(fundsData);
+        if (isMounted) {
+          setFunds(fundsData);
+        }
       } catch (err) {
-        setError('שגיאה בטעינת קופות');
-      } finally {
-        setLoading(false);
+        if (isMounted) {
+          setError('שגיאה בטעינת קופות');
+          console.error('Funds loading error:', err);
+        }
       }
     };
-    loadFunds();
-  }, [selectedBudgetYear]);
 
-  // Save selected budget year to localStorage
+    loadFunds();
+    
+    return () => {
+      isMounted = false; // cleanup
+    };
+  }, [selectedBudgetYear?.id, dataLoaded]);
+
+  // Save selected budget year to localStorage - עם מניעת עדכונים מיותרים
   useEffect(() => {
-    if (selectedBudgetYear) {
+    if (selectedBudgetYear && dataLoaded) {
       localStorage.setItem('selectedBudgetYearId', selectedBudgetYear.id);
     }
-  }, [selectedBudgetYear]);
+  }, [selectedBudgetYear?.id, dataLoaded]);
 
-  // Calculate data based on selected budget year
-  const currentBudgetYearIncomes = selectedBudgetYear ? filterIncomesByBudgetYear(incomes, selectedBudgetYear) : [];
-  const currentBudgetYearExpenses = selectedBudgetYear ? filterExpensesByBudgetYear(expenses, selectedBudgetYear) : [];
-  const allIncomesForTithe = getAllIncomesForTithe(incomes);
+  // Calculate data based on selected budget year - מחושב רק כשצריך
+  const currentBudgetYearIncomes = React.useMemo(() => 
+    selectedBudgetYear ? filterIncomesByBudgetYear(incomes, selectedBudgetYear) : []
+  , [incomes, selectedBudgetYear]);
 
-  // Calculate totals
-  const totalBudget = funds
-    .filter(fund => fund.include_in_budget)
-    .reduce((sum, fund) => {
-      return sum + (fund.type === 'monthly' ? fund.amount * 12 : fund.amount);
-    }, 0);
+  const currentBudgetYearExpenses = React.useMemo(() => 
+    selectedBudgetYear ? filterExpensesByBudgetYear(expenses, selectedBudgetYear) : []
+  , [expenses, selectedBudgetYear]);
 
-  const totalIncome = currentBudgetYearIncomes.reduce((sum, income) => sum + income.amount, 0);
-  const totalExpenses = currentBudgetYearExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const totalIncomesForTithe = allIncomesForTithe.reduce((sum, income) => sum + income.amount, 0);
+  const allIncomesForTithe = React.useMemo(() => 
+    getAllIncomesForTithe(incomes)
+  , [incomes]);
 
-  // Handlers
-  const handleBudgetYearChange = (year: BudgetYear) => {
+  // Calculate totals - מחושב רק כשצריך
+  const totalBudget = React.useMemo(() => 
+    funds
+      .filter(fund => fund.include_in_budget)
+      .reduce((sum, fund) => {
+        return sum + (fund.type === 'monthly' ? fund.amount * 12 : fund.amount);
+      }, 0)
+  , [funds]);
+
+  const totalIncome = React.useMemo(() => 
+    currentBudgetYearIncomes.reduce((sum, income) => sum + income.amount, 0)
+  , [currentBudgetYearIncomes]);
+
+  const totalExpenses = React.useMemo(() => 
+    currentBudgetYearExpenses.reduce((sum, expense) => sum + expense.amount, 0)
+  , [currentBudgetYearExpenses]);
+
+  const totalIncomesForTithe = React.useMemo(() => 
+    allIncomesForTithe.reduce((sum, income) => sum + income.amount, 0)
+  , [allIncomesForTithe]);
+
+  // Handlers - עם useCallback למניעת re-renders מיותרים
+  const handleBudgetYearChange = useCallback((year: BudgetYear) => {
     const selectedYear = budgetYears.find(y => y.id === year.id) || null;
     setSelectedBudgetYear(selectedYear);
-    // טעינת קופות תתבצע אוטומטית דרך useEffect
-  };
+  }, [budgetYears]);
 
-  const handleAddExpense = () => {
+  const handleAddExpense = useCallback(() => {
     setIsExpenseModalOpen(true);
-  };
+  }, []);
 
-  const handleAddIncome = () => {
+  const handleAddIncome = useCallback(() => {
     setIsIncomeModalOpen(true);
-  };
+  }, []);
 
-  const handleIncomeModalSubmit = async (newIncome: {
+  const handleIncomeModalSubmit = useCallback(async (newIncome: {
     name: string;
     amount: number;
     date: string;
@@ -185,7 +221,7 @@ const Dashboard: React.FC = () => {
       };
 
       const createdIncome = await incomesService.createIncome(incomeData);
-      setIncomes([...incomes, createdIncome]);
+      setIncomes(prev => [...prev, createdIncome]);
 
       if (ENV.DEV_MODE) {
         console.log('הכנסה חדשה נוספה:', createdIncome);
@@ -195,12 +231,12 @@ const Dashboard: React.FC = () => {
         console.error('Failed to create income:', error);
       }
     }
-  };
+  }, []);
 
-  const handleExpenseModalSubmit = async (newExpense: CreateExpenseRequest) => {
+  const handleExpenseModalSubmit = useCallback(async (newExpense: CreateExpenseRequest) => {
     try {
       const createdExpense = await expensesService.createExpense(newExpense);
-      setExpenses([...expenses, createdExpense]);
+      setExpenses(prev => [...prev, createdExpense]);
 
       if (ENV.DEV_MODE) {
         console.log('הוצאה חדשה נוספה:', createdExpense);
@@ -210,13 +246,12 @@ const Dashboard: React.FC = () => {
         console.error('Failed to create expense:', error);
       }
     }
-  };
+  }, []);
 
-  const handleCloseDailyFund = async (remainingAmount: number) => {
+  const handleCloseDailyFund = useCallback(async (remainingAmount: number) => {
     if (!selectedBudgetYear) return;
 
     try {
-      // כאן נוכל להוסיף קריאה ל-API לעדכון הקופות
       if (ENV.DEV_MODE) {
         console.log(`סגירת חודש: ${remainingAmount} ש"ח נותר במעטפה`);
       }
@@ -225,13 +260,12 @@ const Dashboard: React.FC = () => {
         console.error('Failed to close daily fund:', error);
       }
     }
-  };
+  }, [selectedBudgetYear]);
 
-  const handleAddMoneyToEnvelope = async (amount: number) => {
+  const handleAddMoneyToEnvelope = useCallback(async (amount: number) => {
     if (!selectedBudgetYear) return;
 
     try {
-      // כאן נוכל להוסיף קריאה ל-API לעדכון הקופות
       if (ENV.DEV_MODE) {
         console.log(`נוסף ${amount} ש"ח למעטפה בחודש ${getMonthName(currentDisplayMonth)}`);
       }
@@ -240,9 +274,9 @@ const Dashboard: React.FC = () => {
         console.error('Failed to add money to envelope:', error);
       }
     }
-  };
+  }, [selectedBudgetYear, currentDisplayMonth]);
 
-  const handleAddTithe = async (amount: number, description: string) => {
+  const handleAddTithe = useCallback(async (amount: number, description: string) => {
     try {
       const titheData = {
         description,
@@ -252,15 +286,15 @@ const Dashboard: React.FC = () => {
       };
 
       const createdTithe = await titheService.createTithe(titheData);
-      setTitheGiven([...titheGiven, createdTithe]);
+      setTitheGiven(prev => [...prev, createdTithe]);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create tithe:', error);
       }
     }
-  };
+  }, []);
 
-  const handleAddDebt = async (amount: number, description: string, note: string = '', type: 'owed_to_me' | 'i_owe' = 'i_owe') => {
+  const handleAddDebt = useCallback(async (amount: number, description: string, note: string = '', type: 'owed_to_me' | 'i_owe' = 'i_owe') => {
     try {
       const debtData = {
         description,
@@ -270,26 +304,26 @@ const Dashboard: React.FC = () => {
       };
 
       const createdDebt = await debtsService.createDebt(debtData);
-      setDebts([...debts, createdDebt]);
+      setDebts(prev => [...prev, createdDebt]);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create debt:', error);
       }
     }
-  };
+  }, []);
 
-  const handleDeleteDebt = async (id: string) => {
+  const handleDeleteDebt = useCallback(async (id: string) => {
     try {
       await debtsService.deleteDebt(id);
-      setDebts(debts.filter(debt => debt.id !== id));
+      setDebts(prev => prev.filter(debt => debt.id !== id));
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to delete debt:', error);
       }
     }
-  };
+  }, []);
 
-  const handleAddTask = async (description: string, important: boolean = false) => {
+  const handleAddTask = useCallback(async (description: string, important: boolean = false) => {
     try {
       const taskData = {
         description,
@@ -298,37 +332,37 @@ const Dashboard: React.FC = () => {
       };
 
       const createdTask = await tasksService.createTask(taskData);
-      setTasks([...tasks, createdTask]);
+      setTasks(prev => [...prev, createdTask]);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create task:', error);
       }
     }
-  };
+  }, []);
 
-  const handleUpdateTask = async (id: string, updates: Partial<Task>) => {
+  const handleUpdateTask = useCallback(async (id: string, updates: Partial<Task>) => {
     try {
       const updatedTask = await tasksService.updateTask(id, updates);
-      setTasks(tasks.map(task => task.id === id ? updatedTask : task));
+      setTasks(prev => prev.map(task => task.id === id ? updatedTask : task));
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to update task:', error);
       }
     }
-  };
+  }, []);
 
-  const handleDeleteTask = async (id: string) => {
+  const handleDeleteTask = useCallback(async (id: string) => {
     try {
       await tasksService.deleteTask(id);
-      setTasks(tasks.filter(task => task.id !== id));
+      setTasks(prev => prev.filter(task => task.id !== id));
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to delete task:', error);
       }
     }
-  };
+  }, []);
 
-  const handleAddAssetSnapshot = async (assets: Record<string, number>, liabilities: Record<string, number>, note: string) => {
+  const handleAddAssetSnapshot = useCallback(async (assets: Record<string, number>, liabilities: Record<string, number>, note: string) => {
     try {
       const snapshotData = {
         assets,
@@ -338,21 +372,21 @@ const Dashboard: React.FC = () => {
       };
 
       const createdSnapshot = await assetsService.createAssetSnapshot(snapshotData);
-      setAssetSnapshots([createdSnapshot, ...assetSnapshots]);
+      setAssetSnapshots(prev => [createdSnapshot, ...prev]);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create asset snapshot:', error);
       }
     }
-  };
+  }, []);
 
-  const getMonthName = (monthNumber: number) => {
+  const getMonthName = useCallback((monthNumber: number) => {
     const months = [
       'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
       'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
     ];
     return months[monthNumber - 1] || '';
-  };
+  }, []);
 
   if (loading) {
     return (

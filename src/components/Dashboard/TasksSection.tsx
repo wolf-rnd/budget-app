@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Check, Star, X, CheckCircle2, Undo2 } from 'lucide-react';
 import { Task } from '../../types';
 import { tasksService } from '../../services/tasksService';
@@ -26,24 +26,35 @@ const TasksSection: React.FC<TasksSectionProps> = ({
   const [undoNotification, setUndoNotification] = useState<UndoNotification | null>(null);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [loading, setLoading] = useState(false);
+  const loadedRef = useRef(false); // מניעת טעינה כפולה
 
-  // טעינת משימות מה-API בטעינה ראשונית
+  // טעינת משימות מה-API בטעינה ראשונית - רק פעם אחת
   useEffect(() => {
-    loadTasks();
-  }, []);
+    if (loadedRef.current) return; // מניעת טעינה כפולה
+    
+    const loadTasks = async () => {
+      try {
+        setLoading(true);
+        const apiTasks = await tasksService.getAllTasks({ completed: false });
+        setTasks(apiTasks);
+        loadedRef.current = true; // סימון שהטעינה הושלמה
+      } catch (error) {
+        console.error('Failed to load tasks:', error);
+        setTasks(initialTasks);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const loadTasks = async () => {
-    try {
-      setLoading(true);
-      const apiTasks = await tasksService.getAllTasks({ completed: false });
-      setTasks(apiTasks);
-    } catch (error) {
-      console.error('Failed to load tasks:', error);
+    loadTasks();
+  }, []); // ללא תלויות כדי למנוע קריאות כפולות
+
+  // עדכון tasks כשמגיעים נתונים חדשים מהרכיב האב
+  useEffect(() => {
+    if (loadedRef.current) {
       setTasks(initialTasks);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [initialTasks]);
 
   const handleAddTask = async () => {
     if (newTask.trim()) {
@@ -206,8 +217,8 @@ const TasksSection: React.FC<TasksSectionProps> = ({
         )}
       </div>
       
-      {/* רשימת המשימות - ללא גלילה, גובה דינמי */}
-      <div className="space-y-2 mb-5">
+      {/* רשימת המשימות - גובה דינמי לפי כמות המשימות */}
+      <div className="space-y-2 mb-5" style={{ minHeight: 'auto' }}>
         {visibleTasks.length > 0 ? (
           visibleTasks.map(task => (
             <div 
