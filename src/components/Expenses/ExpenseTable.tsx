@@ -89,7 +89,8 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
   return (
     <div className="bg-white rounded-lg shadow-md overflow-hidden mx-4">
       <div className="overflow-x-auto">
-        <table className="w-full">
+        {/* טבלה עם רוחב קבוע */}
+        <table className="w-full table-fixed">
           <ExpenseTableHeader sort={sort} onSortChange={onSortChange} />
           <tbody className="bg-white divide-y divide-gray-200">
             {groupBy === 'none' ? (

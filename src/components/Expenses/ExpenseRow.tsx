@@ -22,34 +22,40 @@ const ExpenseRow: React.FC<ExpenseRowProps> = ({
 
   return (
     <tr className="hover:bg-gray-50">
-      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
+      <td className="w-24 px-3 py-2 whitespace-nowrap text-sm text-gray-900">
         {formatDate(expense.date)}
       </td>
-      <td className="px-4 py-2 text-sm text-gray-900">
-        <InlineEditCell
-          expense={expense}
-          field="name"
-          value={expense.name}
-          inlineEdit={inlineEdit}
-          onStartEdit={onStartInlineEdit}
-          onSaveEdit={onSaveInlineEdit}
-          onCancelEdit={onCancelInlineEdit}
-          onEditChange={onInlineEditChange}
-          onEditKeyPress={onInlineEditKeyPress}
-          editInputRef={editInputRef}
-        />
+      <td className="w-48 px-3 py-2 text-sm text-gray-900">
+        <div className="truncate">
+          <InlineEditCell
+            expense={expense}
+            field="name"
+            value={expense.name}
+            inlineEdit={inlineEdit}
+            onStartEdit={onStartInlineEdit}
+            onSaveEdit={onSaveInlineEdit}
+            onCancelEdit={onCancelInlineEdit}
+            onEditChange={onInlineEditChange}
+            onEditKeyPress={onInlineEditKeyPress}
+            editInputRef={editInputRef}
+          />
+        </div>
       </td>
-      <td className="px-4 py-2 whitespace-nowrap">
-        <ColorBadge color={expense.categories?.color_class}>
-          {expense.categories?.name}
-        </ColorBadge>
+      <td className="w-32 px-3 py-2 whitespace-nowrap">
+        <div className="truncate">
+          <ColorBadge color={expense.categories?.color_class}>
+            {expense.categories?.name}
+          </ColorBadge>
+        </div>
       </td>
-      <td className="px-4 py-2 whitespace-nowrap">
-        <ColorBadge color={expense.funds?.color_class}>
-          {expense.funds?.name}
-        </ColorBadge>
+      <td className="w-32 px-3 py-2 whitespace-nowrap">
+        <div className="truncate">
+          <ColorBadge color={expense.funds?.color_class}>
+            {expense.funds?.name}
+          </ColorBadge>
+        </div>
       </td>
-      <td className="px-4 py-2 whitespace-nowrap text-sm font-medium text-amber-600">
+      <td className="w-28 px-3 py-2 whitespace-nowrap text-sm font-medium text-amber-600">
         <InlineEditCell
           expense={expense}
           field="amount"
@@ -64,35 +70,37 @@ const ExpenseRow: React.FC<ExpenseRowProps> = ({
           editInputRef={editInputRef}
         />
       </td>
-      <td className="px-4 py-2 text-sm text-gray-700">
-        <InlineEditCell
-          expense={expense}
-          field="note"
-          value={expense.note || ''}
-          inlineEdit={inlineEdit}
-          onStartEdit={onStartInlineEdit}
-          onSaveEdit={onSaveInlineEdit}
-          onCancelEdit={onCancelInlineEdit}
-          onEditChange={onInlineEditChange}
-          onEditKeyPress={onInlineEditKeyPress}
-          editInputRef={editInputRef}
-        />
+      <td className="w-32 px-3 py-2 text-sm text-gray-700">
+        <div className="truncate">
+          <InlineEditCell
+            expense={expense}
+            field="note"
+            value={expense.note || ''}
+            inlineEdit={inlineEdit}
+            onStartEdit={onStartInlineEdit}
+            onSaveEdit={onSaveInlineEdit}
+            onCancelEdit={onCancelInlineEdit}
+            onEditChange={onInlineEditChange}
+            onEditKeyPress={onInlineEditKeyPress}
+            editInputRef={editInputRef}
+          />
+        </div>
       </td>
-      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-        <div className="flex gap-2">
+      <td className="w-20 px-3 py-2 whitespace-nowrap text-sm text-gray-500">
+        <div className="flex gap-1 justify-center">
           <button
             onClick={() => onEdit(expense.id)}
             className="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50 transition-colors"
             title="עריכה מלאה"
           >
-            <Edit size={16} />
+            <Edit size={14} />
           </button>
           <button
             onClick={() => onDelete(expense.id)}
             className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50 transition-colors"
             title="מחיקה"
           >
-            <Trash2 size={16} />
+            <Trash2 size={14} />
           </button>
         </div>
       </td>
