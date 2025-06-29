@@ -664,75 +664,95 @@ const Expenses: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto">
         {/* כותרת העמוד - קומפקטית */}
-        <div className="bg-white rounded-lg shadow-md p-4 mb-4 mx-4 mt-4">
+        <div className="bg-white rounded-lg shadow-md p-3 mb-3 mx-4 mt-4">
           <div className="flex items-center gap-3">
-            <TrendingDown size={24} className="text-amber-500" />
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">הוצאות</h1>
-            </div>
+            <TrendingDown size={20} className="text-amber-500" />
+            <h1 className="text-lg font-bold text-gray-800">הוצאות</h1>
           </div>
         </div>
 
-        {/* רכיב חיפוש ופילטרים */}
-        <div className="sticky top-0 z-40 bg-white shadow-md border-b border-gray-200 mx-4 rounded-lg mb-4">
-          <div className="p-4">
-            {/* כלי בקרה עליונים */}
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-              <div className="flex items-center gap-3">
-                {/* חיפוש */}
+        {/* רכיב חיפוש ופילטרים - קומפקטי */}
+        <div className="sticky top-0 z-40 bg-white shadow-md border-b border-gray-200 mx-4 rounded-lg mb-3">
+          <div className="p-3">
+            {/* כלי בקרה עליונים - שורה אחת */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-1">
+                {/* חיפוש - קטן יותר */}
                 <div className="relative">
-                  <Search size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <Search size={14} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
                   <input
                     type="text"
                     value={filters.search}
                     onChange={(e) => handleFilterChange('search', e.target.value)}
                     placeholder="חיפוש..."
-                    className="pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400 w-64"
+                    className="pr-8 pl-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 w-48 text-sm"
                   />
                 </div>
 
-                {/* כפתור פילטרים */}
+                {/* פילטרים מהירים - inline */}
+                <select
+                  value={filters.category}
+                  onChange={(e) => handleFilterChange('category', e.target.value)}
+                  className="px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm w-32"
+                >
+                  <option value="">קטגוריה</option>
+                  {categories.map(category => (
+                    <option key={category.name} value={category.name}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  value={filters.fund}
+                  onChange={(e) => handleFilterChange('fund', e.target.value)}
+                  className="px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm w-32"
+                >
+                  <option value="">קופה</option>
+                  {uniqueFunds.map(fund => (
+                    <option key={fund} value={fund}>
+                      {fund}
+                    </option>
+                  ))}
+                </select>
+
+                {/* כפתור פילטרים מתקדמים */}
                 <button
                   onClick={() => setShowFilters(!showFilters)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-md border transition-colors text-sm ${
                     showFilters 
                       ? 'bg-amber-100 border-amber-300 text-amber-700' 
                       : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  <Filter size={16} />
-                  פילטרים
+                  <Filter size={14} />
+                  עוד
                 </button>
 
                 {/* כפתור קיבוץ */}
                 <div className="relative">
                   <button
                     onClick={() => setShowGroupBy(!showGroupBy)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-md border transition-colors text-sm ${
                       groupBy !== 'none' 
                         ? 'bg-amber-100 border-amber-300 text-amber-700' 
                         : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
                     }`}
                   >
-                    <ChevronDown size={16} />
+                    <ChevronDown size={14} />
                     קיבוץ
-                    {groupBy !== 'none' && (
-                      <span className="text-xs">
-                        ({groupBy === 'category' ? 'קטגוריה' : 'קופה'})
-                      </span>
-                    )}
                   </button>
 
                   {/* תפריט קיבוץ נפתח */}
                   {showGroupBy && (
-                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px]">
-                      <div className="p-2">
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[160px]">
+                      <div className="p-1">
                         <button
                           onClick={() => {
                             setGroupBy('none');
                             setShowGroupBy(false);
                           }}
-                          className={`w-full text-right px-3 py-2 rounded-md text-sm transition-colors ${
+                          className={`w-full text-right px-2 py-1.5 rounded-md text-sm transition-colors ${
                             groupBy === 'none' 
                               ? 'bg-amber-100 text-amber-700' 
                               : 'hover:bg-gray-100 text-gray-700'
@@ -745,150 +765,128 @@ const Expenses: React.FC = () => {
                             setGroupBy('category');
                             setShowGroupBy(false);
                           }}
-                          className={`w-full text-right px-3 py-2 rounded-md text-sm transition-colors ${
+                          className={`w-full text-right px-2 py-1.5 rounded-md text-sm transition-colors ${
                             groupBy === 'category' 
                               ? 'bg-amber-100 text-amber-700' 
                               : 'hover:bg-gray-100 text-gray-700'
                           }`}
                         >
-                          קיבוץ לפי קטגוריה
+                          לפי קטגוריה
                         </button>
                         <button
                           onClick={() => {
                             setGroupBy('fund');
                             setShowGroupBy(false);
                           }}
-                          className={`w-full text-right px-3 py-2 rounded-md text-sm transition-colors ${
+                          className={`w-full text-right px-2 py-1.5 rounded-md text-sm transition-colors ${
                             groupBy === 'fund' 
                               ? 'bg-amber-100 text-amber-700' 
                               : 'hover:bg-gray-100 text-gray-700'
                           }`}
                         >
-                          קיבוץ לפי קופה
+                          לפי קופה
                         </button>
                       </div>
                     </div>
                   )}
                 </div>
+
+                {/* כפתור ניקוי פילטרים */}
+                {Object.values(filters).some(value => value) && (
+                  <button
+                    onClick={clearFilters}
+                    className="px-2 py-1.5 text-xs text-gray-600 hover:text-gray-800 rounded-md hover:bg-gray-100 transition-colors"
+                  >
+                    נקה
+                  </button>
+                )}
               </div>
 
               <button
                 onClick={handleAddExpense}
-                className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors flex items-center gap-2 shadow-md"
+                className="bg-amber-500 text-white px-3 py-1.5 rounded-md hover:bg-amber-600 transition-colors flex items-center gap-1 shadow-md text-sm"
               >
-                <Plus size={16} />
-                הוספת הוצאה
+                <Plus size={14} />
+                הוספה
               </button>
             </div>
 
-            {/* פילטרים מתקדמים */}
+            {/* פילטרים מתקדמים - קומפקטיים */}
             {showFilters && (
-              <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">קטגוריה</label>
-                    <select
-                      value={filters.category}
-                      onChange={(e) => handleFilterChange('category', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
-                    >
-                      <option value="">כל הקטגוריות</option>
-                      {categories.map(category => (
-                        <option key={category.name} value={category.name}>
-                          {category.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">קופה</label>
-                    <select
-                      value={filters.fund}
-                      onChange={(e) => handleFilterChange('fund', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
-                    >
-                      <option value="">כל הקופות</option>
-                      {uniqueFunds.map(fund => (
-                        <option key={fund} value={fund}>
-                          {fund}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">סכום מינימלי</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">סכום מינימלי</label>
                     <input
                       type="number"
                       value={filters.minAmount}
                       onChange={(e) => handleFilterChange('minAmount', e.target.value)}
                       placeholder="0"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">סכום מקסימלי</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">סכום מקסימלי</label>
                     <input
                       type="number"
                       value={filters.maxAmount}
                       onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
                       placeholder="∞"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">מתאריך</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">מתאריך</label>
                     <input
                       type="date"
                       value={filters.startDate}
                       onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">עד תאריך</label>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">עד תאריך</label>
                     <input
                       type="date"
                       value={filters.endDate}
                       onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
+                      className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm"
                     />
                   </div>
 
-                  <div className="md:col-span-2 flex items-end gap-2">
+                  <div className="flex items-end">
                     <button
-                      onClick={clearFilters}
-                      className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100 transition-colors"
+                      onClick={() => setShowFilters(false)}
+                      className="w-full px-2 py-1.5 text-xs text-gray-600 hover:text-gray-800 rounded-md hover:bg-gray-100 transition-colors"
                     >
-                      נקה פילטרים
+                      סגור פילטרים
                     </button>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* סיכום פילטרים פעילים */}
+            {/* סיכום פילטרים פעילים - קומפקטי */}
             {(Object.values(filters).some(value => value) || groupBy !== 'none') && (
-              <div className="mt-3 p-2 bg-gray-100 rounded-lg border border-gray-200">
-                <div className="flex items-center gap-2 text-sm">
-                  <span className="text-gray-600">פילטרים פעילים:</span>
+              <div className="mt-2 p-2 bg-gray-100 rounded-md border border-gray-200">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-gray-600">פעיל:</span>
                   {filters.category && (
                     <ColorBadge color="#f59e0b" size="sm">
-                      קטגוריה: {filters.category}
+                      {filters.category}
                     </ColorBadge>
                   )}
                   {filters.fund && (
                     <ColorBadge color="#10b981" size="sm">
-                      קופה: {filters.fund}
+                      {filters.fund}
                     </ColorBadge>
                   )}
                   {filters.search && (
                     <ColorBadge color="#6b7280" size="sm">
-                      חיפוש: {filters.search}
+                      "{filters.search}"
                     </ColorBadge>
                   )}
                   {groupBy !== 'none' && (
@@ -897,7 +895,7 @@ const Expenses: React.FC = () => {
                     </ColorBadge>
                   )}
                   <span className="text-amber-600">
-                    ({expenses.length} תוצאות נטענו{pagination.hasMore ? ', עוד נתונים זמינים' : ''})
+                    ({expenses.length} תוצאות{pagination.hasMore ? '+' : ''})
                   </span>
                 </div>
               </div>
@@ -912,7 +910,7 @@ const Expenses: React.FC = () => {
               <thead className="bg-gray-50 sticky top-0 z-30">
                 <tr>
                   <th 
-                    className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSortChange('date')}
                   >
                     <div className="flex items-center gap-1">
@@ -921,7 +919,7 @@ const Expenses: React.FC = () => {
                     </div>
                   </th>
                   <th 
-                    className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSortChange('name')}
                   >
                     <div className="flex items-center gap-1">
@@ -930,7 +928,7 @@ const Expenses: React.FC = () => {
                     </div>
                   </th>
                   <th 
-                    className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSortChange('category')}
                   >
                     <div className="flex items-center gap-1">
@@ -939,7 +937,7 @@ const Expenses: React.FC = () => {
                     </div>
                   </th>
                   <th 
-                    className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSortChange('fund')}
                   >
                     <div className="flex items-center gap-1">
@@ -948,7 +946,7 @@ const Expenses: React.FC = () => {
                     </div>
                   </th>
                   <th 
-                    className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                     onClick={() => handleSortChange('amount')}
                   >
                     <div className="flex items-center gap-1">
@@ -956,8 +954,8 @@ const Expenses: React.FC = () => {
                       {getSortIcon('amount')}
                     </div>
                   </th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">הערה</th>
-                  <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">פעולות</th>
+                  <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">הערה</th>
+                  <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">פעולות</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -982,19 +980,19 @@ const Expenses: React.FC = () => {
                     Object.entries(groupedExpenses).map(([groupName, groupExpenses]) => (
                       <React.Fragment key={groupName}>
                         <tr className="bg-gray-100 hover:bg-gray-200 cursor-pointer" onClick={() => toggleGroup(groupName)}>
-                          <td colSpan={7} className="px-4 py-3">
+                          <td colSpan={7} className="px-3 py-2">
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
                                 {expandedGroups[groupName] ? (
-                                  <ChevronDown size={16} className="text-gray-600" />
+                                  <ChevronDown size={14} className="text-gray-600" />
                                 ) : (
-                                  <ChevronUp size={16} className="text-gray-600" />
+                                  <ChevronUp size={14} className="text-gray-600" />
                                 )}
-                                <span className="font-semibold text-gray-800">
-                                  {groupName} ({groupExpenses.length} הוצאות)
+                                <span className="font-semibold text-gray-800 text-sm">
+                                  {groupName} ({groupExpenses.length})
                                 </span>
                               </div>
-                              <span className="font-bold text-amber-600">
+                              <span className="font-bold text-amber-600 text-sm">
                                 {formatCurrency(groupSums[groupName])}
                               </span>
                             </div>
@@ -1021,28 +1019,27 @@ const Expenses: React.FC = () => {
             </table>
           </div>
 
-          {/* 🔧 Loading indicator for infinite scroll - עובד תמיד! */}
+          {/* Loading indicator for infinite scroll */}
           <div 
             ref={loadingRef}
-            className="px-4 py-3 border-t border-gray-200 bg-gray-50"
+            className="px-3 py-2 border-t border-gray-200 bg-gray-50"
           >
             {pagination.loading ? (
               <div className="flex items-center justify-center gap-2">
-                <Loader size={16} className="animate-spin text-amber-600" />
-                <span className="text-sm text-gray-600">טוען עוד נתונים...</span>
+                <Loader size={14} className="animate-spin text-amber-600" />
+                <span className="text-xs text-gray-600">טוען עוד נתונים...</span>
               </div>
             ) : pagination.hasMore ? (
-              <div className="text-center text-sm text-gray-500">
-                <div className="mb-2">🔄 גלול למטה לטעינת עוד נתונים</div>
+              <div className="text-center text-xs text-gray-500">
+                <div className="mb-1">🔄 גלול למטה לטעינת עוד נתונים</div>
                 <div className="text-xs text-gray-400">
-                  נטענו {expenses.length} מתוך {pagination.total > 0 ? pagination.total : '?'} הוצאות
+                  נטענו {expenses.length} הוצאות
                   {groupBy !== 'none' && ` (מקובצות לפי ${groupBy === 'category' ? 'קטגוריה' : 'קופה'})`}
                 </div>
               </div>
             ) : expenses.length > 0 ? (
-              <div className="text-center text-sm text-gray-500">
+              <div className="text-center text-xs text-gray-500">
                 ✅ כל הנתונים נטענו ({expenses.length} הוצאות)
-                {groupBy !== 'none' && ` מקובצות לפי ${groupBy === 'category' ? 'קטגוריה' : 'קופה'}`}
               </div>
             ) : null}
           </div>
