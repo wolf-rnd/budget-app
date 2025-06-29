@@ -206,8 +206,8 @@ const TasksSection: React.FC<TasksSectionProps> = ({
         )}
       </div>
       
-      {/* רשימת המשימות */}
-      <div className="space-y-2 max-h-40 overflow-y-auto mb-5">
+      {/* רשימת המשימות - ללא גלילה, גובה דינמי */}
+      <div className="space-y-2 mb-5">
         {visibleTasks.length > 0 ? (
           visibleTasks.map(task => (
             <div 
