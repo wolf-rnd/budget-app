@@ -1,7 +1,6 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { TrendingDown, Plus, Edit, Trash2, ChevronLeft, ChevronRight, Undo2, X, Search, Filter, SortAsc, SortDesc, ChevronDown, ChevronUp } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { TrendingDown, Plus, Edit, Trash2, Undo2, X, Search, Filter, SortAsc, SortDesc, ChevronDown, ChevronUp, Loader } from 'lucide-react';
 import ExpenseModal from '../components/Modals/ExpenseModal';
-import { filterExpensesByBudgetYear } from '../utils/budgetUtils';
 
 // Import services instead of JSON data
 import { CreateExpenseRequest, expensesService, GetExpenseRequest, UpdateExpenseRequest } from '../services/expensesService';
@@ -33,6 +32,15 @@ interface SortState {
 
 type GroupBy = 'none' | 'category' | 'fund';
 
+interface PaginationState {
+  page: number;
+  hasMore: boolean;
+  loading: boolean;
+  total: number;
+}
+
+const ITEMS_PER_PAGE = 15;
+
 const Expenses: React.FC = () => {
   const [expenses, setExpenses] = useState<GetExpenseRequest[]>([]);
   const [categories, setCategories] = useState<GetCategoryRequest[]>([]);
@@ -42,7 +50,6 @@ const Expenses: React.FC = () => {
   const [undoNotification, setUndoNotification] = useState<UndoNotification | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
 
   // מצבי פילטור, מיון וקיבוץ
   const [filters, setFilters] = useState<FilterState>({
@@ -64,23 +71,63 @@ const Expenses: React.FC = () => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [showFilters, setShowFilters] = useState(false);
 
-  const selectedBudgetYearId = useBudgetYearStore(state => state.selectedBudgetYearId);
-  const itemsPerPage = 15;
+  // Pagination state
+  const [pagination, setPagination] = useState<PaginationState>({
+    page: 1,
+    hasMore: true,
+    loading: false,
+    total: 0
+  });
 
-  // Load data from API
+  const selectedBudgetYearId = useBudgetYearStore(state => state.selectedBudgetYearId);
+  
+  // Refs for infinite scroll
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const loadingRef = useRef<HTMLDivElement | null>(null);
+
+  // Load initial data
   useEffect(() => {
-    loadData();
+    loadInitialData();
   }, []);
 
-  // ברירת מחדל: כל הקבוצות פתוחות כשמשנים קיבוץ או בטעינה ראשונית
+  // Reset pagination when filters/sort change
   useEffect(() => {
-    if (groupBy === 'none') return;
-    const allGroups = Object.keys(groupedExpenses);
-    setExpandedGroups(Object.fromEntries(allGroups.map(g => [g, true]))); // כל הקבוצות פתוחות
-    // eslint-disable-next-line
-  }, [groupBy, expenses]); // תלות גם ב-expenses כדי שיעבוד בטעינה ראשונית
+    resetAndLoadData();
+  }, [filters, sort, selectedBudgetYearId]);
 
-  const loadData = async () => {
+  // Setup intersection observer for infinite scroll
+  useEffect(() => {
+    if (groupBy !== 'none') return; // Infinite scroll רק במצב ללא קיבוץ
+
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && pagination.hasMore && !pagination.loading) {
+          loadMoreData();
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '100px'
+      }
+    );
+
+    if (loadingRef.current) {
+      observerRef.current.observe(loadingRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [pagination.hasMore, pagination.loading, groupBy]);
+
+  const loadInitialData = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -92,104 +139,92 @@ const Expenses: React.FC = () => {
 
       setCategories(categoriesData);
       setBudgetYears(budgetYearsData);
-      const expensesData = await expensesService.getAllExpenses(
-        selectedBudgetYearId ? { budget_year_id: selectedBudgetYearId } : undefined
-      );
-      setExpenses(expensesData);
+      
+      // Load first page of expenses
+      await loadExpensesPage(1, true);
     } catch (err) {
-      console.error('Failed to load expenses data:', err);
+      console.error('Failed to load initial data:', err);
       setError('שגיאה בטעינת נתוני ההוצאות');
     } finally {
       setLoading(false);
     }
   };
 
+  const resetAndLoadData = useCallback(async () => {
+    setExpenses([]);
+    setPagination({
+      page: 1,
+      hasMore: true,
+      loading: false,
+      total: 0
+    });
+    await loadExpensesPage(1, true);
+  }, []);
+
+  const loadExpensesPage = async (page: number, reset: boolean = false) => {
+    if (pagination.loading && !reset) return;
+
+    setPagination(prev => ({ ...prev, loading: true }));
+
+    try {
+      const expenseFilters = {
+        budget_year_id: selectedBudgetYearId || undefined,
+        category: filters.category || undefined,
+        fund: filters.fund || undefined,
+        min_amount: filters.minAmount ? Number(filters.minAmount) : undefined,
+        max_amount: filters.maxAmount ? Number(filters.maxAmount) : undefined,
+        start_date: filters.startDate || undefined,
+        end_date: filters.endDate || undefined,
+        search: filters.search || undefined,
+        page,
+        limit: ITEMS_PER_PAGE,
+        sort_field: sort.field,
+        sort_direction: sort.direction
+      };
+
+      const response = await expensesService.getAllExpenses(expenseFilters);
+      
+      if (reset) {
+        setExpenses(response.data || response);
+      } else {
+        setExpenses(prev => [...prev, ...(response.data || response)]);
+      }
+
+      setPagination(prev => ({
+        ...prev,
+        page,
+        hasMore: (response.data || response).length === ITEMS_PER_PAGE,
+        total: response.total || prev.total,
+        loading: false
+      }));
+
+    } catch (error) {
+      console.error('Failed to load expenses:', error);
+      setError('שגיאה בטעינת הוצאות');
+      setPagination(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  const loadMoreData = useCallback(() => {
+    if (pagination.hasMore && !pagination.loading) {
+      loadExpensesPage(pagination.page + 1);
+    }
+  }, [pagination.hasMore, pagination.loading, pagination.page]);
+
   const uniqueFunds = Array.from(new Set(categories.map(cat => cat.fund)));
 
-  // פילטור הוצאות
-  const filteredExpenses = useMemo(() => {
-    return expenses.filter(expense => {
-      // פילטר קטגוריה
-      if (filters.category && expense.categories?.name !== filters.category) return false;
-      
-      // פילטר קופה
-      if (filters.fund && expense.funds?.name !== filters.fund) return false;
-      
-      // פילטר סכום מינימלי
-      if (filters.minAmount && expense.amount < Number(filters.minAmount)) return false;
-      
-      // פילטר סכום מקסימלי
-      if (filters.maxAmount && expense.amount > Number(filters.maxAmount)) return false;
-      
-      // פילטר תאריך התחלה
-      if (filters.startDate && expense.date < filters.startDate) return false;
-      
-      // פילטר תאריך סיום
-      if (filters.endDate && expense.date > filters.endDate) return false;
-      
-      // פילטר חיפוש טקסט
-      if (filters.search) {
-        const searchLower = filters.search.toLowerCase();
-        const matchesName = expense.name.toLowerCase().includes(searchLower);
-        const matchesNote = expense.note?.toLowerCase().includes(searchLower);
-        const matchesCategory = expense.categories?.name.toLowerCase().includes(searchLower);
-        const matchesFund = expense.funds?.name.toLowerCase().includes(searchLower);
-        
-        if (!matchesName && !matchesNote && !matchesCategory && !matchesFund) return false;
-      }
-      
-      return true;
-    });
-  }, [expenses, filters]);
-
-  // מיון הוצאות
-  const sortedExpenses = useMemo(() => {
-    return [...filteredExpenses].sort((a, b) => {
-      let aValue: any, bValue: any;
-      
-      switch (sort.field) {
-        case 'date':
-          aValue = new Date(a.date);
-          bValue = new Date(b.date);
-          break;
-        case 'name':
-          aValue = a.name.toLowerCase();
-          bValue = b.name.toLowerCase();
-          break;
-        case 'amount':
-          aValue = a.amount;
-          bValue = b.amount;
-          break;
-        case 'category':
-          aValue = a.categories?.name || '';
-          bValue = b.categories?.name || '';
-          break;
-        case 'fund':
-          aValue = a.funds?.name || '';
-          bValue = b.funds?.name || '';
-          break;
-        default:
-          return 0;
-      }
-      
-      if (aValue < bValue) return sort.direction === 'asc' ? -1 : 1;
-      if (aValue > bValue) return sort.direction === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }, [filteredExpenses, sort]);
-
-  // קיבוץ הוצאות
+  // קיבוץ הוצאות - רק לנתונים שכבר נטענו
   const groupedExpenses = useMemo(() => {
     if (groupBy === 'none') return {};
     
     const key = groupBy === 'category' ? 'categories' : 'funds';
-    return sortedExpenses.reduce((groups, expense) => {
+    return expenses.reduce((groups, expense) => {
       const groupName = expense[key]?.name || 'לא ידוע';
       if (!groups[groupName]) groups[groupName] = [];
       groups[groupName].push(expense);
       return groups;
     }, {} as Record<string, GetExpenseRequest[]>);
-  }, [sortedExpenses, groupBy]);
+  }, [expenses, groupBy]);
 
   // חישוב סכומים לקבוצות
   const groupSums = useMemo(() => {
@@ -200,25 +235,12 @@ const Expenses: React.FC = () => {
     return sums;
   }, [groupedExpenses]);
 
-  // Pagination - תמיד בצד לקוח
-  const totalPages = Math.ceil(
-    groupBy === 'none' ? sortedExpenses.length : Object.keys(groupedExpenses).length
-  );
-  
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  
-  const currentExpenses = groupBy === 'none' 
-    ? sortedExpenses.slice(startIndex, endIndex)
-    : sortedExpenses; // בקיבוץ מציגים הכל
-
-  const currentGroups = groupBy !== 'none' 
-    ? Object.entries(groupedExpenses).slice(startIndex, endIndex)
-    : [];
-
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [filters, sort, groupBy]);
+  // ברירת מחדל: כל הקבוצות פתוחות כשמשנים קיבוץ
+  useEffect(() => {
+    if (groupBy === 'none') return;
+    const allGroups = Object.keys(groupedExpenses);
+    setExpandedGroups(Object.fromEntries(allGroups.map(g => [g, true])));
+  }, [groupBy, groupedExpenses]);
 
   React.useEffect(() => {
     return () => {
@@ -279,7 +301,7 @@ const Expenses: React.FC = () => {
   const handleExpenseModalSubmit = async (newExpense: CreateExpenseRequest) => {
     try {
       const createdExpense = await expensesService.createExpense(newExpense);
-      setExpenses([createdExpense, ...expenses]);
+      setExpenses(prev => [createdExpense, ...prev]);
       console.log('הוצאה חדשה נוספה:', createdExpense);
     } catch (error) {
       console.error('Failed to create expense:', error);
@@ -335,7 +357,7 @@ const Expenses: React.FC = () => {
   const handleUndo = async () => {
     if (undoNotification) {
       try {
-        await loadData();
+        await resetAndLoadData();
         clearTimeout(undoNotification.timeoutId);
         setUndoNotification(null);
       } catch (error) {
@@ -349,10 +371,6 @@ const Expenses: React.FC = () => {
       clearTimeout(undoNotification.timeoutId);
       setUndoNotification(null);
     }
-  };
-
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
   };
 
   const getSortIcon = (field: SortState['field']) => {
@@ -424,7 +442,7 @@ const Expenses: React.FC = () => {
           <h2 className="text-xl font-bold text-red-800 mb-2">שגיאה בטעינת ההוצאות</h2>
           <p className="text-red-600 mb-4">{error}</p>
           <button
-            onClick={loadData}
+            onClick={loadInitialData}
             className="bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition-colors"
           >
             נסה שוב
@@ -609,7 +627,7 @@ const Expenses: React.FC = () => {
                   </span>
                 )}
                 <span className="text-amber-600">
-                  ({filteredExpenses.length} תוצאות)
+                  ({expenses.length} תוצאות נטענו{pagination.hasMore ? ', עוד נתונים זמינים' : ''})
                 </span>
               </div>
             </div>
@@ -621,18 +639,18 @@ const Expenses: React.FC = () => {
           <div className="p-6 border-b border-gray-200">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-semibold text-gray-800">
-                רשימת הוצאות ({filteredExpenses.length} הוצאות)
+                רשימת הוצאות ({expenses.length} הוצאות נטענו)
                 {groupBy !== 'none' && ` - מקובצות לפי ${groupBy === 'category' ? 'קטגוריה' : 'קופה'}`}
               </h2>
               <div className="text-sm text-gray-500">
                 {groupBy === 'none' ? (
-                  `עמוד ${currentPage} מתוך ${totalPages}`
+                  <div className="text-center">
+                    <div>📊 Pagination: צד שרת</div>
+                    <div>🔄 Infinite Scroll: {pagination.hasMore ? 'זמין' : 'הסתיים'}</div>
+                  </div>
                 ) : (
                   `${Object.keys(groupedExpenses).length} קבוצות`
                 )}
-                <span className="text-xs text-gray-400 block">
-                  📊 Pagination: צד לקוח
-                </span>
               </div>
             </div>
           </div>
@@ -692,9 +710,9 @@ const Expenses: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {groupBy === 'none' ? (
-                  // תצוגה רגילה ללא קיבוץ
-                  currentExpenses.length > 0 ? (
-                    currentExpenses.map(renderExpenseRow)
+                  // תצוגה רגילה ללא קיבוץ - עם infinite scroll
+                  expenses.length > 0 ? (
+                    expenses.map(renderExpenseRow)
                   ) : (
                     <tr>
                       <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
@@ -708,8 +726,8 @@ const Expenses: React.FC = () => {
                   )
                 ) : (
                   // תצוגה מקובצת
-                  currentGroups.length > 0 ? (
-                    currentGroups.map(([groupName, groupExpenses]) => (
+                  Object.keys(groupedExpenses).length > 0 ? (
+                    Object.entries(groupedExpenses).map(([groupName, groupExpenses]) => (
                       <React.Fragment key={groupName}>
                         {/* כותרת הקבוצה */}
                         <tr className="bg-gray-100 hover:bg-gray-200 cursor-pointer" onClick={() => toggleGroup(groupName)}>
@@ -731,7 +749,7 @@ const Expenses: React.FC = () => {
                             </div>
                           </td>
                         </tr>
-                        {/* שורות הקבוצה - מוצגות רק אם הקבוצה פתוחה */}
+                        {/* שורות הקבוצה */}
                         {expandedGroups[groupName] && groupExpenses.map(renderExpenseRow)}
                       </React.Fragment>
                     ))
@@ -751,70 +769,26 @@ const Expenses: React.FC = () => {
             </table>
           </div>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="px-6 py-4 border-t border-gray-200 bg-gray-50">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-700">
-                  {groupBy === 'none' ? (
-                    `מציג ${startIndex + 1}-${Math.min(endIndex, filteredExpenses.length)} מתוך ${filteredExpenses.length} הוצאות`
-                  ) : (
-                    `מציג ${startIndex + 1}-${Math.min(endIndex, Object.keys(groupedExpenses).length)} מתוך ${Object.keys(groupedExpenses).length} קבוצות`
-                  )}
+          {/* Loading indicator for infinite scroll */}
+          {groupBy === 'none' && (
+            <div 
+              ref={loadingRef}
+              className="px-6 py-4 border-t border-gray-200 bg-gray-50"
+            >
+              {pagination.loading ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader size={16} className="animate-spin text-amber-600" />
+                  <span className="text-sm text-gray-600">טוען עוד נתונים...</span>
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    disabled={currentPage === 1}
-                    className={`p-2 rounded-lg transition-colors ${currentPage === 1
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
-                      }`}
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-
-                  <div className="flex gap-1">
-                    {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                      let page;
-                      if (totalPages <= 7) {
-                        page = i + 1;
-                      } else if (currentPage <= 4) {
-                        page = i + 1;
-                      } else if (currentPage >= totalPages - 3) {
-                        page = totalPages - 6 + i;
-                      } else {
-                        page = currentPage - 3 + i;
-                      }
-                      
-                      return (
-                        <button
-                          key={page}
-                          onClick={() => handlePageChange(page)}
-                          className={`px-3 py-1 rounded-lg text-sm transition-colors ${page === currentPage
-                            ? 'bg-amber-500 text-white'
-                            : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
-                            }`}
-                        >
-                          {page}
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className={`p-2 rounded-lg transition-colors ${currentPage === totalPages
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-200'
-                      }`}
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
+              ) : pagination.hasMore ? (
+                <div className="text-center text-sm text-gray-500">
+                  גלול למטה לטעינת עוד נתונים
                 </div>
-              </div>
+              ) : expenses.length > 0 ? (
+                <div className="text-center text-sm text-gray-500">
+                  כל הנתונים נטענו ({expenses.length} הוצאות)
+                </div>
+              ) : null}
             </div>
           )}
         </div>
