@@ -56,31 +56,36 @@ const DebtsModal: React.FC<DebtsModalProps> = ({ isOpen, onClose, debts, onDelet
                 <div className="w-3 h-3 bg-emerald-400 rounded-full"></div>
                 חייבים לי ({debtsOwedToMe.length})
               </h3>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
+              <div className="space-y-2 max-h-96 overflow-y-auto">
                 {debtsOwedToMe.length > 0 ? (
-                  debtsOwedToMe.map(debt => (
-                    <div key={debt.id} className="group p-4 bg-emerald-50 rounded-lg border border-emerald-100">
-                      <div className="flex justify-between items-start">
+                  <ul className="space-y-2">
+                    {debtsOwedToMe.map(debt => (
+                      <li key={debt.id} className="group flex items-start gap-3 py-2">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2 flex-shrink-0"></div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-emerald-800 truncate">{debt.description}</p>
-                          {debt.note && (
-                            <p className="text-xs text-emerald-600 mt-1">{debt.note}</p>
-                          )}
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-800">{debt.description}</p>
+                              {debt.note && (
+                                <p className="text-xs text-gray-600 mt-1">{debt.note}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0 mr-3">
+                              <span className="text-sm font-semibold text-emerald-700">
+                                {formatCurrency(debt.amount)}
+                              </span>
+                              <button
+                                onClick={() => onDeleteDebt(debt.id)}
+                                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-all"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-sm font-semibold text-emerald-700">
-                            {formatCurrency(debt.amount)}
-                          </span>
-                          <button
-                            onClick={() => onDeleteDebt(debt.id)}
-                            className="opacity-0 group-hover:opacity-100 text-emerald-400 hover:text-red-500 p-1 rounded transition-all"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
+                      </li>
+                    ))}
+                  </ul>
                 ) : (
                   <p className="text-center text-gray-500 py-8">אין חובות שחייבים לי</p>
                 )}
@@ -93,31 +98,36 @@ const DebtsModal: React.FC<DebtsModalProps> = ({ isOpen, onClose, debts, onDelet
                 <div className="w-3 h-3 bg-slate-400 rounded-full"></div>
                 אני חייבת ({debtsIOwe.length})
               </h3>
-              <div className="space-y-3 max-h-96 overflow-y-auto">
+              <div className="space-y-2 max-h-96 overflow-y-auto">
                 {debtsIOwe.length > 0 ? (
-                  debtsIOwe.map(debt => (
-                    <div key={debt.id} className="group p-4 bg-slate-50 rounded-lg border border-slate-100">
-                      <div className="flex justify-between items-start">
+                  <ul className="space-y-2">
+                    {debtsIOwe.map(debt => (
+                      <li key={debt.id} className="group flex items-start gap-3 py-2">
+                        <div className="w-2 h-2 bg-slate-500 rounded-full mt-2 flex-shrink-0"></div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-slate-800 truncate">{debt.description}</p>
-                          {debt.note && (
-                            <p className="text-xs text-slate-600 mt-1">{debt.note}</p>
-                          )}
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-800">{debt.description}</p>
+                              {debt.note && (
+                                <p className="text-xs text-gray-600 mt-1">{debt.note}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0 mr-3">
+                              <span className="text-sm font-semibold text-slate-700">
+                                {formatCurrency(debt.amount)}
+                              </span>
+                              <button
+                                onClick={() => onDeleteDebt(debt.id)}
+                                className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-all"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-sm font-semibold text-slate-700">
-                            {formatCurrency(debt.amount)}
-                          </span>
-                          <button
-                            onClick={() => onDeleteDebt(debt.id)}
-                            className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 p-1 rounded transition-all"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
+                      </li>
+                    ))}
+                  </ul>
                 ) : (
                   <p className="text-center text-gray-500 py-8">אין חובות שאני חייבת</p>
                 )}
@@ -130,7 +140,7 @@ const DebtsModal: React.FC<DebtsModalProps> = ({ isOpen, onClose, debts, onDelet
   );
 };
 
-// הוצאת הקומפוננטות החוצה כדי למנוע re-creation
+// רשימת חובות עם bullets
 const DebtsList = ({ debts, type, emptyMessage, onDeleteDebt, maxItems = 3 }: { 
   debts: Debt[], 
   type: 'owed_to_me' | 'i_owe',
@@ -150,42 +160,44 @@ const DebtsList = ({ debts, type, emptyMessage, onDeleteDebt, maxItems = 3 }: {
   const displayDebts = debts.slice(0, maxItems);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       {displayDebts.length > 0 ? (
-        displayDebts.map(debt => (
-          <div key={debt.id} className="group p-2 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 hover:border-gray-200 transition-all duration-200">
-            <div className="flex justify-between items-start">
+        <ul className="space-y-1">
+          {displayDebts.map(debt => (
+            <li key={debt.id} className="group flex items-start gap-2 py-1">
+              {/* Bullet point */}
+              <div className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${
+                type === 'owed_to_me' ? 'bg-emerald-500' : 'bg-slate-500'
+              }`}></div>
+              
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  {type === 'owed_to_me' ? (
-                    <div className="w-2 h-2 bg-emerald-400 rounded-full flex-shrink-0"></div>
-                  ) : (
-                    <div className="w-2 h-2 bg-slate-400 rounded-full flex-shrink-0"></div>
-                  )}
-                  <p className="text-xs font-medium text-gray-800 truncate">{debt.description}</p>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium text-gray-800 leading-relaxed">{debt.description}</p>
+                    {debt.note && (
+                      <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{debt.note}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0 mr-2">
+                    <span className={`text-xs font-semibold ${
+                      type === 'owed_to_me' ? 'text-emerald-600' : 'text-slate-600'
+                    }`}>
+                      {formatCurrency(debt.amount)}
+                    </span>
+                    
+                    <button
+                      onClick={() => onDeleteDebt(debt.id)}
+                      className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-0.5 rounded transition-all duration-200"
+                      title="מחיקת חוב"
+                    >
+                      <Trash2 size={10} />
+                    </button>
+                  </div>
                 </div>
-                {debt.note && (
-                  <p className="text-xs text-gray-500 truncate mr-4">{debt.note}</p>
-                )}
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className={`text-xs font-semibold ${
-                  type === 'owed_to_me' ? 'text-emerald-600' : 'text-slate-600'
-                }`}>
-                  {formatCurrency(debt.amount)}
-                </span>
-                
-                <button
-                  onClick={() => onDeleteDebt(debt.id)}
-                  className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-all duration-200"
-                  title="מחיקת חוב"
-                >
-                  <Trash2 size={10} />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))
+            </li>
+          ))}
+        </ul>
       ) : (
         <div className="text-center py-4 text-gray-400">
           <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
