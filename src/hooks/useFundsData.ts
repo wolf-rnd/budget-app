@@ -53,6 +53,16 @@ export const useFundsData = () => {
     }
   }, [selectedBudgetYearId]);
 
+  // Refresh categories - פונקציה חדשה לרענון קטגוריות
+  const refreshCategories = useCallback(async () => {
+    try {
+      const categoriesData = await categoriesService.getAllCategories();
+      setCategories(categoriesData);
+    } catch (err) {
+      console.error('Failed to refresh categories data:', err);
+    }
+  }, []);
+
   // CRUD operations
   const createFund = useCallback(async (newFund: CreateFundRequest) => {
     try {
@@ -162,6 +172,7 @@ export const useFundsData = () => {
     activateFund,
     deactivateFund,
     getEditingFund,
-    refreshData
+    refreshData,
+    refreshCategories // פונקציה חדשה לרענון קטגוריות
   };
 };

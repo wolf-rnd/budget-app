@@ -24,7 +24,8 @@ const Funds: React.FC = () => {
     activateFund,
     deactivateFund,
     getEditingFund,
-    refreshData
+    refreshData,
+    refreshCategories // פונקציה חדשה לרענון קטגוריות
   } = useFundsData();
 
   // Local state
@@ -105,6 +106,14 @@ const Funds: React.FC = () => {
     }
   };
 
+  // Handler לסגירת המודל עם רענון קטגוריות
+  const handleModalClose = useCallback(() => {
+    setIsFundModalOpen(false);
+    setEditingFund(null);
+    // רענון קטגוריות כדי לקבל קטגוריות חדשות שנוצרו
+    refreshCategories();
+  }, [refreshCategories]);
+
   // Loading state
   if (loading && !dataLoaded) {
     return (
@@ -180,10 +189,7 @@ const Funds: React.FC = () => {
         {/* מודל עריכה */}
         <FundModal
           isOpen={isFundModalOpen}
-          onClose={() => {
-            setIsFundModalOpen(false);
-            setEditingFund(null);
-          }}
+          onClose={handleModalClose} // שימוש ב-handler המעודכן
           onAddFund={createFund}
           onEditFund={updateFund}
           editingFund={editingFund}

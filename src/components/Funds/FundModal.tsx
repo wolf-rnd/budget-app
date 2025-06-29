@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Wallet, Plus } from 'lucide-react';
+import { X, Wallet, Plus, Tag } from 'lucide-react';
 import { CreateFundRequest, UpdateFundRequest } from '../../services/fundsService';
-import { GetCategoryRequest } from '../../services/categoriesService';
+import { GetCategoryRequest, CreateCategoryRequest } from '../../services/categoriesService';
+import { categoriesService } from '../../services/categoriesService';
 import ColorBadge from '../UI/ColorBadge';
 
 interface FundModalProps {
@@ -19,13 +20,25 @@ const FundModal: React.FC<FundModalProps> = ({
   onAddFund,
   onEditFund,
   editingFund,
-  categories
+  categories: initialCategories
 }) => {
   const [name, setName] = useState('');
   const [type, setType] = useState<'monthly' | 'annual' | 'savings'>('monthly');
   const [level, setLevel] = useState<1 | 2 | 3>(1);
   const [includeInBudget, setIncludeInBudget] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<GetCategoryRequest[]>(initialCategories);
+  
+  // State for adding new category
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [newCategoryColor, setNewCategoryColor] = useState('#3b82f6');
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
+
+  // עדכון הקטגוריות כשמתעדכנות מהרכיב האב
+  useEffect(() => {
+    setCategories(initialCategories);
+  }, [initialCategories]);
 
   // עדכון הטופס כשנפתח במצב עריכה
   useEffect(() => {
@@ -42,6 +55,11 @@ const FundModal: React.FC<FundModalProps> = ({
       setIncludeInBudget(true);
       setSelectedCategories([]);
     }
+    
+    // איפוס טופס הוספת קטגוריה
+    setShowAddCategory(false);
+    setNewCategoryName('');
+    setNewCategoryColor('#3b82f6');
   }, [editingFund, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -77,9 +95,61 @@ const FundModal: React.FC<FundModalProps> = ({
     );
   };
 
+  const handleAddNewCategory = async () => {
+    if (!newCategoryName.trim()) {
+      alert('שם הקטגוריה הוא שדה חובה');
+      return;
+    }
+
+    if (!editingFund?.id) {
+      alert('יש לשמור את הקופה תחילה לפני הוספת קטגוריות');
+      return;
+    }
+
+    setIsCreatingCategory(true);
+
+    try {
+      const categoryData: CreateCategoryRequest = {
+        name: newCategoryName.trim(),
+        fund_id: editingFund.id,
+        color_class: newCategoryColor
+      };
+
+      const newCategory = await categoriesService.createCategory(categoryData);
+      
+      // עדכון רשימת הקטגוריות המקומית
+      setCategories(prev => [...prev, newCategory]);
+      
+      // הוספה אוטומטית לרשימת הקטגוריות הנבחרות
+      setSelectedCategories(prev => [...prev, newCategory.id]);
+      
+      // איפוס הטופס
+      setNewCategoryName('');
+      setNewCategoryColor('#3b82f6');
+      setShowAddCategory(false);
+      
+      console.log('✅ קטגוריה חדשה נוצרה:', newCategory);
+    } catch (error) {
+      console.error('❌ Failed to create category:', error);
+      alert('שגיאה ביצירת הקטגוריה. נסה שוב.');
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  };
+
+  const handleCancelAddCategory = () => {
+    setShowAddCategory(false);
+    setNewCategoryName('');
+    setNewCategoryColor('#3b82f6');
+  };
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
-      onClose();
+      if (showAddCategory) {
+        handleCancelAddCategory();
+      } else {
+        onClose();
+      }
     }
   };
 
@@ -88,6 +158,20 @@ const FundModal: React.FC<FundModalProps> = ({
       onClose();
     }
   };
+
+  // צבעים מוגדרים מראש לבחירה
+  const predefinedColors = [
+    '#3b82f6', // כחול
+    '#10b981', // ירוק
+    '#f59e0b', // כתום
+    '#ef4444', // אדום
+    '#8b5cf6', // סגול
+    '#06b6d4', // ציאן
+    '#84cc16', // ירוק בהיר
+    '#f97316', // כתום כהה
+    '#ec4899', // ורוד
+    '#6b7280'  // אפור
+  ];
 
   if (!isOpen) return null;
 
@@ -189,9 +273,121 @@ const FundModal: React.FC<FundModalProps> = ({
 
           {/* בחירת קטגוריות */}
           <div>
-            <label className="block text-sm font-bold text-gray-700 mb-2">
-              קטגוריות משויכות
-            </label>
+            <div className="flex justify-between items-center mb-2">
+              <label className="block text-sm font-bold text-gray-700">
+                קטגוריות משויכות
+              </label>
+              
+              {/* כפתור הוספת קטגוריה חדשה */}
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={() => setShowAddCategory(true)}
+                  className="bg-green-500 text-white px-3 py-1 rounded-md text-xs hover:bg-green-600 transition-colors flex items-center gap-1"
+                >
+                  <Plus size={12} />
+                  קטגוריה חדשה
+                </button>
+              )}
+            </div>
+
+            {/* טופס הוספת קטגוריה חדשה */}
+            {showAddCategory && (
+              <div className="mb-4 p-4 bg-green-50 rounded-lg border-2 border-green-200">
+                <h4 className="text-sm font-bold text-green-800 mb-3 flex items-center gap-2">
+                  <Tag size={16} />
+                  הוספת קטגוריה חדשה
+                </h4>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      שם הקטגוריה *
+                    </label>
+                    <input
+                      type="text"
+                      value={newCategoryName}
+                      onChange={(e) => setNewCategoryName(e.target.value)}
+                      className="w-full p-2 border border-green-300 rounded-md text-sm focus:border-green-500 focus:ring-1 focus:ring-green-200"
+                      placeholder="לדוגמה: מזון, תחבורה, בילויים..."
+                      disabled={isCreatingCategory}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      צבע הקטגוריה
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <div className="grid grid-cols-5 gap-1">
+                        {predefinedColors.map(color => (
+                          <button
+                            key={color}
+                            type="button"
+                            onClick={() => setNewCategoryColor(color)}
+                            className={`w-6 h-6 rounded-full border-2 transition-all ${
+                              newCategoryColor === color 
+                                ? 'border-gray-800 scale-110' 
+                                : 'border-gray-300 hover:border-gray-500'
+                            }`}
+                            style={{ backgroundColor: color }}
+                            disabled={isCreatingCategory}
+                          />
+                        ))}
+                      </div>
+                      <input
+                        type="color"
+                        value={newCategoryColor}
+                        onChange={(e) => setNewCategoryColor(e.target.value)}
+                        className="w-8 h-8 rounded border border-gray-300"
+                        disabled={isCreatingCategory}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      onClick={handleCancelAddCategory}
+                      className="px-3 py-1 text-xs text-gray-600 hover:text-gray-800 rounded-md hover:bg-gray-100 transition-colors"
+                      disabled={isCreatingCategory}
+                    >
+                      ביטול
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddNewCategory}
+                      disabled={!newCategoryName.trim() || isCreatingCategory}
+                      className="bg-green-600 text-white px-3 py-1 rounded-md text-xs hover:bg-green-700 transition-colors flex items-center gap-1 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    >
+                      {isCreatingCategory ? (
+                        <>
+                          <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>
+                          יוצר...
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={12} />
+                          הוסף קטגוריה
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* תצוגה מקדימה */}
+                {newCategoryName.trim() && (
+                  <div className="mt-3 p-2 bg-white rounded-md border border-green-200">
+                    <p className="text-xs text-green-700 mb-1">תצוגה מקדימה:</p>
+                    <ColorBadge color={newCategoryColor} size="sm">
+                      {newCategoryName.trim()}
+                    </ColorBadge>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* רשימת קטגוריות קיימות */}
             <div className="max-h-48 overflow-y-auto border-2 border-blue-200 rounded-lg p-3">
               {categories.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -210,13 +406,26 @@ const FundModal: React.FC<FundModalProps> = ({
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 text-center py-4">
-                  אין קטגוריות זמינות. צור קטגוריות תחילה.
-                </p>
+                <div className="text-center py-4">
+                  <p className="text-sm text-gray-500 mb-2">אין קטגוריות זמינות</p>
+                  {isEditing && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddCategory(true)}
+                      className="text-xs text-blue-600 hover:text-blue-800 underline"
+                    >
+                      צור קטגוריה ראשונה
+                    </button>
+                  )}
+                </div>
               )}
             </div>
+            
             <p className="text-xs text-gray-500 mt-1">
               בחר את הקטגוריות שישויכו לקופה זו
+              {!isEditing && (
+                <span className="text-orange-600 font-medium"> (ניתן להוסיף קטגוריות חדשות רק לאחר שמירת הקופה)</span>
+              )}
             </p>
           </div>
 
