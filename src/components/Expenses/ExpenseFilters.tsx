@@ -49,15 +49,15 @@ const ExpenseFilters: React.FC<ExpenseFiltersProps> = ({
                 value={filters.search}
                 onChange={(e) => onFilterChange('search', e.target.value)}
                 placeholder="חיפוש..."
-                className="pr-8 pl-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 w-48 text-sm"
+                className="pr-8 pl-3 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 w-40 text-sm"
               />
             </div>
 
-            {/* פילטרים מהירים */}
+            {/* קטגוריה */}
             <select
               value={filters.category}
               onChange={(e) => onFilterChange('category', e.target.value)}
-              className="px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm w-32"
+              className="px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm w-28"
             >
               <option value="">קטגוריה</option>
               {categories.map(category => (
@@ -67,10 +67,11 @@ const ExpenseFilters: React.FC<ExpenseFiltersProps> = ({
               ))}
             </select>
 
+            {/* קופה */}
             <select
               value={filters.fund}
               onChange={(e) => onFilterChange('fund', e.target.value)}
-              className="px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm w-32"
+              className="px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm w-28"
             >
               <option value="">קופה</option>
               {uniqueFunds.map(fund => (
@@ -79,6 +80,40 @@ const ExpenseFilters: React.FC<ExpenseFiltersProps> = ({
                 </option>
               ))}
             </select>
+
+            {/* סכום מינימלי */}
+            <input
+              type="number"
+              value={filters.minAmount}
+              onChange={(e) => onFilterChange('minAmount', e.target.value)}
+              placeholder="מינימום"
+              className="px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm w-20"
+            />
+
+            {/* סכום מקסימלי */}
+            <input
+              type="number"
+              value={filters.maxAmount}
+              onChange={(e) => onFilterChange('maxAmount', e.target.value)}
+              placeholder="מקסימום"
+              className="px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm w-20"
+            />
+
+            {/* תאריך התחלה */}
+            <input
+              type="date"
+              value={filters.startDate}
+              onChange={(e) => onFilterChange('startDate', e.target.value)}
+              className="px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm w-32"
+            />
+
+            {/* תאריך סיום */}
+            <input
+              type="date"
+              value={filters.endDate}
+              onChange={(e) => onFilterChange('endDate', e.target.value)}
+              className="px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm w-32"
+            />
 
             {/* כפתור פילטרים מתקדמים */}
             <button
@@ -90,7 +125,7 @@ const ExpenseFilters: React.FC<ExpenseFiltersProps> = ({
               }`}
             >
               <Filter size={14} />
-              עוד
+              פילטרים
             </button>
 
             {/* כפתור קיבוץ */}
@@ -169,57 +204,16 @@ const ExpenseFilters: React.FC<ExpenseFiltersProps> = ({
         {/* פילטרים מתקדמים */}
         {showFilters && (
           <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">סכום מינימלי</label>
-                <input
-                  type="number"
-                  value={filters.minAmount}
-                  onChange={(e) => onFilterChange('minAmount', e.target.value)}
-                  placeholder="0"
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm"
-                />
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                פילטרים מתקדמים - כל הפילטרים כבר זמינים בשורה העליונה
               </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">סכום מקסימלי</label>
-                <input
-                  type="number"
-                  value={filters.maxAmount}
-                  onChange={(e) => onFilterChange('maxAmount', e.target.value)}
-                  placeholder="∞"
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">מתאריך</label>
-                <input
-                  type="date"
-                  value={filters.startDate}
-                  onChange={(e) => onFilterChange('startDate', e.target.value)}
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">עד תאריך</label>
-                <input
-                  type="date"
-                  value={filters.endDate}
-                  onChange={(e) => onFilterChange('endDate', e.target.value)}
-                  className="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:ring-1 focus:ring-amber-200 focus:border-amber-400 text-sm"
-                />
-              </div>
-
-              <div className="flex items-end">
-                <button
-                  onClick={onToggleFilters}
-                  className="w-full px-2 py-1.5 text-xs text-gray-600 hover:text-gray-800 rounded-md hover:bg-gray-100 transition-colors"
-                >
-                  סגור פילטרים
-                </button>
-              </div>
+              <button
+                onClick={onToggleFilters}
+                className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800 rounded-md hover:bg-gray-100 transition-colors"
+              >
+                סגור פילטרים
+              </button>
             </div>
           </div>
         )}
@@ -242,6 +236,16 @@ const ExpenseFilters: React.FC<ExpenseFiltersProps> = ({
               {filters.search && (
                 <ColorBadge color="#6b7280" size="sm">
                   "{filters.search}"
+                </ColorBadge>
+              )}
+              {(filters.minAmount || filters.maxAmount) && (
+                <ColorBadge color="#8b5cf6" size="sm">
+                  סכום: {filters.minAmount || '0'}-{filters.maxAmount || '∞'}
+                </ColorBadge>
+              )}
+              {(filters.startDate || filters.endDate) && (
+                <ColorBadge color="#06b6d4" size="sm">
+                  תאריך: {filters.startDate || '...'} - {filters.endDate || '...'}
                 </ColorBadge>
               )}
               {groupBy !== 'none' && (
