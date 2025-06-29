@@ -51,6 +51,7 @@ const Expenses: React.FC = () => {
   const [undoNotification, setUndoNotification] = useState<UndoNotification | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false); // 🔧 הוספת state לעקוב אחרי טעינה ראשונית
 
   // מצבי פילטור, מיון וקיבוץ
   const [filters, setFilters] = useState<FilterState>({
@@ -95,8 +96,10 @@ const Expenses: React.FC = () => {
 
   // Reset pagination when filters/sort change
   useEffect(() => {
-    resetAndLoadData();
-  }, [filters, sort, selectedBudgetYearId]);
+    if (dataLoaded) { // 🔧 רק אחרי טעינה ראשונית
+      resetAndLoadData();
+    }
+  }, [filters, sort, selectedBudgetYearId, dataLoaded]);
 
   // Setup intersection observer for infinite scroll
   useEffect(() => {
@@ -164,9 +167,11 @@ const Expenses: React.FC = () => {
       
       // Load first page of expenses
       await loadExpensesPage(1, true);
+      setDataLoaded(true); // 🔧 סימון שהטעינה הראשונית הושלמה
     } catch (err) {
       console.error('Failed to load initial data:', err);
       setError('שגיאה בטעינת נתוני ההוצאות');
+      setDataLoaded(true); // 🔧 גם במקרה של שגיאה
     } finally {
       setLoading(false);
     }
@@ -488,7 +493,8 @@ const Expenses: React.FC = () => {
     </tr>
   );
 
-  if (loading) {
+  // 🔧 הצגת loader רק בטעינה ראשונית
+  if (loading && !dataLoaded) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -500,7 +506,7 @@ const Expenses: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error && !dataLoaded) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -846,15 +852,18 @@ const Expenses: React.FC = () => {
                   expenses.length > 0 ? (
                     expenses.map(renderExpenseRow)
                   ) : (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                        <div className="flex flex-col items-center gap-2">
-                          <TrendingDown size={48} className="text-gray-300" />
-                          <p className="text-lg font-medium">אין הוצאות להצגה</p>
-                          <p className="text-sm">נסה לשנות את הפילטרים או להוסיף הוצאה חדשה</p>
-                        </div>
-                      </td>
-                    </tr>
+                    // 🔧 הצגת "אין נתונים" רק אחרי שהטעינה הושלמה
+                    dataLoaded && !pagination.loading && (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                          <div className="flex flex-col items-center gap-2">
+                            <TrendingDown size={48} className="text-gray-300" />
+                            <p className="text-lg font-medium">אין הוצאות להצגה</p>
+                            <p className="text-sm">נסה לשנות את הפילטרים או להוסיף הוצאה חדשה</p>
+                          </div>
+                        </td>
+                      </tr>
+                    )
                   )
                 ) : (
                   // תצוגה מקובצת
@@ -886,15 +895,18 @@ const Expenses: React.FC = () => {
                       </React.Fragment>
                     ))
                   ) : (
-                    <tr>
-                      <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                        <div className="flex flex-col items-center gap-2">
-                          <TrendingDown size={48} className="text-gray-300" />
-                          <p className="text-lg font-medium">אין הוצאות להצגה</p>
-                          <p className="text-sm">נסה לשנות את הפילטרים או להוסיף הוצאה חדשה</p>
-                        </div>
-                      </td>
-                    </tr>
+                    // 🔧 הצגת "אין נתונים" רק אחרי שהטעינה הושלמה
+                    dataLoaded && !pagination.loading && (
+                      <tr>
+                        <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                          <div className="flex flex-col items-center gap-2">
+                            <TrendingDown size={48} className="text-gray-300" />
+                            <p className="text-lg font-medium">אין הוצאות להצגה</p>
+                            <p className="text-sm">נסה לשנות את הפילטרים או להוסיף הוצאה חדשה</p>
+                          </div>
+                        </td>
+                      </tr>
+                    )
                   )
                 )}
               </tbody>
