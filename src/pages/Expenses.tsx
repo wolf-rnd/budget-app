@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { TrendingDown, Plus, Edit, Trash2, Undo2, X, Search, Filter, SortAsc, SortDesc, ChevronDown, ChevronUp, Loader } from 'lucide-react';
+import { TrendingDown, Plus, Edit, Trash2, Undo2, X, Search, Filter, SortAsc, SortDesc, ChevronDown, ChevronUp, Loader, Check } from 'lucide-react';
 import ExpenseModal from '../components/Modals/ExpenseModal';
 import ColorBadge from '../components/UI/ColorBadge';
 
@@ -40,6 +40,14 @@ interface PaginationState {
   total: number;
 }
 
+// 🆕 Interface לעריכה inline
+interface InlineEditState {
+  expenseId: string | null;
+  field: 'name' | 'amount' | 'category' | 'fund' | 'note' | null;
+  value: string;
+  originalValue: string;
+}
+
 const ITEMS_PER_PAGE = 15;
 
 const Expenses: React.FC = () => {
@@ -51,7 +59,15 @@ const Expenses: React.FC = () => {
   const [undoNotification, setUndoNotification] = useState<UndoNotification | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [dataLoaded, setDataLoaded] = useState(false); // 🔧 הוספת state לעקוב אחרי טעינה ראשונית
+  const [dataLoaded, setDataLoaded] = useState(false);
+
+  // 🆕 State לעריכה inline
+  const [inlineEdit, setInlineEdit] = useState<InlineEditState>({
+    expenseId: null,
+    field: null,
+    value: '',
+    originalValue: ''
+  });
 
   // מצבי פילטור, מיון וקיבוץ
   const [filters, setFilters] = useState<FilterState>({
@@ -69,10 +85,10 @@ const Expenses: React.FC = () => {
     direction: 'desc'
   });
 
-  const [groupBy, setGroupBy] = useState<GroupBy>('fund'); // ברירת מחדל: קיבוץ לפי קופה
+  const [groupBy, setGroupBy] = useState<GroupBy>('fund');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [showFilters, setShowFilters] = useState(false);
-  const [showGroupBy, setShowGroupBy] = useState(false); // הוספת state לתפריט קיבוץ
+  const [showGroupBy, setShowGroupBy] = useState(false);
 
   // Pagination state
   const [pagination, setPagination] = useState<PaginationState>({
@@ -84,10 +100,11 @@ const Expenses: React.FC = () => {
 
   const selectedBudgetYearId = useBudgetYearStore(state => state.selectedBudgetYearId);
   
-  // Refs for infinite scroll
+  // Refs for infinite scroll and inline editing
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
-  const isLoadingMoreRef = useRef(false); // מניעת קריאות כפולות
+  const isLoadingMoreRef = useRef(false);
+  const editInputRef = useRef<HTMLInputElement | null>(null); // 🆕 Ref לעריכה
 
   // Load initial data
   useEffect(() => {
@@ -96,15 +113,22 @@ const Expenses: React.FC = () => {
 
   // Reset pagination when filters/sort change
   useEffect(() => {
-    if (dataLoaded) { // 🔧 רק אחרי טעינה ראשונית
+    if (dataLoaded) {
       resetAndLoadData();
     }
   }, [filters, sort, selectedBudgetYearId, dataLoaded]);
 
+  // 🆕 Focus על input כשמתחילים עריכה
+  useEffect(() => {
+    if (inlineEdit.expenseId && inlineEdit.field && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [inlineEdit.expenseId, inlineEdit.field]);
+
   // Setup intersection observer for infinite scroll
   useEffect(() => {
     if (groupBy !== 'none') {
-      // נקה observer כשיש קיבוץ
       if (observerRef.current) {
         observerRef.current.disconnect();
         observerRef.current = null;
@@ -112,12 +136,10 @@ const Expenses: React.FC = () => {
       return;
     }
 
-    // נקה observer קיים
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
 
-    // צור observer חדש
     observerRef.current = new IntersectionObserver(
       (entries) => {
         const target = entries[0];
@@ -139,7 +161,6 @@ const Expenses: React.FC = () => {
       }
     );
 
-    // התחבר לאלמנט
     if (loadingRef.current && observerRef.current) {
       console.log('📌 Observing loading element');
       observerRef.current.observe(loadingRef.current);
@@ -165,13 +186,12 @@ const Expenses: React.FC = () => {
       setCategories(categoriesData);
       setBudgetYears(budgetYearsData);
       
-      // Load first page of expenses
       await loadExpensesPage(1, true);
-      setDataLoaded(true); // 🔧 סימון שהטעינה הראשונית הושלמה
+      setDataLoaded(true);
     } catch (err) {
       console.error('Failed to load initial data:', err);
       setError('שגיאה בטעינת נתוני ההוצאות');
-      setDataLoaded(true); // 🔧 גם במקרה של שגיאה
+      setDataLoaded(true);
     } finally {
       setLoading(false);
     }
@@ -216,7 +236,7 @@ const Expenses: React.FC = () => {
         search: filters.search || undefined,
         page,
         limit: ITEMS_PER_PAGE,
-        sort_field: sort.field, // 🔧 תיקון: שימוש בשדה המיון הנכון
+        sort_field: sort.field,
         sort_direction: sort.direction
       };
 
@@ -224,18 +244,15 @@ const Expenses: React.FC = () => {
 
       const response = await expensesService.getAllExpenses(expenseFilters);
       
-      // טיפול בתגובה - בדוק אם זה ExpenseResponse או רשימה רגילה
       let expensesData: GetExpenseRequest[];
       let hasMoreData = false;
       let totalCount = 0;
 
       if (response && typeof response === 'object' && 'data' in response) {
-        // תגובה מובנית עם pagination
         expensesData = response.data || [];
         hasMoreData = response.hasMore || expensesData.length === ITEMS_PER_PAGE;
         totalCount = response.total || 0;
       } else {
-        // תגובה פשוטה - רשימה
         expensesData = Array.isArray(response) ? response : [];
         hasMoreData = expensesData.length === ITEMS_PER_PAGE;
         totalCount = expensesData.length;
@@ -283,7 +300,7 @@ const Expenses: React.FC = () => {
 
   const uniqueFunds = Array.from(new Set(categories.map(cat => cat.fund)));
 
-  // קיבוץ הוצאות - רק לנתונים שכבר נטענו
+  // קיבוץ הוצאות
   const groupedExpenses = useMemo(() => {
     if (groupBy === 'none') return {};
     
@@ -305,7 +322,6 @@ const Expenses: React.FC = () => {
     return sums;
   }, [groupedExpenses]);
 
-  // ברירת מחדל: כל הקבוצות פתוחות כשמשנים קיבוץ
   useEffect(() => {
     if (groupBy === 'none') return;
     const allGroups = Object.keys(groupedExpenses);
@@ -319,6 +335,76 @@ const Expenses: React.FC = () => {
       }
     };
   }, [undoNotification]);
+
+  // 🆕 פונקציות לעריכה inline
+  const startInlineEdit = (expenseId: string, field: 'name' | 'amount' | 'category' | 'fund' | 'note', currentValue: string) => {
+    setInlineEdit({
+      expenseId,
+      field,
+      value: currentValue,
+      originalValue: currentValue
+    });
+  };
+
+  const cancelInlineEdit = () => {
+    setInlineEdit({
+      expenseId: null,
+      field: null,
+      value: '',
+      originalValue: ''
+    });
+  };
+
+  const saveInlineEdit = async () => {
+    if (!inlineEdit.expenseId || !inlineEdit.field) return;
+
+    const expense = expenses.find(exp => exp.id === inlineEdit.expenseId);
+    if (!expense) return;
+
+    try {
+      let updatedValue: any = inlineEdit.value;
+      
+      // המרת ערכים לפי סוג השדה
+      if (inlineEdit.field === 'amount') {
+        updatedValue = Number(inlineEdit.value);
+        if (isNaN(updatedValue) || updatedValue <= 0) {
+          alert('סכום חייב להיות מספר חיובי');
+          return;
+        }
+      }
+
+      // יצירת אובייקט עדכון
+      const updateData: UpdateExpenseRequest = {
+        id: expense.id,
+        name: inlineEdit.field === 'name' ? updatedValue : expense.name,
+        amount: inlineEdit.field === 'amount' ? updatedValue : expense.amount,
+        category_id: expense.categories?.name || '',
+        fund_id: expense.funds?.name || '',
+        date: expense.date,
+        note: inlineEdit.field === 'note' ? updatedValue : expense.note,
+        budget_year_id: expense.budget_year_id
+      };
+
+      const updated = await expensesService.updateExpense(expense.id, updateData);
+      setExpenses(expenses.map(exp => exp.id === expense.id ? updated : exp));
+      
+      cancelInlineEdit();
+      console.log('הוצאה עודכנה:', updated);
+    } catch (error) {
+      console.error('Failed to update expense:', error);
+      alert('שגיאה בעדכון ההוצאה');
+    }
+  };
+
+  const handleInlineEditKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      saveInlineEdit();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      cancelInlineEdit();
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('he-IL', {
@@ -448,13 +534,68 @@ const Expenses: React.FC = () => {
     return sort.direction === 'asc' ? <SortAsc size={14} /> : <SortDesc size={14} />;
   };
 
+  // 🆕 רכיב עריכה inline
+  const InlineEditCell = ({ 
+    expense, 
+    field, 
+    value, 
+    type = 'text' 
+  }: { 
+    expense: GetExpenseRequest; 
+    field: 'name' | 'amount' | 'note'; 
+    value: string | number; 
+    type?: 'text' | 'number' 
+  }) => {
+    const isEditing = inlineEdit.expenseId === expense.id && inlineEdit.field === field;
+    
+    if (isEditing) {
+      return (
+        <div className="flex items-center gap-2">
+          <input
+            ref={editInputRef}
+            type={type}
+            value={inlineEdit.value}
+            onChange={(e) => setInlineEdit(prev => ({ ...prev, value: e.target.value }))}
+            onKeyDown={handleInlineEditKeyPress}
+            onBlur={saveInlineEdit}
+            className="w-full p-1 border border-blue-300 rounded text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
+          />
+          <button
+            onClick={saveInlineEdit}
+            className="text-green-600 hover:text-green-800 p-1"
+            title="שמירה"
+          >
+            <Check size={14} />
+          </button>
+          <button
+            onClick={cancelInlineEdit}
+            className="text-red-600 hover:text-red-800 p-1"
+            title="ביטול"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        onDoubleClick={() => startInlineEdit(expense.id, field, String(value))}
+        className="cursor-pointer hover:bg-blue-50 p-1 rounded transition-colors"
+        title="לחץ פעמיים לעריכה"
+      >
+        {field === 'amount' ? formatCurrency(Number(value)) : value}
+      </div>
+    );
+  };
+
   const renderExpenseRow = (expense: GetExpenseRequest) => (
     <tr key={expense.id} className="hover:bg-gray-50">
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
         {formatDate(expense.date)}
       </td>
       <td className="px-6 py-4 text-sm text-gray-900">
-        <div className="font-medium">{expense.name}</div>
+        <InlineEditCell expense={expense} field="name" value={expense.name} />
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <ColorBadge color={expense.categories?.color_class}>
@@ -467,17 +608,17 @@ const Expenses: React.FC = () => {
         </ColorBadge>
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-amber-600">
-        {formatCurrency(expense.amount)}
+        <InlineEditCell expense={expense} field="amount" value={expense.amount} type="number" />
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-        {expense.note || ''}
+      <td className="px-6 py-4 text-sm text-gray-700">
+        <InlineEditCell expense={expense} field="note" value={expense.note || ''} />
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         <div className="flex gap-2">
           <button
             onClick={() => handleEditExpense(expense.id)}
             className="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50 transition-colors"
-            title="עריכה"
+            title="עריכה מלאה"
           >
             <Edit size={16} />
           </button>
@@ -493,7 +634,6 @@ const Expenses: React.FC = () => {
     </tr>
   );
 
-  // 🔧 הצגת loader רק בטעינה ראשונית
   if (loading && !dataLoaded) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -535,11 +675,12 @@ const Expenses: React.FC = () => {
               <p className="text-gray-600">
                 ניהול וצפייה בהוצאות - {budgetYears.find(year => year.is_active)?.name}
               </p>
+              <p className="text-xs text-blue-600 mt-1">💡 טיפ: לחץ פעמיים על שדה לעריכה מהירה</p>
             </div>
           </div>
         </div>
 
-        {/* רכיב חיפוש ופילטרים - STICKY */}
+        {/* רכיב חיפוש ופילטרים */}
         <div className="sticky top-0 z-40 bg-white shadow-md border-b border-gray-200 mx-4 rounded-lg mb-6">
           <div className="p-6">
             {/* כלי בקרה עליונים */}
@@ -848,11 +989,9 @@ const Expenses: React.FC = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {groupBy === 'none' ? (
-                  // תצוגה רגילה ללא קיבוץ - עם infinite scroll
                   expenses.length > 0 ? (
                     expenses.map(renderExpenseRow)
                   ) : (
-                    // 🔧 הצגת "אין נתונים" רק אחרי שהטעינה הושלמה
                     dataLoaded && !pagination.loading && (
                       <tr>
                         <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
@@ -866,11 +1005,9 @@ const Expenses: React.FC = () => {
                     )
                   )
                 ) : (
-                  // תצוגה מקובצת
                   Object.keys(groupedExpenses).length > 0 ? (
                     Object.entries(groupedExpenses).map(([groupName, groupExpenses]) => (
                       <React.Fragment key={groupName}>
-                        {/* כותרת הקבוצה */}
                         <tr className="bg-gray-100 hover:bg-gray-200 cursor-pointer" onClick={() => toggleGroup(groupName)}>
                           <td colSpan={7} className="px-6 py-4">
                             <div className="flex items-center justify-between">
@@ -890,12 +1027,10 @@ const Expenses: React.FC = () => {
                             </div>
                           </td>
                         </tr>
-                        {/* שורות הקבוצה */}
                         {expandedGroups[groupName] && groupExpenses.map(renderExpenseRow)}
                       </React.Fragment>
                     ))
                   ) : (
-                    // 🔧 הצגת "אין נתונים" רק אחרי שהטעינה הושלמה
                     dataLoaded && !pagination.loading && (
                       <tr>
                         <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
@@ -913,7 +1048,7 @@ const Expenses: React.FC = () => {
             </table>
           </div>
 
-          {/* Loading indicator for infinite scroll - רק במצב ללא קיבוץ */}
+          {/* Loading indicator for infinite scroll */}
           {groupBy === 'none' && (
             <div 
               ref={loadingRef}
