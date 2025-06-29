@@ -84,6 +84,7 @@ const Expenses: React.FC = () => {
   // Refs for infinite scroll
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef<HTMLDivElement | null>(null);
+  const isLoadingMoreRef = useRef(false); // מניעת קריאות כפולות
 
   // Load initial data
   useEffect(() => {
@@ -97,16 +98,33 @@ const Expenses: React.FC = () => {
 
   // Setup intersection observer for infinite scroll
   useEffect(() => {
-    if (groupBy !== 'none') return; // Infinite scroll רק במצב ללא קיבוץ
+    if (groupBy !== 'none') {
+      // נקה observer כשיש קיבוץ
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+        observerRef.current = null;
+      }
+      return;
+    }
 
+    // נקה observer קיים
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
 
+    // צור observer חדש
     observerRef.current = new IntersectionObserver(
       (entries) => {
         const target = entries[0];
-        if (target.isIntersecting && pagination.hasMore && !pagination.loading) {
+        console.log('🔍 Intersection Observer:', {
+          isIntersecting: target.isIntersecting,
+          hasMore: pagination.hasMore,
+          loading: pagination.loading,
+          isLoadingMore: isLoadingMoreRef.current
+        });
+
+        if (target.isIntersecting && pagination.hasMore && !pagination.loading && !isLoadingMoreRef.current) {
+          console.log('🚀 Triggering loadMoreData');
           loadMoreData();
         }
       },
@@ -116,7 +134,9 @@ const Expenses: React.FC = () => {
       }
     );
 
-    if (loadingRef.current) {
+    // התחבר לאלמנט
+    if (loadingRef.current && observerRef.current) {
+      console.log('📌 Observing loading element');
       observerRef.current.observe(loadingRef.current);
     }
 
@@ -151,6 +171,7 @@ const Expenses: React.FC = () => {
   };
 
   const resetAndLoadData = useCallback(async () => {
+    console.log('🔄 Resetting and loading data');
     setExpenses([]);
     setPagination({
       page: 1,
@@ -158,11 +179,21 @@ const Expenses: React.FC = () => {
       loading: false,
       total: 0
     });
+    isLoadingMoreRef.current = false;
     await loadExpensesPage(1, true);
   }, []);
 
   const loadExpensesPage = async (page: number, reset: boolean = false) => {
-    if (pagination.loading && !reset) return;
+    if (isLoadingMoreRef.current && !reset) {
+      console.log('⚠️ Already loading, skipping request');
+      return;
+    }
+
+    console.log(`📥 Loading expenses page ${page}, reset: ${reset}`);
+    
+    if (!reset) {
+      isLoadingMoreRef.current = true;
+    }
 
     setPagination(prev => ({ ...prev, loading: true }));
 
@@ -182,19 +213,40 @@ const Expenses: React.FC = () => {
         sort_direction: sort.direction
       };
 
+      console.log('📤 Sending request with filters:', expenseFilters);
+
       const response = await expensesService.getAllExpenses(expenseFilters);
       
-      if (reset) {
-        setExpenses(response.data || response);
+      // טיפול בתגובה - בדוק אם זה ExpenseResponse או רשימה רגילה
+      let expensesData: GetExpenseRequest[];
+      let hasMoreData = false;
+      let totalCount = 0;
+
+      if (response && typeof response === 'object' && 'data' in response) {
+        // תגובה מובנית עם pagination
+        expensesData = response.data || [];
+        hasMoreData = response.hasMore || expensesData.length === ITEMS_PER_PAGE;
+        totalCount = response.total || 0;
       } else {
-        setExpenses(prev => [...prev, ...(response.data || response)]);
+        // תגובה פשוטה - רשימה
+        expensesData = Array.isArray(response) ? response : [];
+        hasMoreData = expensesData.length === ITEMS_PER_PAGE;
+        totalCount = expensesData.length;
+      }
+
+      console.log(`📊 Received ${expensesData.length} expenses, hasMore: ${hasMoreData}`);
+      
+      if (reset) {
+        setExpenses(expensesData);
+      } else {
+        setExpenses(prev => [...prev, ...expensesData]);
       }
 
       setPagination(prev => ({
         ...prev,
         page,
-        hasMore: (response.data || response).length === ITEMS_PER_PAGE,
-        total: response.total || prev.total,
+        hasMore: hasMoreData,
+        total: reset ? totalCount : prev.total + expensesData.length,
         loading: false
       }));
 
@@ -202,12 +254,23 @@ const Expenses: React.FC = () => {
       console.error('Failed to load expenses:', error);
       setError('שגיאה בטעינת הוצאות');
       setPagination(prev => ({ ...prev, loading: false }));
+    } finally {
+      if (!reset) {
+        isLoadingMoreRef.current = false;
+      }
     }
   };
 
   const loadMoreData = useCallback(() => {
-    if (pagination.hasMore && !pagination.loading) {
+    if (pagination.hasMore && !pagination.loading && !isLoadingMoreRef.current) {
+      console.log(`🔄 Loading more data - page ${pagination.page + 1}`);
       loadExpensesPage(pagination.page + 1);
+    } else {
+      console.log('❌ Cannot load more:', {
+        hasMore: pagination.hasMore,
+        loading: pagination.loading,
+        isLoadingMore: isLoadingMoreRef.current
+      });
     }
   }, [pagination.hasMore, pagination.loading, pagination.page]);
 
@@ -652,6 +715,7 @@ const Expenses: React.FC = () => {
                   <div className="text-center">
                     <div>📊 Pagination: צד שרת</div>
                     <div>🔄 Infinite Scroll: {pagination.hasMore ? 'זמין' : 'הסתיים'}</div>
+                    <div>📄 עמוד: {pagination.page}</div>
                   </div>
                 ) : (
                   `${Object.keys(groupedExpenses).length} קבוצות`
@@ -774,7 +838,7 @@ const Expenses: React.FC = () => {
             </table>
           </div>
 
-          {/* Loading indicator for infinite scroll */}
+          {/* Loading indicator for infinite scroll - רק במצב ללא קיבוץ */}
           {groupBy === 'none' && (
             <div 
               ref={loadingRef}
@@ -787,11 +851,14 @@ const Expenses: React.FC = () => {
                 </div>
               ) : pagination.hasMore ? (
                 <div className="text-center text-sm text-gray-500">
-                  גלול למטה לטעינת עוד נתונים
+                  <div className="mb-2">🔄 גלול למטה לטעינת עוד נתונים</div>
+                  <div className="text-xs text-gray-400">
+                    נטענו {expenses.length} מתוך {pagination.total > 0 ? pagination.total : '?'} הוצאות
+                  </div>
                 </div>
               ) : expenses.length > 0 ? (
                 <div className="text-center text-sm text-gray-500">
-                  כל הנתונים נטענו ({expenses.length} הוצאות)
+                  ✅ כל הנתונים נטענו ({expenses.length} הוצאות)
                 </div>
               ) : null}
             </div>
