@@ -453,10 +453,10 @@ const Expenses: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto">
         {/* כותרת העמוד */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6 mx-4 mt-4">
           <div className="flex items-center gap-3 mb-4">
             <TrendingDown size={28} className="text-amber-500" />
             <div>
@@ -466,176 +466,181 @@ const Expenses: React.FC = () => {
               </p>
             </div>
           </div>
+        </div>
 
-          {/* כלי בקרה עליונים */}
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              {/* חיפוש */}
-              <div className="relative">
-                <Search size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="text"
-                  value={filters.search}
-                  onChange={(e) => handleFilterChange('search', e.target.value)}
-                  placeholder="חיפוש..."
-                  className="pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400 w-64"
-                />
+        {/* רכיב חיפוש ופילטרים - STICKY */}
+        <div className="sticky top-0 z-40 bg-white shadow-md border-b border-gray-200 mx-4 rounded-lg mb-6">
+          <div className="p-6">
+            {/* כלי בקרה עליונים */}
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+              <div className="flex items-center gap-4">
+                {/* חיפוש */}
+                <div className="relative">
+                  <Search size={16} className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={filters.search}
+                    onChange={(e) => handleFilterChange('search', e.target.value)}
+                    placeholder="חיפוש..."
+                    className="pr-10 pl-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400 w-64"
+                  />
+                </div>
+
+                {/* כפתור פילטרים */}
+                <button
+                  onClick={() => setShowFilters(!showFilters)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                    showFilters 
+                      ? 'bg-amber-100 border-amber-300 text-amber-700' 
+                      : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  <Filter size={16} />
+                  פילטרים
+                </button>
+
+                {/* קיבוץ */}
+                <select
+                  value={groupBy}
+                  onChange={(e) => setGroupBy(e.target.value as GroupBy)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
+                >
+                  <option value="none">ללא קיבוץ</option>
+                  <option value="category">קיבוץ לפי קטגוריה</option>
+                  <option value="fund">קיבוץ לפי קופה</option>
+                </select>
               </div>
 
-              {/* כפתור פילטרים */}
               <button
-                onClick={() => setShowFilters(!showFilters)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
-                  showFilters 
-                    ? 'bg-amber-100 border-amber-300 text-amber-700' 
-                    : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-                }`}
+                onClick={handleAddExpense}
+                className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors flex items-center gap-2 shadow-md"
               >
-                <Filter size={16} />
-                פילטרים
+                <Plus size={16} />
+                הוספת הוצאה
               </button>
-
-              {/* קיבוץ */}
-              <select
-                value={groupBy}
-                onChange={(e) => setGroupBy(e.target.value as GroupBy)}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
-              >
-                <option value="none">ללא קיבוץ</option>
-                <option value="category">קיבוץ לפי קטגוריה</option>
-                <option value="fund">קיבוץ לפי קופה</option>
-              </select>
             </div>
 
-            <button
-              onClick={handleAddExpense}
-              className="bg-amber-500 text-white px-4 py-2 rounded-lg hover:bg-amber-600 transition-colors flex items-center gap-2 shadow-md"
-            >
-              <Plus size={16} />
-              הוספת הוצאה
-            </button>
+            {/* פילטרים מתקדמים */}
+            {showFilters && (
+              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">קטגוריה</label>
+                    <select
+                      value={filters.category}
+                      onChange={(e) => handleFilterChange('category', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
+                    >
+                      <option value="">כל הקטגוריות</option>
+                      {categories.map(category => (
+                        <option key={category.name} value={category.name}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">קופה</label>
+                    <select
+                      value={filters.fund}
+                      onChange={(e) => handleFilterChange('fund', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
+                    >
+                      <option value="">כל הקופות</option>
+                      {uniqueFunds.map(fund => (
+                        <option key={fund} value={fund}>
+                          {fund}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">סכום מינימלי</label>
+                    <input
+                      type="number"
+                      value={filters.minAmount}
+                      onChange={(e) => handleFilterChange('minAmount', e.target.value)}
+                      placeholder="0"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">סכום מקסימלי</label>
+                    <input
+                      type="number"
+                      value={filters.maxAmount}
+                      onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
+                      placeholder="∞"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">מתאריך</label>
+                    <input
+                      type="date"
+                      value={filters.startDate}
+                      onChange={(e) => handleFilterChange('startDate', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">עד תאריך</label>
+                    <input
+                      type="date"
+                      value={filters.endDate}
+                      onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2 flex items-end gap-2">
+                    <button
+                      onClick={clearFilters}
+                      className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100 transition-colors"
+                    >
+                      נקה פילטרים
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* סיכום פילטרים פעילים */}
+            {Object.values(filters).some(value => value) && (
+              <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <div className="flex items-center gap-2 text-sm text-amber-800">
+                  <span>פילטרים פעילים:</span>
+                  {filters.category && (
+                    <span className="px-2 py-1 rounded-full text-xs border bg-gray-100 text-gray-800 border-gray-300">
+                      קטגוריה: {filters.category}
+                    </span>
+                  )}
+                  {filters.fund && (
+                    <span className="px-2 py-1 rounded-full text-xs border bg-gray-100 text-gray-800 border-gray-300">
+                      קופה: {filters.fund}
+                    </span>
+                  )}
+                  {filters.search && (
+                    <span className="px-2 py-1 rounded-full text-xs border bg-gray-100 text-gray-800 border-gray-300">
+                      חיפוש: {filters.search}
+                    </span>
+                  )}
+                  <span className="text-amber-600">
+                    ({expenses.length} תוצאות נטענו{pagination.hasMore ? ', עוד נתונים זמינים' : ''})
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
-
-          {/* פילטרים מתקדמים */}
-          {showFilters && (
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">קטגוריה</label>
-                  <select
-                    value={filters.category}
-                    onChange={(e) => handleFilterChange('category', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
-                  >
-                    <option value="">כל הקטגוריות</option>
-                    {categories.map(category => (
-                      <option key={category.name} value={category.name}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">קופה</label>
-                  <select
-                    value={filters.fund}
-                    onChange={(e) => handleFilterChange('fund', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
-                  >
-                    <option value="">כל הקופות</option>
-                    {uniqueFunds.map(fund => (
-                      <option key={fund} value={fund}>
-                        {fund}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">סכום מינימלי</label>
-                  <input
-                    type="number"
-                    value={filters.minAmount}
-                    onChange={(e) => handleFilterChange('minAmount', e.target.value)}
-                    placeholder="0"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">סכום מקסימלי</label>
-                  <input
-                    type="number"
-                    value={filters.maxAmount}
-                    onChange={(e) => handleFilterChange('maxAmount', e.target.value)}
-                    placeholder="∞"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">מתאריך</label>
-                  <input
-                    type="date"
-                    value={filters.startDate}
-                    onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">עד תאריך</label>
-                  <input
-                    type="date"
-                    value={filters.endDate}
-                    onChange={(e) => handleFilterChange('endDate', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400"
-                  />
-                </div>
-
-                <div className="md:col-span-2 flex items-end gap-2">
-                  <button
-                    onClick={clearFilters}
-                    className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 rounded-lg hover:bg-gray-100 transition-colors"
-                  >
-                    נקה פילטרים
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* סיכום פילטרים פעילים */}
-          {Object.values(filters).some(value => value) && (
-            <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
-              <div className="flex items-center gap-2 text-sm text-amber-800">
-                <span>פילטרים פעילים:</span>
-                {filters.category && (
-                  <span className="px-2 py-1 rounded-full text-xs border bg-gray-100 text-gray-800 border-gray-300">
-                    קטגוריה: {filters.category}
-                  </span>
-                )}
-                {filters.fund && (
-                  <span className="px-2 py-1 rounded-full text-xs border bg-gray-100 text-gray-800 border-gray-300">
-                    קופה: {filters.fund}
-                  </span>
-                )}
-                {filters.search && (
-                  <span className="px-2 py-1 rounded-full text-xs border bg-gray-100 text-gray-800 border-gray-300">
-                    חיפוש: {filters.search}
-                  </span>
-                )}
-                <span className="text-amber-600">
-                  ({expenses.length} תוצאות נטענו{pagination.hasMore ? ', עוד נתונים זמינים' : ''})
-                </span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* תוכן הטבלה */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="bg-white rounded-lg shadow-md overflow-hidden mx-4">
           <div className="p-6 border-b border-gray-200">
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-semibold text-gray-800">
@@ -657,7 +662,7 @@ const Expenses: React.FC = () => {
 
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-gray-50 sticky top-0 z-30">
                 <tr>
                   <th 
                     className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
