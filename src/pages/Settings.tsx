@@ -1,23 +1,98 @@
 import React, { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, Calendar, Percent, Wallet, Users, Plus, Edit, Trash2 } from 'lucide-react';
+import { Settings as SettingsIcon, Calendar, Percent, Wallet, Users, Plus, Edit, Trash2, Save, AlertTriangle, Check, Loader } from 'lucide-react';
 import { BudgetYear } from '../types';
 import { formatBudgetYearName } from '../utils/budgetUtils';
+import { useSystemSettings } from '../hooks/useSystemSettings';
+import { useNotifications } from '../components/Notifications/NotificationSystem';
 
-// Import services instead of JSON data
+// Import services
 import { budgetYearsService } from '../services/budgetYearsService';
 
+// Components
+import SettingsSection from '../components/Settings/SettingsSection';
+import SettingItem from '../components/Settings/SettingItem';
+import ConfirmDialog from '../components/Settings/ConfirmDialog';
+
 const Settings: React.FC = () => {
+  // System settings hook
+  const {
+    settings,
+    loading: settingsLoading,
+    error: settingsError,
+    getSettingValue,
+    updateSetting,
+    loadSettings
+  } = useSystemSettings();
+
+  // Budget years state
   const [budgetYears, setBudgetYears] = useState<BudgetYear[]>([]);
   const [isAddingYear, setIsAddingYear] = useState(false);
   const [newYearStart, setNewYearStart] = useState('');
   const [newYearEnd, setNewYearEnd] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [savingSettings, setSavingSettings] = useState(false);
+
+  // Confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {}
+  });
+
+  // Notifications
+  const { addNotification } = useNotifications();
+
+  // Settings state
+  const [tithePercentage, setTithePercentage] = useState<number>(10);
+  const [defaultCurrency, setDefaultCurrency] = useState<string>('ILS');
+  const [surplusFund, setSurplusFund] = useState<string>('surplus');
+  const [includedFunds, setIncludedFunds] = useState<Record<string, boolean>>({
+    daily: true,
+    annual: true,
+    extended: true,
+    bonus: false
+  });
 
   // Load budget years from API
   useEffect(() => {
     loadBudgetYears();
   }, []);
+
+  // Load settings values
+  useEffect(() => {
+    if (settings.length > 0) {
+      // Load tithe percentage
+      const titheValue = getSettingValue('tithe_percentage', 10);
+      setTithePercentage(Number(titheValue));
+
+      // Load default currency
+      const currencyValue = getSettingValue('default_currency', 'ILS');
+      setDefaultCurrency(String(currencyValue));
+
+      // Load surplus fund
+      const surplusValue = getSettingValue('surplus_fund', 'surplus');
+      setSurplusFund(String(surplusValue));
+
+      // Load included funds
+      const includedFundsValue = getSettingValue('included_funds', {
+        daily: true,
+        annual: true,
+        extended: true,
+        bonus: false
+      });
+      
+      if (typeof includedFundsValue === 'object') {
+        setIncludedFunds(includedFundsValue);
+      }
+    }
+  }, [settings, getSettingValue]);
 
   const loadBudgetYears = async () => {
     try {
@@ -47,19 +122,53 @@ const Settings: React.FC = () => {
         setNewYearStart('');
         setNewYearEnd('');
         setIsAddingYear(false);
+        
+        addNotification({
+          type: 'success',
+          title: 'שנת תקציב נוספה בהצלחה',
+          message: `שנת התקציב ${newYear.name} נוספה בהצלחה`
+        });
       } catch (error) {
         console.error('Failed to create budget year:', error);
+        addNotification({
+          type: 'error',
+          title: 'שגיאה ביצירת שנת תקציב',
+          message: 'אירעה שגיאה בעת יצירת שנת התקציב. נסה שוב.'
+        });
       }
     }
   };
 
   const handleDeleteBudgetYear = async (id: string) => {
-    try {
-      await budgetYearsService.deleteBudgetYear(id);
-      setBudgetYears(budgetYears.filter(year => year.id !== id));
-    } catch (error) {
-      console.error('Failed to delete budget year:', error);
-    }
+    const yearToDelete = budgetYears.find(year => year.id === id);
+    if (!yearToDelete) return;
+
+    setConfirmDialog({
+      isOpen: true,
+      title: 'מחיקת שנת תקציב',
+      message: `האם אתה בטוח שברצונך למחוק את שנת התקציב "${yearToDelete.name}"? פעולה זו אינה הפיכה.`,
+      onConfirm: async () => {
+        try {
+          await budgetYearsService.deleteBudgetYear(id);
+          setBudgetYears(budgetYears.filter(year => year.id !== id));
+          
+          addNotification({
+            type: 'success',
+            title: 'שנת תקציב נמחקה',
+            message: `שנת התקציב ${yearToDelete.name} נמחקה בהצלחה`
+          });
+        } catch (error) {
+          console.error('Failed to delete budget year:', error);
+          addNotification({
+            type: 'error',
+            title: 'שגיאה במחיקת שנת תקציב',
+            message: 'אירעה שגיאה בעת מחיקת שנת התקציב. נסה שוב.'
+          });
+        } finally {
+          setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        }
+      }
+    });
   };
 
   const handleSetActive = async (id: string) => {
@@ -67,14 +176,64 @@ const Settings: React.FC = () => {
       await budgetYearsService.activateBudgetYear(id);
       setBudgetYears(budgetYears.map(year => ({
         ...year,
-        isActive: year.id === id
+        is_active: year.id === id
       })));
+      
+      const activatedYear = budgetYears.find(year => year.id === id);
+      if (activatedYear) {
+        addNotification({
+          type: 'success',
+          title: 'שנת תקציב הופעלה',
+          message: `שנת התקציב ${activatedYear.name} הופעלה בהצלחה`
+        });
+      }
     } catch (error) {
       console.error('Failed to activate budget year:', error);
+      addNotification({
+        type: 'error',
+        title: 'שגיאה בהפעלת שנת תקציב',
+        message: 'אירעה שגיאה בעת הפעלת שנת התקציב. נסה שוב.'
+      });
     }
   };
 
-  if (loading) {
+  const handleSaveSettings = async () => {
+    try {
+      setSavingSettings(true);
+      
+      // שמירת אחוז מעשר
+      await updateSetting('tithe_percentage', tithePercentage, 'number');
+      
+      // שמירת מטבע ברירת מחדל
+      await updateSetting('default_currency', defaultCurrency, 'string');
+      
+      // שמירת קופת עודפים
+      await updateSetting('surplus_fund', surplusFund, 'string');
+      
+      // שמירת קופות כלולות בתקציב
+      await updateSetting('included_funds', includedFunds, 'json');
+      
+      // רענון הגדרות
+      await loadSettings();
+      
+      addNotification({
+        type: 'success',
+        title: 'הגדרות נשמרו בהצלחה',
+        message: 'כל ההגדרות נשמרו בהצלחה'
+      });
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      addNotification({
+        type: 'error',
+        title: 'שגיאה בשמירת הגדרות',
+        message: 'אירעה שגיאה בעת שמירת ההגדרות. נסה שוב.'
+      });
+    } finally {
+      setSavingSettings(false);
+    }
+  };
+
+  if (loading || settingsLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -86,14 +245,17 @@ const Settings: React.FC = () => {
     );
   }
 
-  if (error) {
+  if (error || settingsError) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-bold text-red-800 mb-2">שגיאה בטעינת ההגדרות</h2>
-          <p className="text-red-600 mb-4">{error}</p>
+          <p className="text-red-600 mb-4">{error || settingsError}</p>
           <button
-            onClick={loadBudgetYears}
+            onClick={() => {
+              loadBudgetYears();
+              loadSettings();
+            }}
             className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
           >
             נסה שוב
@@ -118,12 +280,10 @@ const Settings: React.FC = () => {
 
         <div className="space-y-6">
           {/* הגדרות שנות תקציב */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <Calendar size={24} className="text-blue-500" />
-                <h2 className="text-lg font-semibold text-gray-800">שנות תקציב</h2>
-              </div>
+          <SettingsSection 
+            icon={<Calendar size={24} className="text-blue-500" />}
+            title="שנות תקציב"
+            action={
               <button
                 onClick={() => setIsAddingYear(true)}
                 className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2"
@@ -131,11 +291,11 @@ const Settings: React.FC = () => {
                 <Plus size={16} />
                 הוספת שנת תקציב
               </button>
-            </div>
-
+            }
+          >
             {isAddingYear && (
               <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <h3 className="text-md font-semibold text-blue-800 mb-4">הוספת שנת תקציב חדשה</h3>
+                <h3 className="text-lg font-bold text-blue-800 mb-4">הוספת שנת תקציב חדשה</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -243,24 +403,23 @@ const Settings: React.FC = () => {
                 </div>
               ))}
             </div>
-          </div>
+          </SettingsSection>
 
           {/* הגדרות צדקה */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Percent size={24} className="text-pink-500" />
-              <h2 className="text-lg font-semibold text-gray-800">הגדרות צדקה</h2>
-            </div>
-            
+          <SettingsSection 
+            icon={<Percent size={24} className="text-pink-500" />}
+            title="הגדרות צדקה"
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  אחוז מעשר
-                </label>
+              <SettingItem
+                label="אחוז מעשר"
+                description="אחוז המעשר מתוך ההכנסות"
+              >
                 <div className="relative">
                   <input
                     type="number"
-                    defaultValue="10"
+                    value={tithePercentage}
+                    onChange={(e) => setTithePercentage(Number(e.target.value))}
                     min="0"
                     max="100"
                     step="0.1"
@@ -268,123 +427,170 @@ const Settings: React.FC = () => {
                   />
                   <span className="absolute left-3 top-2 text-gray-500">%</span>
                 </div>
-              </div>
+              </SettingItem>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  תאריך תחילת שינוי
-                </label>
-                <input
-                  type="date"
+              <SettingItem
+                label="מטבע ברירת מחדל"
+                description="מטבע לחישוב מעשרות"
+              >
+                <select
+                  value={defaultCurrency}
+                  onChange={(e) => setDefaultCurrency(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-pink-200 focus:border-pink-400"
-                />
-              </div>
+                >
+                  <option value="ILS">₪ שקל (ILS)</option>
+                  <option value="USD">$ דולר (USD)</option>
+                  <option value="EUR">€ אירו (EUR)</option>
+                </select>
+              </SettingItem>
             </div>
-          </div>
+          </SettingsSection>
 
           {/* הגדרות קופות */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Wallet size={24} className="text-green-500" />
-              <h2 className="text-lg font-semibold text-gray-800">הגדרות קופות</h2>
-            </div>
-            
+          <SettingsSection 
+            icon={<Wallet size={24} className="text-green-500" />}
+            title="הגדרות קופות"
+          >
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  קופה מקבלת יתרת שוטף
-                </label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-200 focus:border-green-400">
+              <SettingItem
+                label="קופה מקבלת יתרת שוטף"
+                description="הקופה שתקבל את היתרה מהשוטף בסוף החודש"
+              >
+                <select
+                  value={surplusFund}
+                  onChange={(e) => setSurplusFund(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-200 focus:border-green-400"
+                >
                   <option value="surplus">עודפים</option>
                   <option value="bonus">בונוסים</option>
                   <option value="savings">חיסכון</option>
                 </select>
-              </div>
+              </SettingItem>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  קופות הנכללות בתקציב
-                </label>
+              <SettingItem
+                label="קופות הנכללות בתקציב"
+                description="קופות שיחושבו כחלק מהתקציב הכולל"
+              >
                 <div className="space-y-2">
                   <label className="flex items-center">
-                    <input type="checkbox" defaultChecked className="ml-2" />
+                    <input
+                      type="checkbox"
+                      checked={includedFunds.daily}
+                      onChange={(e) => setIncludedFunds(prev => ({ ...prev, daily: e.target.checked }))}
+                      className="form-checkbox h-5 w-5 text-green-600 ml-2"
+                    />
                     <span className="text-sm text-gray-700">קופת שוטף</span>
                   </label>
                   <label className="flex items-center">
-                    <input type="checkbox" defaultChecked className="ml-2" />
+                    <input
+                      type="checkbox"
+                      checked={includedFunds.annual}
+                      onChange={(e) => setIncludedFunds(prev => ({ ...prev, annual: e.target.checked }))}
+                      className="form-checkbox h-5 w-5 text-green-600 ml-2"
+                    />
                     <span className="text-sm text-gray-700">תקציב שנתי</span>
                   </label>
                   <label className="flex items-center">
-                    <input type="checkbox" defaultChecked className="ml-2" />
+                    <input
+                      type="checkbox"
+                      checked={includedFunds.extended}
+                      onChange={(e) => setIncludedFunds(prev => ({ ...prev, extended: e.target.checked }))}
+                      className="form-checkbox h-5 w-5 text-green-600 ml-2"
+                    />
                     <span className="text-sm text-gray-700">תקציב מורחב</span>
                   </label>
                   <label className="flex items-center">
-                    <input type="checkbox" className="ml-2" />
+                    <input
+                      type="checkbox"
+                      checked={includedFunds.bonus}
+                      onChange={(e) => setIncludedFunds(prev => ({ ...prev, bonus: e.target.checked }))}
+                      className="form-checkbox h-5 w-5 text-green-600 ml-2"
+                    />
                     <span className="text-sm text-gray-700">בונוסים</span>
                   </label>
                 </div>
-              </div>
+              </SettingItem>
             </div>
-          </div>
+          </SettingsSection>
 
           {/* הגדרות רמות קופות */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Users size={24} className="text-purple-500" />
-              <h2 className="text-lg font-semibold text-gray-800">רמות תצוגת קופות</h2>
+          <SettingsSection 
+            icon={<Users size={24} className="text-purple-500" />}
+            title="רמות תצוגת קופות"
+          >
+            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
+              <div className="flex items-start gap-3">
+                <AlertTriangle size={20} className="text-yellow-600 flex-shrink-0 mt-1" />
+                <div>
+                  <h4 className="font-semibold text-yellow-800 mb-1">הגדרות תצוגה</h4>
+                  <p className="text-sm text-yellow-700">
+                    הגדרות אלו משפיעות רק על תצוגת הקופות בדשבורד ולא על הפונקציונליות שלהן.
+                    שינוי רמת תצוגה של קופה נעשה בעמוד ניהול הקופות.
+                  </p>
+                </div>
+              </div>
             </div>
-            
+
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  שורה ראשונה (רמה 1)
-                </label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-200 focus:border-purple-400">
-                  <option value="daily">קופת שוטף</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  שורה שנייה (רמה 2)
-                </label>
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input type="checkbox" defaultChecked className="ml-2" />
-                    <span className="text-sm text-gray-700">תקציב שנתי</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="checkbox" defaultChecked className="ml-2" />
-                    <span className="text-sm text-gray-700">תקציב מורחב</span>
-                  </label>
+              <SettingItem
+                label="שורה ראשונה (רמה 1)"
+                description="קופות שיוצגו בשורה הראשונה בדשבורד"
+              >
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-sm text-gray-700">קופת שוטף</p>
                 </div>
-              </div>
+              </SettingItem>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  שורה שלישית (רמה 3)
-                </label>
-                <div className="space-y-2">
-                  <label className="flex items-center">
-                    <input type="checkbox" defaultChecked className="ml-2" />
-                    <span className="text-sm text-gray-700">בונוסים</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input type="checkbox" defaultChecked className="ml-2" />
-                    <span className="text-sm text-gray-700">עודפים</span>
-                  </label>
+              <SettingItem
+                label="שורה שנייה (רמה 2)"
+                description="קופות שיוצגו בשורה השנייה בדשבורד"
+              >
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-sm text-gray-700">תקציב שנתי, תקציב מורחב</p>
                 </div>
-              </div>
+              </SettingItem>
+
+              <SettingItem
+                label="שורה שלישית (רמה 3)"
+                description="קופות שיוצגו בשורה השלישית בדשבורד"
+              >
+                <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                  <p className="text-sm text-gray-700">בונוסים, עודפים</p>
+                </div>
+              </SettingItem>
             </div>
-          </div>
+          </SettingsSection>
 
           <div className="flex justify-end">
-            <button className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors">
-              שמירת הגדרות
+            <button
+              onClick={handleSaveSettings}
+              disabled={savingSettings}
+              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors flex items-center gap-2 disabled:bg-blue-300"
+            >
+              {savingSettings ? (
+                <>
+                  <Loader size={16} className="animate-spin" />
+                  שומר...
+                </>
+              ) : (
+                <>
+                  <Save size={16} />
+                  שמירת הגדרות
+                </>
+              )}
             </button>
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

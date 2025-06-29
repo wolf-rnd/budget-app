@@ -1,3 +1,4 @@
+// Export all services for easy importing
 export { authService } from './authService';
 export { budgetYearsService } from './budgetYearsService';
 export { GetFundRequest, fundsService } from './fundsService';
@@ -9,6 +10,7 @@ export { debtsService } from './debtsService';
 export { tasksService } from './tasksService';
 export { assetsService } from './assetsService';
 export { dashboardService } from './dashboardService';
+export { systemSettingsService } from './systemSettingsService';
 
 // Export types
 export type { LoginRequest, RegisterRequest, AuthResponse } from './authService';
@@ -22,6 +24,7 @@ export type { CreateDebtRequest, UpdateDebtRequest, DebtFilters, DebtSummary } f
 export type { CreateTaskRequest, UpdateTaskRequest, TaskFilters, TaskSummary } from './tasksService';
 export type { CreateAssetSnapshotRequest, UpdateAssetSnapshotRequest, AssetFilters, AssetTrends } from './assetsService';
 export type { DashboardSummary } from './dashboardService';
+export type { SystemSetting, CreateSystemSettingRequest, UpdateSystemSettingRequest } from './systemSettingsService';
 
 // Note: apiClient is deprecated - all services now use direct fetch calls
 export { apiClient } from './api';
