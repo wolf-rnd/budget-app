@@ -34,14 +34,14 @@ import { debtsService } from '../services/debtsService';
 import { tasksService } from '../services/tasksService';
 import { assetsService } from '../services/assetsService';
 import { categoriesService, GetCategoryRequest } from '../services/categoriesService';
-import { fundsService } from '../services/fundsService';
+import { fundsService, GetFundRequest } from '../services/fundsService';
 import { apiClient } from '../services/apiClient';
 
 const Dashboard: React.FC = () => {
   // State management
   const [budgetYears, setBudgetYears] = useState<BudgetYear[]>([]);
   const [selectedBudgetYear, setSelectedBudgetYear] = useState<BudgetYear | null>(null);
-  const [funds, setFunds] = useState<Fund[]>([]);
+  const [funds, setFunds] = useState<GetFundRequest[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [titheGiven, setTitheGiven] = useState<TitheGiven[]>([]);

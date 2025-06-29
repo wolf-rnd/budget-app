@@ -16,7 +16,7 @@ export interface Fund {
   spent?: number;
   categories: string[];
   budget_year_id?: string; // קישור לשנת תקציב
-  color?: string; // צבע hex במקום color_class
+  color_class?: string | null; // צבע HEX שמגיע מהשרת
 }
 
 export interface Income {
@@ -85,7 +85,7 @@ export interface AssetSnapshot {
 export interface Category {
   name: string;
   fund: string;
-  color?: string; // צבע hex במקום color_class
+  color_class?: string | null; // צבע HEX שמגיע מהשרת
 }
 
 export interface BudgetYear {
