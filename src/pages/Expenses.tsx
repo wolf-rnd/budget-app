@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { TrendingDown, Plus, Edit, Trash2, Undo2, X, Search, Filter, SortAsc, SortDesc, ChevronDown, ChevronUp, Loader } from 'lucide-react';
 import ExpenseModal from '../components/Modals/ExpenseModal';
+import ColorBadge from '../components/UI/ColorBadge';
 
 // Import services instead of JSON data
 import { CreateExpenseRequest, expensesService, GetExpenseRequest, UpdateExpenseRequest } from '../services/expensesService';
@@ -450,14 +451,14 @@ const Expenses: React.FC = () => {
         <div className="font-medium">{expense.name}</div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full border ${expense.categories?.color_class || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
+        <ColorBadge color={expense.categories?.color_class}>
           {expense.categories?.name}
-        </span>
+        </ColorBadge>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full border ${expense.funds?.color_class || 'bg-gray-100 text-gray-800 border-gray-300'}`}>
+        <ColorBadge color={expense.funds?.color_class}>
           {expense.funds?.name}
-        </span>
+        </ColorBadge>
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-amber-600">
         {formatCurrency(expense.amount)}
@@ -679,19 +680,19 @@ const Expenses: React.FC = () => {
                 <div className="flex items-center gap-2 text-sm text-amber-800">
                   <span>פילטרים פעילים:</span>
                   {filters.category && (
-                    <span className="px-2 py-1 rounded-full text-xs border bg-gray-100 text-gray-800 border-gray-300">
+                    <ColorBadge color="#f59e0b" size="sm">
                       קטגוריה: {filters.category}
-                    </span>
+                    </ColorBadge>
                   )}
                   {filters.fund && (
-                    <span className="px-2 py-1 rounded-full text-xs border bg-gray-100 text-gray-800 border-gray-300">
+                    <ColorBadge color="#10b981" size="sm">
                       קופה: {filters.fund}
-                    </span>
+                    </ColorBadge>
                   )}
                   {filters.search && (
-                    <span className="px-2 py-1 rounded-full text-xs border bg-gray-100 text-gray-800 border-gray-300">
+                    <ColorBadge color="#6b7280" size="sm">
                       חיפוש: {filters.search}
-                    </span>
+                    </ColorBadge>
                   )}
                   <span className="text-amber-600">
                     ({expenses.length} תוצאות נטענו{pagination.hasMore ? ', עוד נתונים זמינים' : ''})
