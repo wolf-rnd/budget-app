@@ -24,6 +24,7 @@ export class ApiClient {
   private retryAttempts: number = 2;
   private retryDelay: number = 1000;
   private notificationCallback?: (notification: any) => void;
+  private pendingRequests = new Map<string, Promise<any>>(); // מניעת קריאות כפולות
 
   constructor() {
     this.baseURL = ENV.API_BASE_URL;
@@ -52,7 +53,43 @@ export class ApiClient {
     }
   }
 
+  private createRequestKey(endpoint: string, options: RequestInit): string {
+    const method = options.method || 'GET';
+    const body = options.body ? JSON.stringify(options.body) : '';
+    return `${method}:${endpoint}:${body}`;
+  }
+
   private async makeRequest<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    attempt: number = 1
+  ): Promise<ApiResponse<T>> {
+    const method = options.method || 'GET';
+    
+    // מניעת קריאות כפולות לבקשות POST/PUT/DELETE
+    if (['POST', 'PUT', 'DELETE'].includes(method)) {
+      const requestKey = this.createRequestKey(endpoint, options);
+      
+      if (this.pendingRequests.has(requestKey)) {
+        console.log(`Preventing duplicate ${method} request to ${endpoint}`);
+        return this.pendingRequests.get(requestKey);
+      }
+      
+      const requestPromise = this.executeRequest<T>(endpoint, options, attempt);
+      this.pendingRequests.set(requestKey, requestPromise);
+      
+      try {
+        const result = await requestPromise;
+        return result;
+      } finally {
+        this.pendingRequests.delete(requestKey);
+      }
+    }
+    
+    return this.executeRequest<T>(endpoint, options, attempt);
+  }
+
+  private async executeRequest<T>(
     endpoint: string,
     options: RequestInit = {},
     attempt: number = 1
@@ -113,7 +150,7 @@ export class ApiClient {
         this.showNotification(
           'success',
           'פעולה הושלמה בהצלחה',
-          '', // ללא הודעה מפורטת בהצלחה
+          '',
           response.status,
           endpoint
         );

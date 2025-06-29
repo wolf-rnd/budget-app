@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Check, Star, X, CheckCircle2, Undo2 } from 'lucide-react';
 import { Task } from '../../types';
 import { tasksService } from '../../services/tasksService';
@@ -26,18 +26,21 @@ const TasksSection: React.FC<TasksSectionProps> = ({
   const [undoNotification, setUndoNotification] = useState<UndoNotification | null>(null);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [loading, setLoading] = useState(false);
-  const loadedRef = useRef(false); // מניעת טעינה כפולה
+  
+  // מניעת קריאות כפולות
+  const loadedRef = useRef(false);
+  const isCreatingRef = useRef(false);
 
   // טעינת משימות מה-API בטעינה ראשונית - רק פעם אחת
   useEffect(() => {
-    if (loadedRef.current) return; // מניעת טעינה כפולה
+    if (loadedRef.current) return;
     
     const loadTasks = async () => {
       try {
         setLoading(true);
         const apiTasks = await tasksService.getAllTasks({ completed: false });
         setTasks(apiTasks);
-        loadedRef.current = true; // סימון שהטעינה הושלמה
+        loadedRef.current = true;
       } catch (error) {
         console.error('Failed to load tasks:', error);
         setTasks(initialTasks);
@@ -47,7 +50,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({
     };
 
     loadTasks();
-  }, []); // ללא תלויות כדי למנוע קריאות כפולות
+  }, []); // ללא תלויות
 
   // עדכון tasks כשמגיעים נתונים חדשים מהרכיב האב
   useEffect(() => {
@@ -56,37 +59,40 @@ const TasksSection: React.FC<TasksSectionProps> = ({
     }
   }, [initialTasks]);
 
-  const handleAddTask = async () => {
-    if (newTitle.trim()) {
-      try {
-        setLoading(true);
-        const createdTask = await tasksService.createTask({
-          title: newTitle.trim(),
-          important: false,
-          completed: false
-        });
-        
-        setTasks(prevTasks => [...prevTasks, createdTask]);
-        setNewTitle('');
-        onAddTaskProp(newTitle.trim(), false);
-      } catch (error) {
-        console.error('Failed to create task:', error);
-        onAddTaskProp(newTitle.trim(), false);
-        setNewTitle('');
-      } finally {
-        setLoading(false);
-      }
+  const handleAddTask = useCallback(async () => {
+    if (!newTitle.trim() || isCreatingRef.current) return;
+    
+    isCreatingRef.current = true; // מניעת קריאות כפולות
+    
+    try {
+      setLoading(true);
+      const createdTask = await tasksService.createTask({
+        title: newTitle.trim(),
+        important: false,
+        completed: false
+      });
+      
+      setTasks(prevTasks => [...prevTasks, createdTask]);
+      setNewTitle('');
+      onAddTaskProp(newTitle.trim(), false);
+    } catch (error) {
+      console.error('Failed to create task:', error);
+      onAddTaskProp(newTitle.trim(), false);
+      setNewTitle('');
+    } finally {
+      setLoading(false);
+      isCreatingRef.current = false; // איפוס הדגל
     }
-  };
+  }, [newTitle, onAddTaskProp]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleAddTask();
     }
-  };
+  }, [handleAddTask]);
 
-  const handleTaskCompletion = async (task: Task) => {
+  const handleTaskCompletion = useCallback(async (task: Task) => {
     if (!task.completed) {
       try {
         setLoading(true);
@@ -133,9 +139,9 @@ const TasksSection: React.FC<TasksSectionProps> = ({
         setLoading(false);
       }
     }
-  };
+  }, [onUpdateTaskProp]);
 
-  const handleUpdateTask = async (id: string, updates: Partial<Task>) => {
+  const handleUpdateTask = useCallback(async (id: string, updates: Partial<Task>) => {
     try {
       setLoading(true);
       const updatedTask = await tasksService.updateTask(id, updates);
@@ -149,9 +155,9 @@ const TasksSection: React.FC<TasksSectionProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [onUpdateTaskProp]);
 
-  const handleDeleteTask = async (id: string) => {
+  const handleDeleteTask = useCallback(async (id: string) => {
     try {
       setLoading(true);
       await tasksService.deleteTask(id);
@@ -163,9 +169,9 @@ const TasksSection: React.FC<TasksSectionProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [onDeleteTaskProp]);
 
-  const handleUndo = async () => {
+  const handleUndo = useCallback(async () => {
     if (undoNotification) {
       try {
         setLoading(true);
@@ -183,14 +189,14 @@ const TasksSection: React.FC<TasksSectionProps> = ({
         setLoading(false);
       }
     }
-  };
+  }, [undoNotification, onUpdateTaskProp]);
 
-  const handleCloseNotification = () => {
+  const handleCloseNotification = useCallback(() => {
     if (undoNotification) {
       clearTimeout(undoNotification.timeoutId);
       setUndoNotification(null);
     }
-  };
+  }, [undoNotification]);
 
   useEffect(() => {
     return () => {
@@ -217,7 +223,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({
         )}
       </div>
       
-      {/* רשימת המשימות - גובה דינמי לפי כמות המשימות */}
+      {/* רשימת המשימות */}
       <div className="space-y-2 mb-5" style={{ minHeight: 'auto' }}>
         {visibleTasks.length > 0 ? (
           visibleTasks.map(task => (
