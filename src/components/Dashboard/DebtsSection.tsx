@@ -95,7 +95,7 @@ const DebtsModal: React.FC<DebtsModalProps> = ({ isOpen, onClose, debts, onDelet
             {/* אני חייבת */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <div className="w-3 h-3 bg-slate-400 rounded-full"></div>
+                <div className="w-3 h-3 bg-red-400 rounded-full"></div>
                 אני חייבת ({debtsIOwe.length})
               </h3>
               <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -103,7 +103,7 @@ const DebtsModal: React.FC<DebtsModalProps> = ({ isOpen, onClose, debts, onDelet
                   <ul className="space-y-2">
                     {debtsIOwe.map(debt => (
                       <li key={debt.id} className="group flex items-start gap-3 py-2">
-                        <div className="w-2 h-2 bg-slate-500 rounded-full mt-2 flex-shrink-0"></div>
+                        <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
                         <div className="flex-1 min-w-0">
                           <div className="flex justify-between items-start">
                             <div className="flex-1 min-w-0">
@@ -113,7 +113,7 @@ const DebtsModal: React.FC<DebtsModalProps> = ({ isOpen, onClose, debts, onDelet
                               )}
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0 mr-3">
-                              <span className="text-sm font-semibold text-slate-700">
+                              <span className="text-sm font-semibold text-red-700">
                                 {formatCurrency(debt.amount)}
                               </span>
                               <button
@@ -165,9 +165,9 @@ const DebtsList = ({ debts, type, emptyMessage, onDeleteDebt, maxItems = 3 }: {
         <ul className="space-y-1">
           {displayDebts.map(debt => (
             <li key={debt.id} className="group flex items-start gap-2 py-1">
-              {/* Bullet point */}
+              {/* Bullet point - אדום לאני חייבת, ירוק לחייבים לי */}
               <div className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${
-                type === 'owed_to_me' ? 'bg-emerald-500' : 'bg-slate-500'
+                type === 'owed_to_me' ? 'bg-emerald-500' : 'bg-red-500'
               }`}></div>
               
               <div className="flex-1 min-w-0">
@@ -180,7 +180,7 @@ const DebtsList = ({ debts, type, emptyMessage, onDeleteDebt, maxItems = 3 }: {
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0 mr-2">
                     <span className={`text-xs font-semibold ${
-                      type === 'owed_to_me' ? 'text-emerald-600' : 'text-slate-600'
+                      type === 'owed_to_me' ? 'text-emerald-600' : 'text-red-600'
                     }`}>
                       {formatCurrency(debt.amount)}
                     </span>
@@ -376,7 +376,7 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
           {/* עמודה ימנית - אני חייבת */}
           <div>
             <div className="flex items-center gap-2 mb-2 pb-1 border-b border-gray-100">
-              <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+              <div className="w-2 h-2 bg-red-400 rounded-full"></div>
               <h4 className="text-xs font-medium text-gray-600">אני חייבת</h4>
             </div>
             <div className="mb-3" style={{ maxHeight: '150px', overflowY: 'auto' }}>
