@@ -47,9 +47,7 @@ export class ApiClient {
         title,
         message,
         status,
-        endpoint,
-        autoHide: type === 'success',
-        duration: type === 'error' ? 0 : 6000
+        endpoint
       });
     }
   }
@@ -109,17 +107,12 @@ export class ApiClient {
 
       const result = await response.json();
 
+      // הצגת נוטיפיקציית הצלחה רק לפעולות שינוי (לא לקריאה)
       if (['POST', 'PUT', 'DELETE'].includes(options.method || 'GET')) {
-        const operationNames = {
-          'POST': 'נוצר',
-          'PUT': 'עודכן',
-          'DELETE': 'נמחק'
-        };
-
         this.showNotification(
           'success',
           'פעולה הושלמה בהצלחה',
-          `הנתונים ${operationNames[options.method as keyof typeof operationNames]} בהצלחה`,
+          '', // ללא הודעה מפורטת בהצלחה
           response.status,
           endpoint
         );
