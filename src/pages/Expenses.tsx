@@ -126,20 +126,14 @@ const Expenses: React.FC = () => {
     }
   }, [inlineEdit.expenseId, inlineEdit.field]);
 
-  // Setup intersection observer for infinite scroll
+  // 🔧 Setup intersection observer for infinite scroll - עובד גם עם קיבוץ!
   useEffect(() => {
-    if (groupBy !== 'none') {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-        observerRef.current = null;
-      }
-      return;
-    }
-
+    // נקה observer קיים
     if (observerRef.current) {
       observerRef.current.disconnect();
     }
 
+    // צור observer חדש - עובד תמיד, גם עם קיבוץ
     observerRef.current = new IntersectionObserver(
       (entries) => {
         const target = entries[0];
@@ -147,11 +141,12 @@ const Expenses: React.FC = () => {
           isIntersecting: target.isIntersecting,
           hasMore: pagination.hasMore,
           loading: pagination.loading,
-          isLoadingMore: isLoadingMoreRef.current
+          isLoadingMore: isLoadingMoreRef.current,
+          groupBy
         });
 
         if (target.isIntersecting && pagination.hasMore && !pagination.loading && !isLoadingMoreRef.current) {
-          console.log('🚀 Triggering loadMoreData');
+          console.log('🚀 Triggering loadMoreData (groupBy:', groupBy, ')');
           loadMoreData();
         }
       },
@@ -161,8 +156,9 @@ const Expenses: React.FC = () => {
       }
     );
 
+    // התחבר לאלמנט
     if (loadingRef.current && observerRef.current) {
-      console.log('📌 Observing loading element');
+      console.log('📌 Observing loading element (groupBy:', groupBy, ')');
       observerRef.current.observe(loadingRef.current);
     }
 
@@ -171,7 +167,7 @@ const Expenses: React.FC = () => {
         observerRef.current.disconnect();
       }
     };
-  }, [pagination.hasMore, pagination.loading, groupBy]);
+  }, [pagination.hasMore, pagination.loading, groupBy]); // 🔧 הוסף groupBy לתלויות
 
   const loadInitialData = async () => {
     try {
@@ -216,7 +212,7 @@ const Expenses: React.FC = () => {
       return;
     }
 
-    console.log(`📥 Loading expenses page ${page}, reset: ${reset}`);
+    console.log(`📥 Loading expenses page ${page}, reset: ${reset}, groupBy: ${groupBy}`);
     
     if (!reset) {
       isLoadingMoreRef.current = true;
@@ -287,20 +283,21 @@ const Expenses: React.FC = () => {
 
   const loadMoreData = useCallback(() => {
     if (pagination.hasMore && !pagination.loading && !isLoadingMoreRef.current) {
-      console.log(`🔄 Loading more data - page ${pagination.page + 1}`);
+      console.log(`🔄 Loading more data - page ${pagination.page + 1} (groupBy: ${groupBy})`);
       loadExpensesPage(pagination.page + 1);
     } else {
       console.log('❌ Cannot load more:', {
         hasMore: pagination.hasMore,
         loading: pagination.loading,
-        isLoadingMore: isLoadingMoreRef.current
+        isLoadingMore: isLoadingMoreRef.current,
+        groupBy
       });
     }
-  }, [pagination.hasMore, pagination.loading, pagination.page]);
+  }, [pagination.hasMore, pagination.loading, pagination.page, groupBy]);
 
   const uniqueFunds = Array.from(new Set(categories.map(cat => cat.fund)));
 
-  // קיבוץ הוצאות
+  // קיבוץ הוצאות - עובד על כל הנתונים שנטענו עד כה
   const groupedExpenses = useMemo(() => {
     if (groupBy === 'none') return {};
     
@@ -1024,31 +1021,31 @@ const Expenses: React.FC = () => {
             </table>
           </div>
 
-          {/* Loading indicator for infinite scroll */}
-          {groupBy === 'none' && (
-            <div 
-              ref={loadingRef}
-              className="px-4 py-3 border-t border-gray-200 bg-gray-50"
-            >
-              {pagination.loading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <Loader size={16} className="animate-spin text-amber-600" />
-                  <span className="text-sm text-gray-600">טוען עוד נתונים...</span>
+          {/* 🔧 Loading indicator for infinite scroll - עובד תמיד! */}
+          <div 
+            ref={loadingRef}
+            className="px-4 py-3 border-t border-gray-200 bg-gray-50"
+          >
+            {pagination.loading ? (
+              <div className="flex items-center justify-center gap-2">
+                <Loader size={16} className="animate-spin text-amber-600" />
+                <span className="text-sm text-gray-600">טוען עוד נתונים...</span>
+              </div>
+            ) : pagination.hasMore ? (
+              <div className="text-center text-sm text-gray-500">
+                <div className="mb-2">🔄 גלול למטה לטעינת עוד נתונים</div>
+                <div className="text-xs text-gray-400">
+                  נטענו {expenses.length} מתוך {pagination.total > 0 ? pagination.total : '?'} הוצאות
+                  {groupBy !== 'none' && ` (מקובצות לפי ${groupBy === 'category' ? 'קטגוריה' : 'קופה'})`}
                 </div>
-              ) : pagination.hasMore ? (
-                <div className="text-center text-sm text-gray-500">
-                  <div className="mb-2">🔄 גלול למטה לטעינת עוד נתונים</div>
-                  <div className="text-xs text-gray-400">
-                    נטענו {expenses.length} מתוך {pagination.total > 0 ? pagination.total : '?'} הוצאות
-                  </div>
-                </div>
-              ) : expenses.length > 0 ? (
-                <div className="text-center text-sm text-gray-500">
-                  ✅ כל הנתונים נטענו ({expenses.length} הוצאות)
-                </div>
-              ) : null}
-            </div>
-          )}
+              </div>
+            ) : expenses.length > 0 ? (
+              <div className="text-center text-sm text-gray-500">
+                ✅ כל הנתונים נטענו ({expenses.length} הוצאות)
+                {groupBy !== 'none' && ` מקובצות לפי ${groupBy === 'category' ? 'קטגוריה' : 'קופה'}`}
+              </div>
+            ) : null}
+          </div>
         </div>
 
         {/* מודלים */}
