@@ -197,7 +197,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({
   });
 
   return (
-    <div className="relative bg-white rounded-xl shadow-sm p-5 border border-gray-100 hover:shadow-md transition-all duration-300">
+    <div className="relative bg-white rounded-xl shadow-sm p-5 border-r-4 border-purple-400 hover:shadow-md transition-all duration-300">
       <div className="flex items-center justify-center gap-2 mb-5">
         <CheckCircle2 size={18} className="text-violet-400" />
         <h3 className="text-lg font-semibold text-gray-700">תזכורות</h3>
