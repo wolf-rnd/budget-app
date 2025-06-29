@@ -71,6 +71,7 @@ const Expenses: React.FC = () => {
   const [groupBy, setGroupBy] = useState<GroupBy>('fund'); // ברירת מחדל: קיבוץ לפי קופה
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [showFilters, setShowFilters] = useState(false);
+  const [showGroupBy, setShowGroupBy] = useState(false); // הוספת state לתפריט קיבוץ
 
   // Pagination state
   const [pagination, setPagination] = useState<PaginationState>({
@@ -563,20 +564,72 @@ const Expenses: React.FC = () => {
                   פילטרים
                 </button>
 
-                {/* קיבוץ - עם הדגשה כשפעיל */}
-                <select
-                  value={groupBy}
-                  onChange={(e) => setGroupBy(e.target.value as GroupBy)}
-                  className={`px-4 py-2 border rounded-lg focus:ring-2 focus:ring-amber-200 focus:border-amber-400 transition-colors ${
-                    groupBy !== 'none' 
-                      ? 'bg-amber-100 border-amber-300 text-amber-700' 
-                      : 'bg-white border-gray-300 text-gray-700'
-                  }`}
-                >
-                  <option value="none">ללא קיבוץ</option>
-                  <option value="category">קיבוץ לפי קטגוריה</option>
-                  <option value="fund">קיבוץ לפי קופה</option>
-                </select>
+                {/* כפתור קיבוץ */}
+                <div className="relative">
+                  <button
+                    onClick={() => setShowGroupBy(!showGroupBy)}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border transition-colors ${
+                      groupBy !== 'none' 
+                        ? 'bg-amber-100 border-amber-300 text-amber-700' 
+                        : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    <ChevronDown size={16} />
+                    קיבוץ
+                    {groupBy !== 'none' && (
+                      <span className="text-xs">
+                        ({groupBy === 'category' ? 'קטגוריה' : 'קופה'})
+                      </span>
+                    )}
+                  </button>
+
+                  {/* תפריט קיבוץ נפתח */}
+                  {showGroupBy && (
+                    <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[200px]">
+                      <div className="p-2">
+                        <button
+                          onClick={() => {
+                            setGroupBy('none');
+                            setShowGroupBy(false);
+                          }}
+                          className={`w-full text-right px-3 py-2 rounded-md text-sm transition-colors ${
+                            groupBy === 'none' 
+                              ? 'bg-amber-100 text-amber-700' 
+                              : 'hover:bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          ללא קיבוץ
+                        </button>
+                        <button
+                          onClick={() => {
+                            setGroupBy('category');
+                            setShowGroupBy(false);
+                          }}
+                          className={`w-full text-right px-3 py-2 rounded-md text-sm transition-colors ${
+                            groupBy === 'category' 
+                              ? 'bg-amber-100 text-amber-700' 
+                              : 'hover:bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          קיבוץ לפי קטגוריה
+                        </button>
+                        <button
+                          onClick={() => {
+                            setGroupBy('fund');
+                            setShowGroupBy(false);
+                          }}
+                          className={`w-full text-right px-3 py-2 rounded-md text-sm transition-colors ${
+                            groupBy === 'fund' 
+                              ? 'bg-amber-100 text-amber-700' 
+                              : 'hover:bg-gray-100 text-gray-700'
+                          }`}
+                        >
+                          קיבוץ לפי קופה
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <button
