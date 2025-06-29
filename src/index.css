@@ -137,67 +137,18 @@ textarea:focus {
   letter-spacing: 0.5px;
 }
 
-/* תיקון z-index לרכיבים שונים - הסדר הנכון */
+/* תיקון לרכיבי דשבורד - הסרת גובה קבוע */
 .dashboard-section {
   position: relative;
-  z-index: 1;
   isolation: isolate;
+  margin-bottom: 1.5rem;
 }
 
-.dashboard-top-row {
-  position: relative;
-  z-index: 10;
-  isolation: isolate;
-}
-
-.dashboard-middle-row {
-  position: relative;
-  z-index: 5;
-  isolation: isolate;
-  margin-top: 2rem;
-  clear: both;
-}
-
-.dashboard-bottom-row {
-  position: relative;
-  z-index: 1;
-  isolation: isolate;
-  margin-top: 2rem;
-  clear: both;
+.dashboard-section:last-child {
+  margin-bottom: 0;
 }
 
 /* מודלים */
-.dashboard-modal {
-  position: fixed;
-  z-index: 1000;
-  isolation: isolate;
-}
-
-/* נוטיפיקציות */
-.dashboard-notification {
-  position: fixed;
-  z-index: 1100;
-  isolation: isolate;
-}
-
-/* מניעת overflow בגריד */
-.dashboard-grid {
-  overflow: visible;
-  position: relative;
-}
-
-.dashboard-grid > * {
-  overflow: visible;
-  position: relative;
-}
-
-/* תיקון לרכיבים עם position absolute */
-.relative-container {
-  position: relative;
-  isolation: isolate;
-}
-
-/* תיקון למודלים */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -214,71 +165,17 @@ textarea:focus {
   isolation: isolate;
 }
 
-/* תיקון לנוטיפיקציות */
+/* נוטיפיקציות */
 .notification-container {
   position: fixed;
   z-index: 1100;
   isolation: isolate;
 }
 
-/* תיקון לטיפטולים */
+/* טיפטולים */
 .tooltip {
   z-index: 1200;
   isolation: isolate;
-}
-
-/* תיקון לרכיבי דשבורד ספציפיים */
-.tasks-section {
-  position: relative;
-  z-index: 10;
-  isolation: isolate;
-}
-
-.tithe-section {
-  position: relative;
-  z-index: 10;
-  isolation: isolate;
-}
-
-.notes-section {
-  position: relative;
-  z-index: 10;
-  isolation: isolate;
-}
-
-.debts-section {
-  position: relative;
-  z-index: 10;
-  isolation: isolate;
-}
-
-.funds-section {
-  position: relative;
-  z-index: 5;
-  isolation: isolate;
-}
-
-.chart-section {
-  position: relative;
-  z-index: 5;
-  isolation: isolate;
-}
-
-.assets-section {
-  position: relative;
-  z-index: 1;
-  isolation: isolate;
-}
-
-/* מניעת חפיפה בין שורות */
-.dashboard-row {
-  position: relative;
-  isolation: isolate;
-  margin-bottom: 2rem;
-}
-
-.dashboard-row:not(:last-child) {
-  margin-bottom: 3rem;
 }
 
 /* תיקון לגריד שמתנהג לא טוב */
@@ -332,4 +229,106 @@ textarea:focus {
 .transform-fix {
   transform: translateZ(0);
   isolation: isolate;
+}
+
+/* תיקון ספציפי לגריד עם גבהים דינמיים */
+.dashboard-grid-row {
+  display: grid;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  align-items: start; /* חשוב! מונע מתיחה של רכיבים */
+}
+
+.dashboard-grid-row:last-child {
+  margin-bottom: 0;
+}
+
+/* תיקון לרכיבים שצריכים גובה מלא */
+.full-height-component {
+  height: 100%;
+  min-height: 400px; /* גובה מינימלי במקום קבוע */
+  max-height: 600px; /* גובה מקסימלי למניעת התארכות יתר */
+  overflow-y: auto;
+}
+
+/* תיקון לרכיבים שצריכים גובה חצי */
+.half-height-component {
+  height: 100%;
+  min-height: 200px; /* גובה מינימלי במקום קבוע */
+  max-height: 300px; /* גובה מקסימלי למניעת התארכות יתר */
+  overflow-y: auto;
+}
+
+/* תיקון לגריד עם שורות שוות */
+.equal-height-grid {
+  display: grid;
+  grid-template-rows: 1fr 1fr; /* שתי שורות שוות */
+  gap: 1.5rem;
+  height: 100%;
+  min-height: 500px; /* גובה מינימלי כולל */
+}
+
+/* תיקון לעמודות שוות */
+.equal-width-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* תיקון לרכיבים שצריכים להיות responsive */
+.responsive-component {
+  width: 100%;
+  height: auto;
+  min-height: fit-content;
+  overflow: visible;
+}
+
+/* תיקון למניעת overflow בטקסט */
+.text-overflow-fix {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+/* תיקון לרכיבים עם תוכן דינמי */
+.dynamic-content {
+  height: auto;
+  min-height: fit-content;
+  max-height: none;
+  overflow: visible;
+}
+
+/* תיקון לרכיבים עם scroll פנימי */
+.internal-scroll {
+  overflow-y: auto;
+  max-height: 400px;
+}
+
+/* תיקון לרכיבים שצריכים להיות גמישים */
+.flexible-component {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+/* תיקון לגריד עם גבהים אוטומטיים */
+.auto-height-grid {
+  display: grid;
+  grid-template-rows: auto;
+  gap: 1.5rem;
+  align-content: start;
+}
+
+/* תיקון לרכיבים עם תוכן ארוך */
+.long-content {
+  max-height: 500px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+/* תיקון לרכיבים עם תוכן קצר */
+.short-content {
+  min-height: 200px;
+  height: auto;
 }

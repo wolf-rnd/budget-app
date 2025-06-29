@@ -491,9 +491,9 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* כפתורי פעולה עליונים */}
-        <div className="dashboard-top-row">
+        <div className="dashboard-section">
           <TopActions
             selectedBudgetYear={selectedBudgetYear}
             budgetYears={budgetYears}
@@ -504,11 +504,11 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* שורה ראשונה: תזכורות, מעשרות+פתקים, חובות */}
-        <div className="dashboard-row dashboard-top-row">
+        <div className="dashboard-section">
           <div className="grid grid-cols-12 gap-6">
-            {/* עמודה שמאלית: תזכורות (צרה, גובה מלא 650px) */}
+            {/* עמודה שמאלית: תזכורות (צרה) */}
             <div className="col-span-12 lg:col-span-3">
-              <div className="tasks-section dashboard-component" style={{ height: '650px' }}>
+              <div className="h-full">
                 <TasksSection
                   tasks={tasks}
                   onAddTask={handleAddTask}
@@ -519,31 +519,33 @@ const Dashboard: React.FC = () => {
             </div>
 
             {/* עמודה אמצעית: מעשרות ופתקים (מחולקת ל-2 שורות) */}
-            <div className="col-span-12 lg:col-span-4 space-y-6">
-              {/* שורה עליונה: מעשרות (גובה חצי - 300px) */}
-              <div className="tithe-section dashboard-component" style={{ height: '300px' }}>
-                <TitheSection
-                  totalIncome={totalIncomesForTithe}
-                  tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
-                  titheGiven={titheGiven}
-                  onAddTithe={handleAddTithe}
-                />
-              </div>
+            <div className="col-span-12 lg:col-span-4">
+              <div className="grid grid-rows-2 gap-6 h-full">
+                {/* שורה עליונה: מעשרות */}
+                <div className="row-span-1">
+                  <TitheSection
+                    totalIncome={totalIncomesForTithe}
+                    tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
+                    titheGiven={titheGiven}
+                    onAddTithe={handleAddTithe}
+                  />
+                </div>
 
-              {/* שורה תחתונה: פתקים (גובה חצי - 300px) */}
-              <div className="notes-section dashboard-component" style={{ height: '300px' }}>
-                <NotesSection
-                  notes={notes}
-                  onAddNote={handleAddNote}
-                  onUpdateNote={handleUpdateNote}
-                  onDeleteNote={handleDeleteNote}
-                />
+                {/* שורה תחתונה: פתקים */}
+                <div className="row-span-1">
+                  <NotesSection
+                    notes={notes}
+                    onAddNote={handleAddNote}
+                    onUpdateNote={handleUpdateNote}
+                    onDeleteNote={handleDeleteNote}
+                  />
+                </div>
               </div>
             </div>
 
-            {/* עמודה ימנית: חובות (רחבה, גובה מלא 650px) */}
+            {/* עמודה ימנית: חובות (רחבה) */}
             <div className="col-span-12 lg:col-span-5">
-              <div className="debts-section dashboard-component" style={{ height: '650px' }}>
+              <div className="h-full">
                 <DebtsSection
                   debts={debts}
                   onAddDebt={handleAddDebt}
@@ -555,24 +557,22 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* שורה שנייה: קופות ותרשים */}
-        <div className="dashboard-row dashboard-middle-row">
+        <div className="dashboard-section">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="funds-section dashboard-component">
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
-                  מצב קופות - {selectedBudgetYear?.name}
-                </h2>
-                <FundsGrid
-                  funds={funds}
-                  onCloseDailyFund={handleCloseDailyFund}
-                  onAddMoneyToEnvelope={handleAddMoneyToEnvelope}
-                  currentDisplayMonth={currentDisplayMonth}
-                  onMonthChange={setCurrentDisplayMonth}
-                />
-              </div>
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
+                מצב קופות - {selectedBudgetYear?.name}
+              </h2>
+              <FundsGrid
+                funds={funds}
+                onCloseDailyFund={handleCloseDailyFund}
+                onAddMoneyToEnvelope={handleAddMoneyToEnvelope}
+                currentDisplayMonth={currentDisplayMonth}
+                onMonthChange={setCurrentDisplayMonth}
+              />
             </div>
 
-            <div className="chart-section dashboard-component">
+            <div>
               <BudgetChart
                 totalBudget={totalBudget}
                 totalIncome={totalIncome}
@@ -584,31 +584,27 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* שורה שלישית: נכסים */}
-        <div className="dashboard-row dashboard-bottom-row">
+        <div className="dashboard-section">
           <div className="flex justify-center">
-            <div className="assets-section dashboard-component">
-              <AssetsSection
-                snapshots={assetSnapshots}
-                onAddSnapshot={handleAddAssetSnapshot}
-              />
-            </div>
+            <AssetsSection
+              snapshots={assetSnapshots}
+              onAddSnapshot={handleAddAssetSnapshot}
+            />
           </div>
         </div>
 
-        {/* מודלים עם z-index גבוה */}
-        <div className="dashboard-modal">
-          <IncomeModal
-            isOpen={isIncomeModalOpen}
-            onClose={() => setIsIncomeModalOpen(false)}
-            onAddIncome={handleIncomeModalSubmit}
-          />
-          <ExpenseModal
-            isOpen={isExpenseModalOpen}
-            onClose={() => setIsExpenseModalOpen(false)}
-            onAddExpense={handleExpenseModalSubmit}
-            categories={categories}
-          />
-        </div>
+        {/* מודלים */}
+        <IncomeModal
+          isOpen={isIncomeModalOpen}
+          onClose={() => setIsIncomeModalOpen(false)}
+          onAddIncome={handleIncomeModalSubmit}
+        />
+        <ExpenseModal
+          isOpen={isExpenseModalOpen}
+          onClose={() => setIsExpenseModalOpen(false)}
+          onAddExpense={handleExpenseModalSubmit}
+          categories={categories}
+        />
       </div>
     </div>
   );
