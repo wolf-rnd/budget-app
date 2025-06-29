@@ -107,8 +107,9 @@ export class ApiClient {
 
       const result = await response.json();
 
-      // הצגת נוטיפיקציית הצלחה רק לפעולות שינוי (לא לקריאה)
-      if (['POST', 'PUT', 'DELETE'].includes(options.method || 'GET')) {
+      // הצגת נוטיפיקציית הצלחה רק לפעולות שינוי (לא לקריאה ולא ל-OPTIONS)
+      const method = options.method || 'GET';
+      if (['POST', 'PUT', 'DELETE'].includes(method) && method !== 'OPTIONS') {
         this.showNotification(
           'success',
           'פעולה הושלמה בהצלחה',
