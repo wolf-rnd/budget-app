@@ -500,41 +500,51 @@ const Dashboard: React.FC = () => {
           onAddIncome={handleAddIncome}
         />
 
-        {/* שורה ראשונה: מעשרות וחובות */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <TitheSection
-            totalIncome={totalIncomesForTithe}
-            tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
-            titheGiven={titheGiven}
-            onAddTithe={handleAddTithe}
-          />
-
-          <DebtsSection
-            debts={debts}
-            onAddDebt={handleAddDebt}
-            onDeleteDebt={handleDeleteDebt}
-          />
-        </div>
-
-        {/* שורה שנייה: פתקים */}
-        <div className="mb-6">
-          <NotesSection
-            notes={notes}
-            onAddNote={handleAddNote}
-            onUpdateNote={handleUpdateNote}
-            onDeleteNote={handleDeleteNote}
-          />
-        </div>
-
-        {/* שורה שלישית: תזכורות */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <div className="md:col-span-1">
+        {/* עימוד חדש לפי הדרישות */}
+        <div className="grid grid-cols-12 gap-6 mb-6">
+          {/* עמודה שמאלית: תזכורות (צרה) */}
+          <div className="col-span-12 md:col-span-3">
             <TasksSection
               tasks={tasks}
               onAddTask={handleAddTask}
               onUpdateTask={handleUpdateTask}
               onDeleteTask={handleDeleteTask}
             />
+          </div>
+
+          {/* עמודה ימנית: מעשרות, חובות ופתקים */}
+          <div className="col-span-12 md:col-span-9 space-y-6">
+            {/* שורה 1: מעשרות + חובות (2 עמודות) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* מעשרות - רוחב קטן יותר */}
+              <div className="md:col-span-1">
+                <TitheSection
+                  totalIncome={totalIncomesForTithe}
+                  tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
+                  titheGiven={titheGiven}
+                  onAddTithe={handleAddTithe}
+                />
+              </div>
+
+              {/* חובות - רוחב רגיל */}
+              <div className="md:col-span-1">
+                <DebtsSection
+                  debts={debts}
+                  onAddDebt={handleAddDebt}
+                  onDeleteDebt={handleDeleteDebt}
+                />
+              </div>
+            </div>
+
+            {/* שורה 2: פתקים (רוחב מלא) */}
+            <div>
+              <NotesSection
+                notes={notes}
+                onAddNote={handleAddNote}
+                onUpdateNote={handleUpdateNote}
+                onDeleteNote={handleDeleteNote}
+              />
+            </div>
           </div>
         </div>
 
