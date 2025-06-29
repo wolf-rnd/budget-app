@@ -7,7 +7,8 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  // שינוי ברירת המחדל לסגור
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
 
   const toggleSidebarCollapse = () => {
     setSidebarCollapsed(!sidebarCollapsed);

@@ -500,7 +500,8 @@ const Dashboard: React.FC = () => {
           onAddIncome={handleAddIncome}
         />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {/* שורה ראשונה: מעשרות וחובות */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <TitheSection
             totalIncome={totalIncomesForTithe}
             tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
@@ -513,16 +514,9 @@ const Dashboard: React.FC = () => {
             onAddDebt={handleAddDebt}
             onDeleteDebt={handleDeleteDebt}
           />
-
-          <TasksSection
-            tasks={tasks}
-            onAddTask={handleAddTask}
-            onUpdateTask={handleUpdateTask}
-            onDeleteTask={handleDeleteTask}
-          />
         </div>
 
-        {/* רכיב הפתקים החדש */}
+        {/* שורה שנייה: פתקים */}
         <div className="mb-6">
           <NotesSection
             notes={notes}
@@ -530,6 +524,18 @@ const Dashboard: React.FC = () => {
             onUpdateNote={handleUpdateNote}
             onDeleteNote={handleDeleteNote}
           />
+        </div>
+
+        {/* שורה שלישית: תזכורות */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="md:col-span-1">
+            <TasksSection
+              tasks={tasks}
+              onAddTask={handleAddTask}
+              onUpdateTask={handleUpdateTask}
+              onDeleteTask={handleDeleteTask}
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">

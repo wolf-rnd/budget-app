@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, CreditCard, Trash2, ArrowLeft, ArrowRight, Eye } from 'lucide-react';
+import { Plus, CreditCard, Trash2, ArrowLeft, ArrowRight, Eye, X } from 'lucide-react';
 import { Debt } from '../../types';
 
 interface DebtsSectionProps {
@@ -153,7 +153,7 @@ const DebtsList = ({ debts, type, emptyMessage, onDeleteDebt, maxItems = 3 }: {
     <div className="space-y-2">
       {displayDebts.length > 0 ? (
         displayDebts.map(debt => (
-          <div key={debt.id} className="group p-3 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 hover:border-gray-200 transition-all duration-200">
+          <div key={debt.id} className="group p-2 bg-gray-50 rounded-lg border border-gray-100 hover:bg-gray-100 hover:border-gray-200 transition-all duration-200">
             <div className="flex justify-between items-start">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
@@ -162,14 +162,14 @@ const DebtsList = ({ debts, type, emptyMessage, onDeleteDebt, maxItems = 3 }: {
                   ) : (
                     <div className="w-2 h-2 bg-slate-400 rounded-full flex-shrink-0"></div>
                   )}
-                  <p className="text-sm font-medium text-gray-800 truncate">{debt.description}</p>
+                  <p className="text-xs font-medium text-gray-800 truncate">{debt.description}</p>
                 </div>
                 {debt.note && (
                   <p className="text-xs text-gray-500 truncate mr-4">{debt.note}</p>
                 )}
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className={`text-sm font-semibold ${
+                <span className={`text-xs font-semibold ${
                   type === 'owed_to_me' ? 'text-emerald-600' : 'text-slate-600'
                 }`}>
                   {formatCurrency(debt.amount)}
@@ -180,19 +180,19 @@ const DebtsList = ({ debts, type, emptyMessage, onDeleteDebt, maxItems = 3 }: {
                   className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-all duration-200"
                   title="מחיקת חוב"
                 >
-                  <Trash2 size={12} />
+                  <Trash2 size={10} />
                 </button>
               </div>
             </div>
           </div>
         ))
       ) : (
-        <div className="text-center py-6 text-gray-400">
-          <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+        <div className="text-center py-4 text-gray-400">
+          <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
             {type === 'owed_to_me' ? (
-              <ArrowLeft size={14} className="text-gray-400" />
+              <ArrowLeft size={12} className="text-gray-400" />
             ) : (
-              <ArrowRight size={14} className="text-gray-400" />
+              <ArrowRight size={12} className="text-gray-400" />
             )}
           </div>
           <p className="text-xs font-medium">{emptyMessage}</p>
@@ -216,7 +216,7 @@ const AddDebtForm = ({
   onKeyPress: (e: React.KeyboardEvent) => void
 }) => {
   return (
-    <div className="space-y-3 p-3 bg-white border border-gray-100 rounded-lg">
+    <div className="space-y-2 p-2 bg-white border border-gray-100 rounded-lg">
       <div className="space-y-2">
         <input
           type="number"
@@ -224,7 +224,7 @@ const AddDebtForm = ({
           onChange={(e) => onUpdateForm('amount', e.target.value)}
           onKeyDown={onKeyPress}
           placeholder="סכום"
-          className="w-full p-2 border border-gray-200 rounded-md text-sm bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all"
+          className="w-full p-2 border border-gray-200 rounded-md text-xs bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all"
         />
         
         <input
@@ -233,7 +233,7 @@ const AddDebtForm = ({
           onChange={(e) => onUpdateForm('description', e.target.value)}
           onKeyDown={onKeyPress}
           placeholder="תיאור"
-          className="w-full p-2 border border-gray-200 rounded-md text-sm bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all"
+          className="w-full p-2 border border-gray-200 rounded-md text-xs bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all"
         />
         
         <input
@@ -242,20 +242,20 @@ const AddDebtForm = ({
           onChange={(e) => onUpdateForm('note', e.target.value)}
           onKeyDown={onKeyPress}
           placeholder="הערה (אופציונלי)"
-          className="w-full p-2 border border-gray-200 rounded-md text-sm bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all"
+          className="w-full p-2 border border-gray-200 rounded-md text-xs bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all"
         />
       </div>
       
       <button
         onClick={onAddDebt}
         disabled={!form.amount || !form.description.trim()}
-        className={`w-full py-2 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+        className={`w-full py-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-2 ${
           form.amount && form.description.trim()
             ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-sm hover:shadow-md'
             : 'bg-gray-100 text-gray-400 cursor-not-allowed'
         }`}
       >
-        <Plus size={14} />
+        <Plus size={12} />
         הוספה
       </button>
     </div>
@@ -317,33 +317,33 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-sm p-5 border-r-4 border-orange-400 hover:shadow-md transition-all duration-300" style={{ maxHeight: '500px', overflow: 'hidden' }}>
-        <div className="flex items-center justify-between mb-5">
+      <div className="bg-white rounded-xl shadow-sm p-4 border-r-4 border-orange-400 hover:shadow-md transition-all duration-300" style={{ maxHeight: '500px', overflow: 'hidden' }}>
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <CreditCard size={18} className="text-gray-500" />
-            <h3 className="text-lg font-semibold text-gray-700">חובות</h3>
+            <CreditCard size={16} className="text-gray-500" />
+            <h3 className="text-base font-semibold text-gray-700">חובות</h3>
           </div>
           
           {showViewAllButton && (
             <button
               onClick={() => setShowAllModal(true)}
-              className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 transition-colors"
+              className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 transition-colors"
             >
-              <Eye size={14} />
+              <Eye size={12} />
               הצג הכל ({totalDebts})
             </button>
           )}
         </div>
 
         {/* שתי עמודות של חובות */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           {/* עמודה שמאלית - חייבים לי */}
           <div>
-            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-              <div className="w-3 h-3 bg-emerald-400 rounded-full"></div>
-              <h4 className="text-sm font-medium text-gray-600">חייבים לי</h4>
+            <div className="flex items-center gap-2 mb-2 pb-1 border-b border-gray-100">
+              <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
+              <h4 className="text-xs font-medium text-gray-600">חייבים לי</h4>
             </div>
-            <div className="mb-4" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+            <div className="mb-3" style={{ maxHeight: '150px', overflowY: 'auto' }}>
               <DebtsList 
                 debts={debtsOwedToMe} 
                 type="owed_to_me"
@@ -363,11 +363,11 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
 
           {/* עמודה ימנית - אני חייבת */}
           <div>
-            <div className="flex items-center gap-2 mb-3 pb-2 border-b border-gray-100">
-              <div className="w-3 h-3 bg-slate-400 rounded-full"></div>
-              <h4 className="text-sm font-medium text-gray-600">אני חייבת</h4>
+            <div className="flex items-center gap-2 mb-2 pb-1 border-b border-gray-100">
+              <div className="w-2 h-2 bg-slate-400 rounded-full"></div>
+              <h4 className="text-xs font-medium text-gray-600">אני חייבת</h4>
             </div>
-            <div className="mb-4" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+            <div className="mb-3" style={{ maxHeight: '150px', overflowY: 'auto' }}>
               <DebtsList 
                 debts={debtsIOwe} 
                 type="i_owe"
