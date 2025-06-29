@@ -211,7 +211,7 @@ const Expenses: React.FC = () => {
         search: filters.search || undefined,
         page,
         limit: ITEMS_PER_PAGE,
-        sort_field: sort.field,
+        sort_field: sort.field, // 🔧 תיקון: שימוש בשדה המיון הנכון
         sort_direction: sort.direction
       };
 
