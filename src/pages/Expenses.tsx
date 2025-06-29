@@ -72,13 +72,13 @@ const Expenses: React.FC = () => {
     loadData();
   }, []);
 
-  // ברירת מחדל: כל הקבוצות פתוחות כשמשנים קיבוץ
+  // ברירת מחדל: כל הקבוצות פתוחות כשמשנים קיבוץ או בטעינה ראשונית
   useEffect(() => {
     if (groupBy === 'none') return;
     const allGroups = Object.keys(groupedExpenses);
-    setExpandedGroups(Object.fromEntries(allGroups.map(g => [g, true])));
+    setExpandedGroups(Object.fromEntries(allGroups.map(g => [g, true]))); // כל הקבוצות פתוחות
     // eslint-disable-next-line
-  }, [groupBy]);
+  }, [groupBy, expenses]); // תלות גם ב-expenses כדי שיעבוד בטעינה ראשונית
 
   const loadData = async () => {
     try {
@@ -200,7 +200,7 @@ const Expenses: React.FC = () => {
     return sums;
   }, [groupedExpenses]);
 
-  // Pagination
+  // Pagination - תמיד בצד לקוח
   const totalPages = Math.ceil(
     groupBy === 'none' ? sortedExpenses.length : Object.keys(groupedExpenses).length
   );
@@ -630,6 +630,9 @@ const Expenses: React.FC = () => {
                 ) : (
                   `${Object.keys(groupedExpenses).length} קבוצות`
                 )}
+                <span className="text-xs text-gray-400 block">
+                  📊 Pagination: צד לקוח
+                </span>
               </div>
             </div>
           </div>
@@ -728,7 +731,7 @@ const Expenses: React.FC = () => {
                             </div>
                           </td>
                         </tr>
-                        {/* שורות הקבוצה */}
+                        {/* שורות הקבוצה - מוצגות רק אם הקבוצה פתוחה */}
                         {expandedGroups[groupName] && groupExpenses.map(renderExpenseRow)}
                       </React.Fragment>
                     ))
