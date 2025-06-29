@@ -117,7 +117,10 @@ const TitheSection: React.FC<TitheSectionProps> = ({ totalIncome, tithePercentag
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-sm p-4 border-r-4 border-pink-400 hover:shadow-md transition-all duration-300" style={{ maxHeight: '500px', overflow: 'hidden' }}>
+      <div 
+        className="bg-white rounded-xl shadow-sm p-4 border-r-4 border-pink-400 hover:shadow-md transition-all duration-300" 
+        style={{ height: '382px', overflow: 'hidden' }}
+      >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Heart size={16} className="text-rose-400" />

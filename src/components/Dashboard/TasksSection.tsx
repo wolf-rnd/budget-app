@@ -214,7 +214,10 @@ const TasksSection: React.FC<TasksSectionProps> = ({
   });
 
   return (
-    <div className="relative bg-white rounded-xl shadow-sm p-5 border-r-4 border-purple-400 hover:shadow-md transition-all duration-300">
+    <div 
+      className="relative bg-white rounded-xl shadow-sm p-5 border-r-4 border-purple-400 hover:shadow-md transition-all duration-300"
+      style={{ height: '500px', overflow: 'hidden' }}
+    >
       <div className="flex items-center justify-center gap-2 mb-5">
         <CheckCircle2 size={18} className="text-violet-400" />
         <h3 className="text-lg font-semibold text-gray-700">תזכורות</h3>
@@ -224,7 +227,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({
       </div>
       
       {/* רשימת המשימות */}
-      <div className="space-y-2 mb-5" style={{ minHeight: 'auto' }}>
+      <div className="space-y-2 mb-5 flex-1" style={{ maxHeight: '300px', overflowY: 'auto' }}>
         {visibleTasks.length > 0 ? (
           visibleTasks.map(task => (
             <div 
@@ -294,15 +297,15 @@ const TasksSection: React.FC<TasksSectionProps> = ({
       </div>
 
       {/* טופס הוספה */}
-      <div className="space-y-3 p-3 bg-white border border-gray-100 rounded-lg">
-        <input
-          type="text"
+      <div className="space-y-3 p-3 bg-white border border-gray-100 rounded-lg mt-auto">
+        <textarea
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           onKeyDown={handleKeyPress}
           disabled={loading}
           placeholder="תיאור המשימה..."
-          className={`w-full p-2 border border-gray-200 rounded-md text-sm bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all ${
+          rows={2}
+          className={`w-full p-2 border border-gray-200 rounded-md text-sm bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all resize-none ${
             loading ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         />
