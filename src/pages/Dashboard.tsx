@@ -323,10 +323,10 @@ const Dashboard: React.FC = () => {
     }
   }, []);
 
-  const handleAddTask = useCallback(async (description: string, important: boolean = false) => {
+  const handleAddTask = useCallback(async (title: string, important: boolean = false) => {
     try {
       const taskData = {
-        description,
+        title,
         important,
         completed: false
       };

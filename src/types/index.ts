@@ -66,7 +66,7 @@ export interface Debt {
 
 export interface Task {
   id: string;
-  description: string;
+  title: string;
   completed: boolean;
   important: boolean;
 }
@@ -102,4 +102,3 @@ export interface FundBudget {
   amount_given?: number;
   spent?: number;
 }
-

@@ -5,14 +5,14 @@ import { tasksService } from '../../services/tasksService';
 
 interface TasksSectionProps {
   tasks: Task[];
-  onAddTask: (description: string, important: boolean) => void;
+  onAddTask: (title: string, important: boolean) => void;
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
   onDeleteTask: (id: string) => void;
 }
 
 interface UndoNotification {
   taskId: string;
-  taskDescription: string;
+  taskTitle: string;
   timeoutId: ReturnType<typeof setTimeout>;
 }
 
@@ -22,7 +22,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({
   onUpdateTask: onUpdateTaskProp, 
   onDeleteTask: onDeleteTaskProp 
 }) => {
-  const [newTask, setNewTask] = useState('');
+  const [newTitle, setNewTitle] = useState('');
   const [undoNotification, setUndoNotification] = useState<UndoNotification | null>(null);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [loading, setLoading] = useState(false);
@@ -57,22 +57,22 @@ const TasksSection: React.FC<TasksSectionProps> = ({
   }, [initialTasks]);
 
   const handleAddTask = async () => {
-    if (newTask.trim()) {
+    if (newTitle.trim()) {
       try {
         setLoading(true);
         const createdTask = await tasksService.createTask({
-          description: newTask.trim(),
+          title: newTitle.trim(),
           important: false,
           completed: false
         });
         
         setTasks(prevTasks => [...prevTasks, createdTask]);
-        setNewTask('');
-        onAddTaskProp(newTask.trim(), false);
+        setNewTitle('');
+        onAddTaskProp(newTitle.trim(), false);
       } catch (error) {
         console.error('Failed to create task:', error);
-        onAddTaskProp(newTask.trim(), false);
-        setNewTask('');
+        onAddTaskProp(newTitle.trim(), false);
+        setNewTitle('');
       } finally {
         setLoading(false);
       }
@@ -107,7 +107,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({
 
         setUndoNotification({
           taskId: task.id,
-          taskDescription: task.description,
+          taskTitle: task.title,
           timeoutId
         });
 
@@ -263,7 +263,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({
                     ? 'text-amber-800 font-semibold text-sm'
                     : 'text-gray-700 text-sm'
               }`}>
-                {task.description}
+                {task.title}
               </span>
               
               <button
@@ -291,8 +291,8 @@ const TasksSection: React.FC<TasksSectionProps> = ({
       <div className="space-y-3 p-3 bg-white border border-gray-100 rounded-lg">
         <input
           type="text"
-          value={newTask}
-          onChange={(e) => setNewTask(e.target.value)}
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
           onKeyDown={handleKeyPress}
           disabled={loading}
           placeholder="תיאור המשימה..."
@@ -303,9 +303,9 @@ const TasksSection: React.FC<TasksSectionProps> = ({
         
         <button
           onClick={handleAddTask}
-          disabled={!newTask.trim() || loading}
+          disabled={!newTitle.trim() || loading}
           className={`w-full py-2 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
-            newTask.trim() && !loading
+            newTitle.trim() && !loading
               ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-sm hover:shadow-md'
               : 'bg-gray-100 text-gray-400 cursor-not-allowed'
           }`}
@@ -323,7 +323,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({
               <CheckCircle2 size={16} className="flex-shrink-0" />
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium">המשימה הושלמה!</p>
-                <p className="text-xs opacity-90 break-words">"{undoNotification.taskDescription}"</p>
+                <p className="text-xs opacity-90 break-words">"{undoNotification.taskTitle}"</p>
               </div>
             </div>
             
