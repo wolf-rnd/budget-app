@@ -38,8 +38,8 @@ const Settings: React.FC = () => {
       try {
         const budgetYearData = {
           name: formatBudgetYearName(newYearStart, newYearEnd),
-          startDate: newYearStart,
-          endDate: newYearEnd
+          start_date: newYearStart,
+          end_date: newYearEnd
         };
 
         const newYear = await budgetYearsService.createBudgetYear(budgetYearData);
@@ -195,7 +195,7 @@ const Settings: React.FC = () => {
             <div className="space-y-3">
               {budgetYears.map(year => (
                 <div key={year.id} className={`p-4 rounded-lg border-2 ${
-                  year.isActive 
+                  year.is_active 
                     ? 'border-blue-500 bg-blue-50' 
                     : 'border-gray-200 bg-white'
                 }`}>
@@ -203,19 +203,19 @@ const Settings: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <h3 className="font-semibold text-gray-800">{year.name}</h3>
-                        {year.isActive && (
+                        {year.is_active && (
                           <span className="px-2 py-1 bg-blue-500 text-white text-xs rounded-full">
                             פעיל
                           </span>
                         )}
                       </div>
                       <p className="text-sm text-gray-600">
-                        {new Date(year.startDate).toLocaleDateString('he-IL')} - {new Date(year.endDate).toLocaleDateString('he-IL')}
+                        {new Date(year.start_date).toLocaleDateString('he-IL')} - {new Date(year.end_date).toLocaleDateString('he-IL')}
                       </p>
                     </div>
                     
                     <div className="flex gap-2">
-                      {!year.isActive && (
+                      {!year.is_active && (
                         <button
                           onClick={() => handleSetActive(year.id)}
                           className="px-3 py-1 text-sm bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors"
@@ -234,7 +234,7 @@ const Settings: React.FC = () => {
                         onClick={() => handleDeleteBudgetYear(year.id)}
                         className="p-2 text-red-600 hover:text-red-800 hover:bg-red-100 rounded-md transition-colors"
                         title="מחיקה"
-                        disabled={year.isActive}
+                        disabled={year.is_active}
                       >
                         <Trash2 size={16} />
                       </button>

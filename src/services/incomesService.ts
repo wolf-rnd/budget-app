@@ -23,7 +23,7 @@ export interface UpdateIncomeRequest {
 }
 
 export interface IncomeFilters {
-  budgetYearId?: string;
+  budget_year_id?: string;
   month?: number;
   year?: number;
   source?: string;
@@ -32,12 +32,12 @@ export interface IncomeFilters {
 }
 
 export interface IncomeSummary {
-  totalIncome: number;
-  monthlyAverage: number;
-  currentMonthIncome: number;
-  yearToDateIncome: number;
-  incomeBySource: { source: string; amount: number }[];
-  incomeByMonth: { month: number; amount: number }[];
+  total_income: number;
+  monthly_average: number;
+  current_month_income: number;
+  year_to_date_income: number;
+  income_by_source: { source: string; amount: number }[];
+  income_by_month: { month: number; amount: number }[];
 }
 
 class IncomesService {
@@ -45,7 +45,7 @@ class IncomesService {
   async getAllIncomes(filters?: IncomeFilters): Promise<Income[]> {
     const params = new URLSearchParams();
     
-    if (filters?.budgetYearId) params.append('budgetYearId', filters.budgetYearId);
+    if (filters?.budget_year_id) params.append('budget_year_id', filters.budget_year_id);
     if (filters?.month) params.append('month', filters.month.toString());
     if (filters?.year) params.append('year', filters.year.toString());
     if (filters?.source) params.append('source', filters.source);
@@ -70,8 +70,8 @@ class IncomesService {
   }
 
   // GET /incomes/stats/summary - קבלת סטטיסטיקות הכנסות
-  async getIncomeSummary(budgetYearId?: string): Promise<IncomeSummary> {
-    const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
+  async getIncomeSummary(budget_year_id?: string): Promise<IncomeSummary> {
+    const params = budget_year_id ? `?budget_year_id=${budget_year_id}` : '';
     const response = await apiClient.get<IncomeSummary>(`/incomes/stats/summary${params}`);
     return response.data;
   }

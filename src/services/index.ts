@@ -15,7 +15,7 @@ export { dashboardService } from './dashboardService';
 export type { LoginRequest, RegisterRequest, AuthResponse } from './authService';
 export type { BudgetYear, CreateBudgetYearRequest, UpdateBudgetYearRequest } from './budgetYearsService';
 export type { CreateFundRequest, UpdateFundRequest, UpdateFundBudgetRequest } from './fundsService';
-export type { Category, CreateCategoryRequest, UpdateCategoryRequest } from './categoriesService';
+export type { GetCategoryRequest as Category, CreateCategoryRequest, UpdateCategoryRequest } from './categoriesService';
 export type { CreateIncomeRequest, UpdateIncomeRequest, IncomeFilters, IncomeSummary } from './incomesService';
 export type { CreateExpenseRequest, UpdateExpenseRequest, ExpenseFilters, ExpenseSummary } from './expensesService';
 export type { CreateTitheRequest, UpdateTitheRequest, TitheFilters, TitheSummary } from './titheService';

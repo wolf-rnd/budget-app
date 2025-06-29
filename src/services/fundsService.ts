@@ -6,7 +6,7 @@ export interface CreateFundRequest {
   name: string;
   type: 'monthly' | 'annual' | 'savings';
   level: 1 | 2 | 3;
-  includeInBudget: boolean;
+  include_in_budget: boolean;
   categories: string[];
 }
 
@@ -14,7 +14,7 @@ export interface UpdateFundRequest {
   name?: string;
   type?: 'monthly' | 'annual' | 'savings';
   level?: 1 | 2 | 3;
-  includeInBudget?: boolean;
+  include_in_budget?: boolean;
   categories?: string[];
 }
 
@@ -28,6 +28,7 @@ class FundsService {
   // GET /funds - קבלת כל הקופות (עם אפשרות לסינון לפי שנת תקציב)
   async getAllFunds(budgetYearId?: string): Promise<Fund[]> {
     const params = budgetYearId ? `?budgetYearId=${budgetYearId}` : '';
+    
     const response = await apiClient.get<Fund[]>(`/funds${params}`);
     return response.data;
   }

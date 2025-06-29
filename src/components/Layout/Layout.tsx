@@ -4,11 +4,9 @@ import Footer from './Footer';
 
 interface LayoutProps {
   children: React.ReactNode;
-  currentPage: string;
-  onPageChange: (page: string) => void;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange }) => {
+const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const toggleSidebarCollapse = () => {
@@ -19,8 +17,6 @@ const Layout: React.FC<LayoutProps> = ({ children, currentPage, onPageChange }) 
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* תפריט צד */}
       <Sidebar
-        currentPage={currentPage}
-        onPageChange={onPageChange}
         isCollapsed={sidebarCollapsed}
         onToggleCollapse={toggleSidebarCollapse}
       />
