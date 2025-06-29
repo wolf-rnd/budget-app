@@ -492,108 +492,123 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-7xl mx-auto">
-        <TopActions
-          selectedBudgetYear={selectedBudgetYear}
-          budgetYears={budgetYears}
-          onBudgetYearChange={handleBudgetYearChange}
-          onAddExpense={handleAddExpense}
-          onAddIncome={handleAddIncome}
-        />
-
-        {/* פריסה חדשה לפי הדרישות - עם תיקון z-index */}
-        <div className="grid grid-cols-12 gap-6 mb-6 relative">
-          {/* עמודה שמאלית: תזכורות (צרה, גובה מלא 650px) */}
-          <div className="col-span-12 lg:col-span-3 relative z-10">
-            <div style={{ height: '650px' }}>
-              <TasksSection
-                tasks={tasks}
-                onAddTask={handleAddTask}
-                onUpdateTask={handleUpdateTask}
-                onDeleteTask={handleDeleteTask}
-              />
-            </div>
-          </div>
-
-          {/* עמודה אמצעית: מעשרות ופתקים (מחולקת ל-2 שורות) */}
-          <div className="col-span-12 lg:col-span-4 space-y-6 relative z-10">
-            {/* שורה עליונה: מעשרות (גובה חצי - 300px) */}
-            <div style={{ height: '300px' }}>
-              <TitheSection
-                totalIncome={totalIncomesForTithe}
-                tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
-                titheGiven={titheGiven}
-                onAddTithe={handleAddTithe}
-              />
-            </div>
-
-            {/* שורה תחתונה: פתקים (גובה חצי - 300px) */}
-            <div style={{ height: '300px' }}>
-              <NotesSection
-                notes={notes}
-                onAddNote={handleAddNote}
-                onUpdateNote={handleUpdateNote}
-                onDeleteNote={handleDeleteNote}
-              />
-            </div>
-          </div>
-
-          {/* עמודה ימנית: חובות (רחבה, גובה מלא 650px) */}
-          <div className="col-span-12 lg:col-span-5 relative z-10">
-            <div style={{ height: '650px' }}>
-              <DebtsSection
-                debts={debts}
-                onAddDebt={handleAddDebt}
-                onDeleteDebt={handleDeleteDebt}
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* שורה נפרדת לקופות ותרשים - עם מרווח מספיק */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6 mt-8 relative z-0">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
-              מצב קופות - {selectedBudgetYear?.name}
-            </h2>
-            <FundsGrid
-              funds={funds}
-              onCloseDailyFund={handleCloseDailyFund}
-              onAddMoneyToEnvelope={handleAddMoneyToEnvelope}
-              currentDisplayMonth={currentDisplayMonth}
-              onMonthChange={setCurrentDisplayMonth}
-            />
-          </div>
-
-          <div>
-            <BudgetChart
-              totalBudget={totalBudget}
-              totalIncome={totalIncome}
-              totalExpenses={totalExpenses}
-              budgetYearMonths={selectedBudgetYear ? calculateBudgetYearMonths(selectedBudgetYear) : 12}
-            />
-          </div>
-        </div>
-
-        {/* נכסים בשורה נפרדת - עם מרווח מספיק */}
-        <div className="flex justify-center mt-8 relative z-0">
-          <AssetsSection
-            snapshots={assetSnapshots}
-            onAddSnapshot={handleAddAssetSnapshot}
+        {/* כפתורי פעולה עליונים */}
+        <div className="dashboard-top-row">
+          <TopActions
+            selectedBudgetYear={selectedBudgetYear}
+            budgetYears={budgetYears}
+            onBudgetYearChange={handleBudgetYearChange}
+            onAddExpense={handleAddExpense}
+            onAddIncome={handleAddIncome}
           />
         </div>
 
+        {/* שורה ראשונה: תזכורות, מעשרות+פתקים, חובות */}
+        <div className="dashboard-row dashboard-top-row">
+          <div className="grid grid-cols-12 gap-6">
+            {/* עמודה שמאלית: תזכורות (צרה, גובה מלא 650px) */}
+            <div className="col-span-12 lg:col-span-3">
+              <div className="tasks-section dashboard-component" style={{ height: '650px' }}>
+                <TasksSection
+                  tasks={tasks}
+                  onAddTask={handleAddTask}
+                  onUpdateTask={handleUpdateTask}
+                  onDeleteTask={handleDeleteTask}
+                />
+              </div>
+            </div>
+
+            {/* עמודה אמצעית: מעשרות ופתקים (מחולקת ל-2 שורות) */}
+            <div className="col-span-12 lg:col-span-4 space-y-6">
+              {/* שורה עליונה: מעשרות (גובה חצי - 300px) */}
+              <div className="tithe-section dashboard-component" style={{ height: '300px' }}>
+                <TitheSection
+                  totalIncome={totalIncomesForTithe}
+                  tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
+                  titheGiven={titheGiven}
+                  onAddTithe={handleAddTithe}
+                />
+              </div>
+
+              {/* שורה תחתונה: פתקים (גובה חצי - 300px) */}
+              <div className="notes-section dashboard-component" style={{ height: '300px' }}>
+                <NotesSection
+                  notes={notes}
+                  onAddNote={handleAddNote}
+                  onUpdateNote={handleUpdateNote}
+                  onDeleteNote={handleDeleteNote}
+                />
+              </div>
+            </div>
+
+            {/* עמודה ימנית: חובות (רחבה, גובה מלא 650px) */}
+            <div className="col-span-12 lg:col-span-5">
+              <div className="debts-section dashboard-component" style={{ height: '650px' }}>
+                <DebtsSection
+                  debts={debts}
+                  onAddDebt={handleAddDebt}
+                  onDeleteDebt={handleDeleteDebt}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* שורה שנייה: קופות ותרשים */}
+        <div className="dashboard-row dashboard-middle-row">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="funds-section dashboard-component">
+              <div className="bg-white rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
+                  מצב קופות - {selectedBudgetYear?.name}
+                </h2>
+                <FundsGrid
+                  funds={funds}
+                  onCloseDailyFund={handleCloseDailyFund}
+                  onAddMoneyToEnvelope={handleAddMoneyToEnvelope}
+                  currentDisplayMonth={currentDisplayMonth}
+                  onMonthChange={setCurrentDisplayMonth}
+                />
+              </div>
+            </div>
+
+            <div className="chart-section dashboard-component">
+              <BudgetChart
+                totalBudget={totalBudget}
+                totalIncome={totalIncome}
+                totalExpenses={totalExpenses}
+                budgetYearMonths={selectedBudgetYear ? calculateBudgetYearMonths(selectedBudgetYear) : 12}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* שורה שלישית: נכסים */}
+        <div className="dashboard-row dashboard-bottom-row">
+          <div className="flex justify-center">
+            <div className="assets-section dashboard-component">
+              <AssetsSection
+                snapshots={assetSnapshots}
+                onAddSnapshot={handleAddAssetSnapshot}
+              />
+            </div>
+          </div>
+        </div>
+
         {/* מודלים עם z-index גבוה */}
-        <IncomeModal
-          isOpen={isIncomeModalOpen}
-          onClose={() => setIsIncomeModalOpen(false)}
-          onAddIncome={handleIncomeModalSubmit}
-        />
-        <ExpenseModal
-          isOpen={isExpenseModalOpen}
-          onClose={() => setIsExpenseModalOpen(false)}
-          onAddExpense={handleExpenseModalSubmit}
-          categories={categories}
-        />
+        <div className="dashboard-modal">
+          <IncomeModal
+            isOpen={isIncomeModalOpen}
+            onClose={() => setIsIncomeModalOpen(false)}
+            onAddIncome={handleIncomeModalSubmit}
+          />
+          <ExpenseModal
+            isOpen={isExpenseModalOpen}
+            onClose={() => setIsExpenseModalOpen(false)}
+            onAddExpense={handleExpenseModalSubmit}
+            categories={categories}
+          />
+        </div>
       </div>
     </div>
   );

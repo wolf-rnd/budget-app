@@ -137,27 +137,58 @@ textarea:focus {
   letter-spacing: 0.5px;
 }
 
-/* תיקון z-index לרכיבים שונים */
+/* תיקון z-index לרכיבים שונים - הסדר הנכון */
 .dashboard-section {
   position: relative;
   z-index: 1;
+  isolation: isolate;
 }
 
+.dashboard-top-row {
+  position: relative;
+  z-index: 10;
+  isolation: isolate;
+}
+
+.dashboard-middle-row {
+  position: relative;
+  z-index: 5;
+  isolation: isolate;
+  margin-top: 2rem;
+  clear: both;
+}
+
+.dashboard-bottom-row {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  margin-top: 2rem;
+  clear: both;
+}
+
+/* מודלים */
 .dashboard-modal {
+  position: fixed;
   z-index: 1000;
+  isolation: isolate;
 }
 
+/* נוטיפיקציות */
 .dashboard-notification {
+  position: fixed;
   z-index: 1100;
+  isolation: isolate;
 }
 
 /* מניעת overflow בגריד */
 .dashboard-grid {
   overflow: visible;
+  position: relative;
 }
 
 .dashboard-grid > * {
   overflow: visible;
+  position: relative;
 }
 
 /* תיקון לרכיבים עם position absolute */
@@ -174,20 +205,131 @@ textarea:focus {
   right: 0;
   bottom: 0;
   z-index: 1000;
+  isolation: isolate;
 }
 
 .modal-content {
   position: relative;
   z-index: 1001;
+  isolation: isolate;
 }
 
 /* תיקון לנוטיפיקציות */
 .notification-container {
   position: fixed;
   z-index: 1100;
+  isolation: isolate;
 }
 
 /* תיקון לטיפטולים */
 .tooltip {
   z-index: 1200;
+  isolation: isolate;
+}
+
+/* תיקון לרכיבי דשבורד ספציפיים */
+.tasks-section {
+  position: relative;
+  z-index: 10;
+  isolation: isolate;
+}
+
+.tithe-section {
+  position: relative;
+  z-index: 10;
+  isolation: isolate;
+}
+
+.notes-section {
+  position: relative;
+  z-index: 10;
+  isolation: isolate;
+}
+
+.debts-section {
+  position: relative;
+  z-index: 10;
+  isolation: isolate;
+}
+
+.funds-section {
+  position: relative;
+  z-index: 5;
+  isolation: isolate;
+}
+
+.chart-section {
+  position: relative;
+  z-index: 5;
+  isolation: isolate;
+}
+
+.assets-section {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+}
+
+/* מניעת חפיפה בין שורות */
+.dashboard-row {
+  position: relative;
+  isolation: isolate;
+  margin-bottom: 2rem;
+}
+
+.dashboard-row:not(:last-child) {
+  margin-bottom: 3rem;
+}
+
+/* תיקון לגריד שמתנהג לא טוב */
+.grid-fix {
+  display: grid;
+  position: relative;
+  isolation: isolate;
+}
+
+.grid-fix > * {
+  position: relative;
+  isolation: isolate;
+}
+
+/* תיקון לרכיבים שמתנהגים כמו sticky */
+.sticky-fix {
+  position: relative !important;
+  z-index: auto !important;
+}
+
+/* תיקון לאלמנטים שעולים */
+.no-overlap {
+  position: relative;
+  isolation: isolate;
+  transform: translateZ(0);
+}
+
+/* תיקון לרכיבים עם shadow שעולים */
+.shadow-fix {
+  position: relative;
+  isolation: isolate;
+  transform: translateZ(0);
+}
+
+/* תיקון כללי לכל הרכיבים */
+.dashboard-component {
+  position: relative;
+  isolation: isolate;
+  transform: translateZ(0);
+}
+
+/* תיקון לאנימציות שגורמות לחפיפה */
+.animate-fix {
+  position: relative;
+  isolation: isolate;
+  transform: translateZ(0);
+  will-change: auto;
+}
+
+/* תיקון לטרנספורמים */
+.transform-fix {
+  transform: translateZ(0);
+  isolation: isolate;
 }
