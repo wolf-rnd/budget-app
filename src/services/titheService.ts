@@ -1,6 +1,16 @@
-import { TitheGiven } from '../types';
 import { ENV } from '../config/env';
 import { apiClient } from './apiClient';
+
+export interface TitheGiven {
+  id: string;
+  description: string;
+  amount: number;
+  note: string;
+  date: string;
+  created_at?: string;
+  updated_at?: string;
+  user_id?: string;
+}
 
 export interface CreateTitheRequest {
   description: string;
@@ -10,6 +20,7 @@ export interface CreateTitheRequest {
 }
 
 export interface UpdateTitheRequest {
+  id?: string;
   description?: string;
   amount?: number;
   note?: string;
@@ -17,11 +28,19 @@ export interface UpdateTitheRequest {
 }
 
 export interface TitheFilters {
-  start_date?: string;
-  end_date?: string;
+  startDate?: string;
+  endDate?: string;
   search?: string;
   page?: number;
   limit?: number;
+}
+
+export interface TitheResponse {
+  data: TitheGiven[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
 }
 
 export interface TitheSummary {
@@ -34,12 +53,12 @@ export interface TitheSummary {
 }
 
 class TitheService {
-  // GET /tithe - קבלת כל המעשרות (עם פילטרים)
-  async getAllTithes(filters?: TitheFilters): Promise<TitheGiven[]> {
+  // GET /tithe - קבלת כל המעשרות (עם פילטרים ו-pagination)
+  async getAllTithes(filters?: TitheFilters): Promise<TitheResponse | TitheGiven[]> {
     const params = new URLSearchParams();
     
-    if (filters?.start_date) params.append('start_date', filters.start_date);
-    if (filters?.end_date) params.append('end_date', filters.end_date);
+    if (filters?.startDate) params.append('startDate', filters.startDate);
+    if (filters?.endDate) params.append('endDate', filters.endDate);
     if (filters?.search) params.append('search', filters.search);
     if (filters?.page) params.append('page', filters.page.toString());
     if (filters?.limit) params.append('limit', filters.limit.toString());
@@ -47,7 +66,7 @@ class TitheService {
     const queryString = params.toString();
     const endpoint = queryString ? `/tithe?${queryString}` : '/tithe';
     
-    const response = await apiClient.get<TitheGiven[]>(endpoint);
+    const response = await apiClient.get<TitheResponse | TitheGiven[]>(endpoint);
     return response.data;
   }
 

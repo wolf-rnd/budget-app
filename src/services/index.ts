@@ -1,7 +1,6 @@
-// Export all services for easy importing
 export { authService } from './authService';
 export { budgetYearsService } from './budgetYearsService';
-export { fundsService } from './fundsService';
+export { GetFundRequest, fundsService } from './fundsService';
 export { categoriesService } from './categoriesService';
 export { incomesService } from './incomesService';
 export { expensesService } from './expensesService';
@@ -14,7 +13,7 @@ export { dashboardService } from './dashboardService';
 // Export types
 export type { LoginRequest, RegisterRequest, AuthResponse } from './authService';
 export type { BudgetYear, CreateBudgetYearRequest, UpdateBudgetYearRequest } from './budgetYearsService';
-export type { GetFundRequest, CreateFundRequest, UpdateFundRequest, UpdateFundBudgetRequest } from './fundsService';
+export type { CreateFundRequest, UpdateFundRequest, UpdateFundBudgetRequest } from './fundsService';
 export type { GetCategoryRequest as Category, CreateCategoryRequest, UpdateCategoryRequest } from './categoriesService';
 export type { CreateIncomeRequest, UpdateIncomeRequest, IncomeFilters, IncomeSummary } from './incomesService';
 export type { CreateExpenseRequest, UpdateExpenseRequest, ExpenseFilters, ExpenseSummary } from './expensesService';
