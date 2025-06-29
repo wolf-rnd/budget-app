@@ -8,24 +8,13 @@ interface DebtsSectionProps {
   onDeleteDebt: (id: string) => void;
 }
 
-const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteDebt }) => {
-  // State נפרד לכל סוג חוב
-  const [owedToMeForm, setOwedToMeForm] = useState({
-    amount: '',
-    description: '',
-    note: ''
-  });
-
-  const [iOweForm, setIOweForm] = useState({
-    amount: '',
-    description: '',
-    note: ''
-  });
-
-  // הפרדת החובות לשני סוגים
-  const debtsOwedToMe = debts.filter(debt => debt.type === 'owed_to_me');
-  const debtsIOwe = debts.filter(debt => debt.type === 'i_owe' || !debt.type); // תאימות לאחור
-
+// הוצאת הקומפוננטות החוצה כדי למנוע re-creation
+const DebtsList = ({ debts, type, emptyMessage, onDeleteDebt }: { 
+  debts: Debt[], 
+  type: 'owed_to_me' | 'i_owe',
+  emptyMessage: string,
+  onDeleteDebt: (id: string) => void
+}) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('he-IL', {
       style: 'currency',
@@ -35,41 +24,7 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
     }).format(amount);
   };
 
-  const handleAddDebt = (type: 'owed_to_me' | 'i_owe') => {
-    const form = type === 'owed_to_me' ? owedToMeForm : iOweForm;
-    
-    if (form.amount && form.description.trim()) {
-      onAddDebt(Number(form.amount), form.description.trim(), form.note.trim(), type);
-      
-      // איפוס הטופס הספציפי
-      if (type === 'owed_to_me') {
-        setOwedToMeForm({ amount: '', description: '', note: '' });
-      } else {
-        setIOweForm({ amount: '', description: '', note: '' });
-      }
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent, type: 'owed_to_me' | 'i_owe') => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddDebt(type);
-    }
-  };
-
-  const updateForm = (type: 'owed_to_me' | 'i_owe', field: string, value: string) => {
-    if (type === 'owed_to_me') {
-      setOwedToMeForm(prev => ({ ...prev, [field]: value }));
-    } else {
-      setIOweForm(prev => ({ ...prev, [field]: value }));
-    }
-  };
-
-  const DebtsList = ({ debts, type, emptyMessage }: { 
-    debts: Debt[], 
-    type: 'owed_to_me' | 'i_owe',
-    emptyMessage: string 
-  }) => (
+  return (
     <div className="space-y-1">
       {debts.length > 0 ? (
         debts.map(debt => (
@@ -130,70 +85,129 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
       )}
     </div>
   );
+};
 
-  const AddDebtForm = ({ type }: { type: 'owed_to_me' | 'i_owe' }) => {
+const AddDebtForm = ({ 
+  type, 
+  form, 
+  onUpdateForm, 
+  onAddDebt, 
+  onKeyPress 
+}: { 
+  type: 'owed_to_me' | 'i_owe',
+  form: { amount: string, description: string, note: string },
+  onUpdateForm: (field: string, value: string) => void,
+  onAddDebt: () => void,
+  onKeyPress: (e: React.KeyboardEvent) => void
+}) => {
+  return (
+    <div className="space-y-2">
+      <div className="grid grid-cols-2 gap-2">
+        <input
+          type="number"
+          value={form.amount}
+          onChange={(e) => onUpdateForm('amount', e.target.value)}
+          onKeyDown={onKeyPress}
+          placeholder="סכום"
+          className={`w-full p-2 border-2 rounded text-xs transition-all bg-white ${
+            type === 'owed_to_me'
+              ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
+              : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
+          }`}
+        />
+        
+        <input
+          type="text"
+          value={form.description}
+          onChange={(e) => onUpdateForm('description', e.target.value)}
+          onKeyDown={onKeyPress}
+          placeholder="תיאור"
+          className={`w-full p-2 border-2 rounded text-xs transition-all bg-white ${
+            type === 'owed_to_me'
+              ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
+              : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
+          }`}
+        />
+      </div>
+      
+      <div className="flex gap-2 flex-nowrap">
+        <input
+          type="text"
+          value={form.note}
+          onChange={(e) => onUpdateForm('note', e.target.value)}
+          onKeyDown={onKeyPress}
+          placeholder="הערה (אופציונלי)"
+          className={`w-20 md:w-28 p-2 border-2 rounded text-xs transition-all bg-white ${
+            type === 'owed_to_me'
+              ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
+              : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
+          }`}
+        />
+        
+        <button
+          onClick={onAddDebt}
+          disabled={!form.amount || !form.description.trim()}
+          className={`px-3 py-2 rounded text-xs font-medium transition-all flex items-center justify-center ${
+            form.amount && form.description.trim()
+              ? type === 'owed_to_me'
+                ? 'bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg'
+                : 'bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg'
+              : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+          }`}
+        >
+          <Plus size={14} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteDebt }) => {
+  // State נפרד לכל סוג חוב
+  const [owedToMeForm, setOwedToMeForm] = useState({
+    amount: '',
+    description: '',
+    note: ''
+  });
+
+  const [iOweForm, setIOweForm] = useState({
+    amount: '',
+    description: '',
+    note: ''
+  });
+
+  // הפרדת החובות לשני סוגים
+  const debtsOwedToMe = debts.filter(debt => debt.type === 'owed_to_me');
+  const debtsIOwe = debts.filter(debt => debt.type === 'i_owe' || !debt.type); // תאימות לאחור
+
+  const handleAddDebt = (type: 'owed_to_me' | 'i_owe') => {
     const form = type === 'owed_to_me' ? owedToMeForm : iOweForm;
     
-    return (
-      <div className="space-y-2">
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="number"
-            value={form.amount}
-            onChange={(e) => updateForm(type, 'amount', e.target.value)}
-            onKeyDown={(e) => handleKeyPress(e, type)}
-            placeholder="סכום"
-            className={`w-full p-2 border-2 rounded text-xs transition-all bg-white ${
-              type === 'owed_to_me'
-                ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
-                : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
-            }`}
-          />
-          
-          <input
-            type="text"
-            value={form.description}
-            onChange={(e) => updateForm(type, 'description', e.target.value)}
-            onKeyDown={(e) => handleKeyPress(e, type)}
-            placeholder="תיאור"
-            className={`w-full p-2 border-2 rounded text-xs transition-all bg-white ${
-              type === 'owed_to_me'
-                ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
-                : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
-            }`}
-          />
-        </div>
-        
-        <div className="flex gap-2 flex-nowrap">
-          <input
-            type="text"
-            value={form.note}
-            onChange={(e) => updateForm(type, 'note', e.target.value)}
-            onKeyDown={(e) => handleKeyPress(e, type)}
-            placeholder="הערה (אופציונלי)"
-            className={`w-20 md:w-28 p-2 border-2 rounded text-xs transition-all bg-white ${
-              type === 'owed_to_me'
-                ? 'border-green-200 focus:border-green-400 focus:ring-1 focus:ring-green-200'
-                : 'border-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-200'
-            }`}
-          />
-          
-          <button
-            onClick={() => handleAddDebt(type)}
-            disabled={!form.amount || !form.description.trim()}
-            className={`px-3 py-2 rounded text-xs font-medium transition-all flex items-center justify-center ${
-              form.amount && form.description.trim()
-                ? type === 'owed_to_me'
-                  ? 'bg-green-600 text-white hover:bg-green-700 shadow-md hover:shadow-lg'
-                  : 'bg-red-600 text-white hover:bg-red-700 shadow-md hover:shadow-lg'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-      </div>
-    );
+    if (form.amount && form.description.trim()) {
+      onAddDebt(Number(form.amount), form.description.trim(), form.note.trim(), type);
+      
+      // איפוס הטופס הספציפי
+      if (type === 'owed_to_me') {
+        setOwedToMeForm({ amount: '', description: '', note: '' });
+      } else {
+        setIOweForm({ amount: '', description: '', note: '' });
+      }
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent, type: 'owed_to_me' | 'i_owe') => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddDebt(type);
+    }
+  };
+
+  const updateOwedToMeForm = (field: string, value: string) => {
+    setOwedToMeForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const updateIOweForm = (field: string, value: string) => {
+    setIOweForm(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -221,9 +235,16 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
                 debts={debtsOwedToMe} 
                 type="owed_to_me"
                 emptyMessage="אין חובות שחייבים לי"
+                onDeleteDebt={onDeleteDebt}
               />
             </div>
-            <AddDebtForm type="owed_to_me" />
+            <AddDebtForm 
+              type="owed_to_me" 
+              form={owedToMeForm}
+              onUpdateForm={updateOwedToMeForm}
+              onAddDebt={() => handleAddDebt('owed_to_me')}
+              onKeyPress={(e) => handleKeyPress(e, 'owed_to_me')}
+            />
           </div>
 
           {/* עמודה ימנית - אני חייבת */}
@@ -237,9 +258,16 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
                 debts={debtsIOwe} 
                 type="i_owe"
                 emptyMessage="אין חובות שאני חייבת"
+                onDeleteDebt={onDeleteDebt}
               />
             </div>
-            <AddDebtForm type="i_owe" />
+            <AddDebtForm 
+              type="i_owe" 
+              form={iOweForm}
+              onUpdateForm={updateIOweForm}
+              onAddDebt={() => handleAddDebt('i_owe')}
+              onKeyPress={(e) => handleKeyPress(e, 'i_owe')}
+            />
           </div>
         </div>
       </div>
