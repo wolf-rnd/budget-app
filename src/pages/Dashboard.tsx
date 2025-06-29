@@ -514,10 +514,10 @@ const Dashboard: React.FC = () => {
 
           {/* עמודה ימנית: מעשרות, חובות ופתקים */}
           <div className="col-span-12 md:col-span-9 space-y-6">
-            {/* שורה 1: מעשרות + חובות (2 עמודות) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* מעשרות - רוחב קטן יותר */}
-              <div className="md:col-span-1">
+            {/* שורה 1: מעשרות + חובות (2 עמודות) - עם התאמת רוחב */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+              {/* מעשרות - רוחב קטן יותר (2 מתוך 5) */}
+              <div className="md:col-span-2">
                 <TitheSection
                   totalIncome={totalIncomesForTithe}
                   tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
@@ -526,8 +526,8 @@ const Dashboard: React.FC = () => {
                 />
               </div>
 
-              {/* חובות - רוחב רגיל */}
-              <div className="md:col-span-1">
+              {/* חובות - רוחב גדול יותר (3 מתוך 5) */}
+              <div className="md:col-span-3">
                 <DebtsSection
                   debts={debts}
                   onAddDebt={handleAddDebt}
