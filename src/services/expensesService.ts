@@ -36,7 +36,7 @@ export interface CreateExpenseRequest {
 
 
 export interface UpdateExpenseRequest {
-  id: string;
+  // ❌ הסרת id מכאן - הוא נשלח ב-URL
   name: string;
   amount: number;
   category_id: string;
@@ -129,6 +129,7 @@ class ExpensesService {
 
   // PUT /expenses/:id - עדכון הוצאה
   async updateExpense(id: string, data: UpdateExpenseRequest): Promise<Expense> {
+    console.log(`🔄 Updating expense ${id} with data:`, data);
     const response = await apiClient.put<Expense>(`/expenses/${id}`, data);
     return response.data;
   }

@@ -52,6 +52,18 @@ export const useExpenseData = () => {
   const selectedBudgetYearId = useBudgetYearStore(state => state.selectedBudgetYearId);
   const isLoadingMoreRef = useRef(false);
 
+  // Helper function to find category ID by name
+  const findCategoryIdByName = useCallback((categoryName: string): string => {
+    const category = categories.find(cat => cat.name === categoryName);
+    return category?.id || '';
+  }, [categories]);
+
+  // Helper function to find fund ID by name
+  const findFundIdByName = useCallback((fundName: string): string => {
+    const category = categories.find(cat => cat.funds?.name === fundName);
+    return category?.fund_id || '';
+  }, [categories]);
+
   // Load initial data
   const loadInitialData = useCallback(async () => {
     try {
@@ -234,27 +246,40 @@ export const useExpenseData = () => {
         }
       }
 
+      // 🔧 תיקון: המרת שמות לIDים
+      const categoryId = findCategoryIdByName(expense.categories?.name || '');
+      const fundId = findFundIdByName(expense.funds?.name || '');
+
       const updateData: UpdateExpenseRequest = {
-        id: expense.id,
+        // ❌ הסרת ID מה-payload - הוא נשלח ב-URL
         name: inlineEdit.field === 'name' ? updatedValue : expense.name,
         amount: inlineEdit.field === 'amount' ? updatedValue : expense.amount,
-        category_id: expense.categories?.name || '',
-        fund_id: expense.funds?.name || '',
+        category_id: categoryId, // 🔧 שליחת ID במקום שם
+        fund_id: fundId, // 🔧 שליחת ID במקום שם
         date: expense.date,
         note: inlineEdit.field === 'note' ? updatedValue : expense.note,
         budget_year_id: expense.budget_year_id
       };
 
+      console.log('🔍 Update data being sent:', {
+        expenseId: expense.id,
+        categoryName: expense.categories?.name,
+        categoryId,
+        fundName: expense.funds?.name,
+        fundId,
+        updateData
+      });
+
       const updated = await expensesService.updateExpense(expense.id, updateData);
       setExpenses(expenses.map(exp => exp.id === expense.id ? updated : exp));
       
       cancelInlineEdit();
-      console.log('הוצאה עודכנה:', updated);
+      console.log('✅ הוצאה עודכנה:', updated);
     } catch (error) {
-      console.error('Failed to update expense:', error);
+      console.error('❌ Failed to update expense:', error);
       alert('שגיאה בעדכון ההוצאה');
     }
-  }, [inlineEdit, expenses, cancelInlineEdit]);
+  }, [inlineEdit, expenses, cancelInlineEdit, findCategoryIdByName, findFundIdByName]);
 
   // CRUD operations
   const createExpense = useCallback(async (newExpense: CreateExpenseRequest) => {
@@ -290,10 +315,21 @@ export const useExpenseData = () => {
     const expense = expenses.find(exp => exp.id === id);
     if (!expense) return null;
     
-    return mapObject<typeof expense, UpdateExpenseRequest>(expense, [
-      'id', 'name', 'amount', 'category_id', 'fund_id', 'date', 'note', 'budget_year_id'
-    ]);
-  }, [expenses]);
+    // 🔧 תיקון: המרת שמות לIDים גם כאן
+    const categoryId = findCategoryIdByName(expense.categories?.name || '');
+    const fundId = findFundIdByName(expense.funds?.name || '');
+    
+    return {
+      id: expense.id,
+      name: expense.name,
+      amount: expense.amount,
+      category_id: categoryId, // 🔧 ID במקום שם
+      fund_id: fundId, // 🔧 ID במקום שם
+      date: expense.date,
+      note: expense.note,
+      budget_year_id: expense.budget_year_id
+    };
+  }, [expenses, findCategoryIdByName, findFundIdByName]);
 
   // Effects
   useEffect(() => {
