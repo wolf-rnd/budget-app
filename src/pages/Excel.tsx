@@ -1,327 +1,319 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { FileSpreadsheet, Save, Download, Upload, RefreshCw, Calculator, Plus, Trash2 } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  FileSpreadsheet, 
+  Save, 
+  Download, 
+  Plus, 
+  Trash2, 
+  Calculator, 
+  Upload,
+  RefreshCw,
+  Edit3,
+  Check,
+  X
+} from 'lucide-react';
 
-// Import Luckysheet types
-declare global {
-  interface Window {
-    luckysheet: any;
-  }
+interface Cell {
+  value: string | number;
+  formula?: string;
+  type: 'text' | 'number' | 'formula';
+}
+
+interface Sheet {
+  name: string;
+  data: Cell[][];
+  id: string;
 }
 
 const Excel: React.FC = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [sheets, setSheets] = useState<Sheet[]>([]);
+  const [activeSheetId, setActiveSheetId] = useState<string>('');
   const [savedSheets, setSavedSheets] = useState<string[]>([]);
+  const [editingCell, setEditingCell] = useState<{ row: number; col: number } | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize Luckysheet
+  const ROWS = 20;
+  const COLS = 10;
+
+  // Initialize default sheet
   useEffect(() => {
-    const initLuckysheet = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+    const initializeSheets = () => {
+      setIsLoading(true);
+      
+      // Load saved sheets list
+      const savedSheetsList = Object.keys(localStorage)
+        .filter(key => key.startsWith('excel-sheet-'))
+        .map(key => key.replace('excel-sheet-', ''));
+      setSavedSheets(savedSheetsList);
 
-        // Load Luckysheet CSS and JS
-        await loadLuckysheetsAssets();
+      // Load last active sheet or create default
+      const lastActiveSheet = localStorage.getItem('excel-last-active');
+      let initialSheet: Sheet;
 
-        // Initialize Luckysheet
-        if (window.luckysheet && containerRef.current) {
-          // Clear any existing content
-          containerRef.current.innerHTML = '';
-
-          // Load saved data if exists
-          const savedData = localStorage.getItem('luckysheet-data');
-          let initialData = [];
-
-          if (savedData) {
-            try {
-              initialData = JSON.parse(savedData);
-            } catch (e) {
-              console.warn('Failed to parse saved data, using default');
-            }
-          }
-
-          // Default sheet if no saved data
-          if (initialData.length === 0) {
-            initialData = [{
-              name: "חישובים משפחתיים",
-              color: "",
-              index: 0,
-              status: 1,
-              order: 0,
-              hide: 0,
-              row: 50,
-              column: 26,
-              defaultRowHeight: 19,
-              defaultColWidth: 73,
-              celldata: [
-                // Header row
-                { r: 0, c: 0, v: { v: "פריט", ct: { fa: "General", t: "g" }, m: "פריט", bg: "#4472C4", fc: "#FFFFFF", bl: 1, fs: 12 } },
-                { r: 0, c: 1, v: { v: "סכום", ct: { fa: "General", t: "g" }, m: "סכום", bg: "#4472C4", fc: "#FFFFFF", bl: 1, fs: 12 } },
-                { r: 0, c: 2, v: { v: "הערות", ct: { fa: "General", t: "g" }, m: "הערות", bg: "#4472C4", fc: "#FFFFFF", bl: 1, fs: 12 } },
-                
-                // Sample data
-                { r: 1, c: 0, v: { v: "הכנסות חודשיות", ct: { fa: "General", t: "g" }, m: "הכנסות חודשיות" } },
-                { r: 1, c: 1, v: { v: 15000, ct: { fa: "General", t: "n" }, m: "15000" } },
-                { r: 1, c: 2, v: { v: "משכורת + הכנסות נוספות", ct: { fa: "General", t: "g" }, m: "משכורת + הכנסות נוספות" } },
-                
-                { r: 2, c: 0, v: { v: "הוצאות קבועות", ct: { fa: "General", t: "g" }, m: "הוצאות קבועות" } },
-                { r: 2, c: 1, v: { v: 8000, ct: { fa: "General", t: "n" }, m: "8000" } },
-                { r: 2, c: 2, v: { v: "משכנתא + חשמל + מים", ct: { fa: "General", t: "g" }, m: "משכנתא + חשמל + מים" } },
-                
-                { r: 3, c: 0, v: { v: "הוצאות משתנות", ct: { fa: "General", t: "g" }, m: "הוצאות משתנות" } },
-                { r: 3, c: 1, v: { v: 3000, ct: { fa: "General", t: "n" }, m: "3000" } },
-                { r: 3, c: 2, v: { v: "מזון + בילויים + דלק", ct: { fa: "General", t: "g" }, m: "מזון + בילויים + דלק" } },
-                
-                { r: 5, c: 0, v: { v: "יתרה חודשית", ct: { fa: "General", t: "g" }, m: "יתרה חודשית", bg: "#70AD47", fc: "#FFFFFF", bl: 1 } },
-                { r: 5, c: 1, v: { v: "=B2-B3-B4", ct: { fa: "General", t: "n" }, m: "4000", f: "=B2-B3-B4", bg: "#70AD47", fc: "#FFFFFF", bl: 1 } },
-                { r: 5, c: 2, v: { v: "חישוב אוטומטי", ct: { fa: "General", t: "g" }, m: "חישוב אוטומטי", bg: "#70AD47", fc: "#FFFFFF" } },
-              ],
-              config: {
-                merge: {},
-                rowlen: {},
-                columnlen: {},
-                rowhidden: {},
-                colhidden: {},
-                borderInfo: [],
-                authority: {}
-              },
-              scrollLeft: 0,
-              scrollTop: 0,
-              luckysheet_select_save: [{ row: [0, 0], column: [0, 0] }],
-              calcChain: [],
-              isPivotTable: false,
-              pivotTable: {},
-              filter_select: {},
-              filter: null,
-              luckysheet_alternateformat_save: [],
-              luckysheet_alternateformat_save_modelCustom: [],
-              luckysheet_conditionformat_save: {},
-              frozen: {},
-              chart: [],
-              zoomRatio: 1,
-              image: [],
-              showGridLines: 1,
-              dataVerification: {}
-            }];
-          }
-
-          const options = {
-            container: 'luckysheet-container',
-            title: 'גיליון חישובים משפחתי',
-            lang: 'he',
-            data: initialData,
-            showinfobar: false,
-            showsheetbar: true,
-            showstatisticBar: true,
-            enableAddRow: true,
-            enableAddCol: true,
-            userInfo: false,
-            myFolderUrl: '',
-            devicePixelRatio: window.devicePixelRatio,
-            functionButton: '<button class="btn btn-primary btn-sm" onclick="saveData()">💾 שמירה</button>',
-            showConfigWindowResize: true,
-            forceCalculation: false,
-            plugins: ['chart'],
-            hook: {
-              updated: function() {
-                // Auto-save on changes
-                setTimeout(() => {
-                  saveData();
-                }, 1000);
-              }
-            }
-          };
-
-          window.luckysheet.create(options);
-          
-          // Add global save function
-          (window as any).saveData = saveData;
-          
-          setIsLoading(false);
-        }
-      } catch (err) {
-        console.error('Failed to initialize Luckysheet:', err);
-        setError('שגיאה בטעינת הגיליון האלקטרוני');
-        setIsLoading(false);
-      }
-    };
-
-    initLuckysheet();
-
-    // Cleanup
-    return () => {
-      if (window.luckysheet && window.luckysheet.destroy) {
+      if (lastActiveSheet && localStorage.getItem(`excel-sheet-${lastActiveSheet}`)) {
         try {
-          window.luckysheet.destroy();
-        } catch (e) {
-          console.warn('Failed to destroy Luckysheet:', e);
+          initialSheet = JSON.parse(localStorage.getItem(`excel-sheet-${lastActiveSheet}`)!);
+        } catch {
+          initialSheet = createDefaultSheet();
         }
+      } else {
+        initialSheet = createDefaultSheet();
       }
+
+      setSheets([initialSheet]);
+      setActiveSheetId(initialSheet.id);
+      setIsLoading(false);
     };
+
+    // Simulate loading time
+    setTimeout(initializeSheets, 500);
   }, []);
 
-  // Load saved sheets list
+  // Auto-focus on edit input
   useEffect(() => {
-    const sheets = Object.keys(localStorage)
-      .filter(key => key.startsWith('luckysheet-saved-'))
-      .map(key => key.replace('luckysheet-saved-', ''));
-    setSavedSheets(sheets);
-  }, []);
+    if (editingCell && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.select();
+    }
+  }, [editingCell]);
 
-  // Load Luckysheet assets
-  const loadLuckysheetsAssets = async (): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      // Check if already loaded
-      if (window.luckysheet) {
-        resolve();
-        return;
-      }
+  const createDefaultSheet = (): Sheet => {
+    const data: Cell[][] = Array(ROWS).fill(null).map(() => 
+      Array(COLS).fill(null).map(() => ({ value: '', type: 'text' as const }))
+    );
 
-      // Load CSS
-      const cssLink = document.createElement('link');
-      cssLink.rel = 'stylesheet';
-      cssLink.href = 'https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/css/pluginsCss.css';
-      document.head.appendChild(cssLink);
+    // Add sample budget data
+    data[0][0] = { value: 'פריט תקציבי', type: 'text' };
+    data[0][1] = { value: 'סכום', type: 'text' };
+    data[0][2] = { value: 'הערות', type: 'text' };
 
-      const cssLink2 = document.createElement('link');
-      cssLink2.rel = 'stylesheet';
-      cssLink2.href = 'https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/plugins.css';
-      document.head.appendChild(cssLink2);
+    data[1][0] = { value: 'הכנסות חודשיות', type: 'text' };
+    data[1][1] = { value: 15000, type: 'number' };
+    data[1][2] = { value: 'משכורת + הכנסות נוספות', type: 'text' };
 
-      const cssLink3 = document.createElement('link');
-      cssLink3.rel = 'stylesheet';
-      cssLink3.href = 'https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/css/luckysheet.css';
-      document.head.appendChild(cssLink3);
+    data[2][0] = { value: 'הוצאות קבועות', type: 'text' };
+    data[2][1] = { value: 8000, type: 'number' };
+    data[2][2] = { value: 'משכנתא + חשמל + מים', type: 'text' };
 
-      const cssLink4 = document.createElement('link');
-      cssLink4.rel = 'stylesheet';
-      cssLink4.href = 'https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/assets/iconfont/iconfont.css';
-      document.head.appendChild(cssLink4);
+    data[3][0] = { value: 'הוצאות משתנות', type: 'text' };
+    data[3][1] = { value: 3000, type: 'number' };
+    data[3][2] = { value: 'מזון + בילויים + דלק', type: 'text' };
 
-      // Load JS
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/luckysheet.umd.js';
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load Luckysheet'));
-      document.head.appendChild(script);
-    });
+    data[5][0] = { value: 'יתרה חודשית', type: 'text' };
+    data[5][1] = { value: '=B2-B3-B4', formula: '=B2-B3-B4', type: 'formula' };
+    data[5][2] = { value: 'חישוב אוטומטי', type: 'text' };
+
+    return {
+      id: 'default-sheet',
+      name: 'תקציב משפחתי',
+      data
+    };
   };
 
-  // Save data to localStorage
-  const saveData = () => {
+  const getColumnLabel = (col: number): string => {
+    return String.fromCharCode(65 + col); // A, B, C, etc.
+  };
+
+  const getCellReference = (row: number, col: number): string => {
+    return `${getColumnLabel(col)}${row + 1}`;
+  };
+
+  const evaluateFormula = (formula: string, sheetData: Cell[][]): number => {
     try {
-      if (window.luckysheet && window.luckysheet.getAllSheets) {
-        const data = window.luckysheet.getAllSheets();
-        localStorage.setItem('luckysheet-data', JSON.stringify(data));
-        console.log('✅ נתונים נשמרו בהצלחה');
-      }
-    } catch (error) {
-      console.error('❌ שגיאה בשמירת נתונים:', error);
+      // Simple formula evaluation
+      let expression = formula.substring(1); // Remove '='
+      
+      // Replace cell references with values
+      const cellRefRegex = /([A-Z])(\d+)/g;
+      expression = expression.replace(cellRefRegex, (match, col, row) => {
+        const colIndex = col.charCodeAt(0) - 65;
+        const rowIndex = parseInt(row) - 1;
+        
+        if (rowIndex >= 0 && rowIndex < ROWS && colIndex >= 0 && colIndex < COLS) {
+          const cell = sheetData[rowIndex][colIndex];
+          if (cell.type === 'number') {
+            return cell.value.toString();
+          } else if (cell.type === 'formula') {
+            return evaluateFormula(cell.formula!, sheetData).toString();
+          }
+        }
+        return '0';
+      });
+
+      // Evaluate simple arithmetic
+      return Function(`"use strict"; return (${expression})`)();
+    } catch {
+      return 0;
     }
   };
 
-  // Save with custom name
+  const handleCellClick = (row: number, col: number) => {
+    const activeSheet = sheets.find(s => s.id === activeSheetId);
+    if (!activeSheet) return;
+
+    const cell = activeSheet.data[row][col];
+    setEditingCell({ row, col });
+    setEditValue(cell.formula || cell.value.toString());
+  };
+
+  const handleCellSave = () => {
+    if (!editingCell) return;
+
+    const activeSheet = sheets.find(s => s.id === activeSheetId);
+    if (!activeSheet) return;
+
+    const newSheets = sheets.map(sheet => {
+      if (sheet.id === activeSheetId) {
+        const newData = [...sheet.data];
+        const { row, col } = editingCell;
+        
+        let cellType: 'text' | 'number' | 'formula' = 'text';
+        let cellValue: string | number = editValue;
+        let formula: string | undefined;
+
+        if (editValue.startsWith('=')) {
+          cellType = 'formula';
+          formula = editValue;
+          cellValue = evaluateFormula(editValue, newData);
+        } else if (!isNaN(Number(editValue)) && editValue.trim() !== '') {
+          cellType = 'number';
+          cellValue = Number(editValue);
+        }
+
+        newData[row][col] = {
+          value: cellValue,
+          type: cellType,
+          ...(formula && { formula })
+        };
+
+        return { ...sheet, data: newData };
+      }
+      return sheet;
+    });
+
+    setSheets(newSheets);
+    setEditingCell(null);
+    setEditValue('');
+
+    // Auto-save
+    saveCurrentSheet(newSheets.find(s => s.id === activeSheetId)!);
+  };
+
+  const handleCellCancel = () => {
+    setEditingCell(null);
+    setEditValue('');
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleCellSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      handleCellCancel();
+    }
+  };
+
+  const saveCurrentSheet = (sheet?: Sheet) => {
+    const sheetToSave = sheet || sheets.find(s => s.id === activeSheetId);
+    if (sheetToSave) {
+      localStorage.setItem(`excel-sheet-${sheetToSave.id}`, JSON.stringify(sheetToSave));
+      localStorage.setItem('excel-last-active', sheetToSave.id);
+    }
+  };
+
   const saveWithName = () => {
     const name = prompt('שם הגיליון:');
-    if (name && window.luckysheet && window.luckysheet.getAllSheets) {
-      try {
-        const data = window.luckysheet.getAllSheets();
-        localStorage.setItem(`luckysheet-saved-${name}`, JSON.stringify(data));
+    if (name) {
+      const activeSheet = sheets.find(s => s.id === activeSheetId);
+      if (activeSheet) {
+        const newSheet = { ...activeSheet, id: name, name };
+        localStorage.setItem(`excel-sheet-${name}`, JSON.stringify(newSheet));
         setSavedSheets(prev => [...prev.filter(s => s !== name), name]);
         alert(`✅ הגיליון "${name}" נשמר בהצלחה`);
-      } catch (error) {
-        alert('❌ שגיאה בשמירת הגיליון');
       }
     }
   };
 
-  // Load saved sheet
-  const loadSheet = (name: string) => {
+  const loadSheet = (sheetId: string) => {
     try {
-      const data = localStorage.getItem(`luckysheet-saved-${name}`);
-      if (data && window.luckysheet) {
-        const parsedData = JSON.parse(data);
-        window.luckysheet.destroy();
-        
-        setTimeout(() => {
-          if (containerRef.current) {
-            containerRef.current.innerHTML = '';
-            const options = {
-              container: 'luckysheet-container',
-              title: `גיליון: ${name}`,
-              lang: 'he',
-              data: parsedData,
-              showinfobar: false,
-              showsheetbar: true,
-              showstatisticBar: true,
-              enableAddRow: true,
-              enableAddCol: true,
-              userInfo: false,
-              devicePixelRatio: window.devicePixelRatio,
-              functionButton: '<button class="btn btn-primary btn-sm" onclick="saveData()">💾 שמירה</button>',
-              hook: {
-                updated: function() {
-                  setTimeout(() => saveData(), 1000);
-                }
-              }
-            };
-            window.luckysheet.create(options);
-            (window as any).saveData = saveData;
-          }
-        }, 100);
+      const data = localStorage.getItem(`excel-sheet-${sheetId}`);
+      if (data) {
+        const sheet: Sheet = JSON.parse(data);
+        setSheets([sheet]);
+        setActiveSheetId(sheet.id);
+        localStorage.setItem('excel-last-active', sheet.id);
       }
-    } catch (error) {
+    } catch {
       alert('❌ שגיאה בטעינת הגיליון');
     }
   };
 
-  // Delete saved sheet
-  const deleteSheet = (name: string) => {
-    if (confirm(`האם אתה בטוח שברצונך למחוק את הגיליון "${name}"?`)) {
-      localStorage.removeItem(`luckysheet-saved-${name}`);
-      setSavedSheets(prev => prev.filter(s => s !== name));
+  const deleteSheet = (sheetId: string) => {
+    if (confirm(`האם אתה בטוח שברצונך למחוק את הגיליון "${sheetId}"?`)) {
+      localStorage.removeItem(`excel-sheet-${sheetId}`);
+      setSavedSheets(prev => prev.filter(s => s !== sheetId));
     }
   };
 
-  // Export to Excel
-  const exportToExcel = () => {
-    if (window.luckysheet && window.luckysheet.exportLuckyToExcel) {
-      try {
-        window.luckysheet.exportLuckyToExcel('גיליון-חישובים-משפחתי.xlsx');
-      } catch (error) {
-        alert('❌ שגיאה בייצוא לאקסל');
-      }
-    }
-  };
-
-  // Create new sheet
   const createNewSheet = () => {
-    if (confirm('האם אתה בטוח שברצונך ליצור גיליון חדש? (הנתונים הנוכחיים יאבדו)')) {
-      localStorage.removeItem('luckysheet-data');
-      window.location.reload();
+    if (confirm('האם אתה בטוח שברצונך ליצור גיליון חדש?')) {
+      const newSheet = createDefaultSheet();
+      newSheet.id = `sheet-${Date.now()}`;
+      newSheet.name = 'גיליון חדש';
+      setSheets([newSheet]);
+      setActiveSheetId(newSheet.id);
     }
   };
 
-  if (error) {
+  const exportToCSV = () => {
+    const activeSheet = sheets.find(s => s.id === activeSheetId);
+    if (!activeSheet) return;
+
+    const csvContent = activeSheet.data
+      .map(row => 
+        row.map(cell => {
+          const value = cell.value.toString();
+          return value.includes(',') ? `"${value}"` : value;
+        }).join(',')
+      )
+      .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${activeSheet.name}.csv`;
+    link.click();
+  };
+
+  const formatCellValue = (cell: Cell): string => {
+    if (cell.type === 'number') {
+      return typeof cell.value === 'number' ? cell.value.toLocaleString('he-IL') : cell.value.toString();
+    }
+    return cell.value.toString();
+  };
+
+  const getCellStyle = (row: number, col: number): string => {
+    if (row === 0) return 'bg-blue-100 font-bold text-blue-800'; // Header row
+    if (row === 5 && col <= 2) return 'bg-green-100 font-bold text-green-800'; // Result row
+    return 'bg-white hover:bg-gray-50';
+  };
+
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center max-w-md">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
-            <FileSpreadsheet size={48} className="mx-auto text-red-400 mb-4" />
-            <h2 className="text-xl font-bold text-red-800 mb-2">שגיאה בטעינת Excel</h2>
-            <p className="text-red-700 mb-4">{error}</p>
-            <button
-              onClick={() => window.location.reload()}
-              className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
-            >
-              נסה שוב
-            </button>
-          </div>
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">טוען גיליון אלקטרוני...</h2>
+          <p className="text-gray-600">מכין את הרכיב עבורך...</p>
         </div>
       </div>
     );
   }
+
+  const activeSheet = sheets.find(s => s.id === activeSheetId);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -333,14 +325,16 @@ const Excel: React.FC = () => {
               <FileSpreadsheet size={28} className="text-green-600" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">גיליון אלקטרוני</h1>
-                <p className="text-gray-600">חישובים משפחתיים ותכנון תקציב</p>
+                <p className="text-gray-600">
+                  {activeSheet ? `עובד על: ${activeSheet.name}` : 'חישובים משפחתיים ותכנון תקציב'}
+                </p>
               </div>
             </div>
 
             {/* כלי עבודה */}
             <div className="flex items-center gap-2">
               <button
-                onClick={saveData}
+                onClick={() => saveCurrentSheet()}
                 className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 text-sm"
                 title="שמירה מהירה"
               >
@@ -358,12 +352,12 @@ const Excel: React.FC = () => {
               </button>
 
               <button
-                onClick={exportToExcel}
+                onClick={exportToCSV}
                 className="bg-emerald-600 text-white px-3 py-2 rounded-lg hover:bg-emerald-700 transition-colors flex items-center gap-2 text-sm"
-                title="ייצוא לאקסל"
+                title="ייצוא ל-CSV"
               >
                 <Download size={16} />
-                ייצוא
+                ייצוא CSV
               </button>
 
               <button
@@ -382,17 +376,21 @@ const Excel: React.FC = () => {
             <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
               <h3 className="text-sm font-semibold text-gray-700 mb-2">גיליונות שמורים:</h3>
               <div className="flex flex-wrap gap-2">
-                {savedSheets.map(name => (
-                  <div key={name} className="flex items-center gap-1 bg-white border border-gray-200 rounded-md px-2 py-1">
+                {savedSheets.map(sheetId => (
+                  <div key={sheetId} className="flex items-center gap-1 bg-white border border-gray-200 rounded-md px-2 py-1">
                     <button
-                      onClick={() => loadSheet(name)}
-                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                      title={`טען גיליון: ${name}`}
+                      onClick={() => loadSheet(sheetId)}
+                      className={`text-sm font-medium ${
+                        activeSheetId === sheetId 
+                          ? 'text-green-700 bg-green-100 px-2 py-1 rounded' 
+                          : 'text-blue-600 hover:text-blue-800'
+                      }`}
+                      title={`טען גיליון: ${sheetId}`}
                     >
-                      📊 {name}
+                      📊 {sheetId}
                     </button>
                     <button
-                      onClick={() => deleteSheet(name)}
+                      onClick={() => deleteSheet(sheetId)}
                       className="text-red-500 hover:text-red-700 ml-1"
                       title="מחק גיליון"
                     >
@@ -405,62 +403,115 @@ const Excel: React.FC = () => {
           )}
         </div>
 
-        {/* Loading state */}
-        {isLoading && (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="w-16 h-16 border-4 border-green-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-              <h2 className="text-xl font-bold text-gray-800 mb-2">טוען גיליון אלקטרוני...</h2>
-              <p className="text-gray-600">אנא המתן בזמן טעינת הרכיב</p>
+        {/* הגיליון */}
+        {activeSheet && (
+          <div className="mx-4 mb-4 bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+            <div className="p-4 border-b border-gray-200 bg-gray-50">
+              <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+                <Calculator size={18} />
+                {activeSheet.name}
+              </h3>
+            </div>
+
+            <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <th className="w-12 h-8 bg-gray-100 border border-gray-300 text-xs font-medium text-gray-600"></th>
+                    {Array.from({ length: COLS }, (_, col) => (
+                      <th key={col} className="w-32 h-8 bg-gray-100 border border-gray-300 text-xs font-medium text-gray-600">
+                        {getColumnLabel(col)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: ROWS }, (_, row) => (
+                    <tr key={row}>
+                      <td className="w-12 h-8 bg-gray-100 border border-gray-300 text-xs font-medium text-gray-600 text-center">
+                        {row + 1}
+                      </td>
+                      {Array.from({ length: COLS }, (_, col) => {
+                        const cell = activeSheet.data[row][col];
+                        const isEditing = editingCell?.row === row && editingCell?.col === col;
+                        
+                        return (
+                          <td key={col} className={`w-32 h-8 border border-gray-300 p-1 ${getCellStyle(row, col)}`}>
+                            {isEditing ? (
+                              <div className="flex items-center gap-1">
+                                <input
+                                  ref={editInputRef}
+                                  type="text"
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  onKeyDown={handleKeyPress}
+                                  onBlur={handleCellSave}
+                                  className="w-full h-6 px-1 text-xs border border-blue-300 rounded focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
+                                />
+                                <button
+                                  onClick={handleCellSave}
+                                  className="text-green-600 hover:text-green-800"
+                                  title="שמירה"
+                                >
+                                  <Check size={12} />
+                                </button>
+                                <button
+                                  onClick={handleCellCancel}
+                                  className="text-red-600 hover:text-red-800"
+                                  title="ביטול"
+                                >
+                                  <X size={12} />
+                                </button>
+                              </div>
+                            ) : (
+                              <div
+                                onClick={() => handleCellClick(row, col)}
+                                className="w-full h-6 px-1 text-xs cursor-pointer flex items-center hover:bg-blue-50 rounded"
+                                title={cell.formula ? `נוסחה: ${cell.formula}` : `${getCellReference(row, col)}: ${cell.value}`}
+                              >
+                                {formatCellValue(cell)}
+                              </div>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
-
-        {/* Luckysheet Container */}
-        <div className="mx-4 mb-4">
-          <div 
-            id="luckysheet-container" 
-            ref={containerRef}
-            className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200"
-            style={{ 
-              height: 'calc(100vh - 200px)', 
-              minHeight: '600px',
-              display: isLoading ? 'none' : 'block'
-            }}
-          />
-        </div>
 
         {/* הוראות שימוש */}
-        {!isLoading && (
-          <div className="mx-4 mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
-              <Calculator size={20} />
-              הוראות שימוש
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-700">
-              <div>
-                <h4 className="font-semibold mb-2">פונקציות בסיסיות:</h4>
-                <ul className="space-y-1">
-                  <li>• <strong>=SUM(A1:A10)</strong> - סכום טווח</li>
-                  <li>• <strong>=AVERAGE(A1:A10)</strong> - ממוצע</li>
-                  <li>• <strong>=MAX(A1:A10)</strong> - ערך מקסימלי</li>
-                  <li>• <strong>=MIN(A1:A10)</strong> - ערך מינימלי</li>
-                  <li>• <strong>=COUNT(A1:A10)</strong> - ספירת תאים</li>
-                </ul>
-              </div>
-              <div>
-                <h4 className="font-semibold mb-2">טיפים:</h4>
-                <ul className="space-y-1">
-                  <li>• לחץ פעמיים על תא לעריכה</li>
-                  <li>• גרור לבחירת טווח תאים</li>
-                  <li>• Ctrl+C/V להעתקה והדבקה</li>
-                  <li>• הנתונים נשמרים אוטומטית</li>
-                  <li>• ניתן ליצור גרפים ותרשימים</li>
-                </ul>
-              </div>
+        <div className="mx-4 mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
+            <Calculator size={20} />
+            הוראות שימוש
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-blue-700">
+            <div>
+              <h4 className="font-semibold mb-2">נוסחאות בסיסיות:</h4>
+              <ul className="space-y-1">
+                <li>• <strong>=B2+B3</strong> - חיבור תאים</li>
+                <li>• <strong>=B2-B3</strong> - חיסור תאים</li>
+                <li>• <strong>=B2*B3</strong> - כפל תאים</li>
+                <li>• <strong>=B2/B3</strong> - חילוק תאים</li>
+                <li>• <strong>=B2+B3+B4</strong> - חיבור מספר תאים</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-2">טיפים:</h4>
+              <ul className="space-y-1">
+                <li>• לחץ על תא כדי לערוך אותו</li>
+                <li>• Enter לשמירה, Escape לביטול</li>
+                <li>• נוסחאות מתחילות ב-=</li>
+                <li>• הנתונים נשמרים אוטומטית</li>
+                <li>• ניתן לייצא ל-CSV</li>
+              </ul>
             </div>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
