@@ -104,7 +104,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse }) => {
                 <p className="text-xs text-emerald-600 font-medium">ניהול חכם</p>
               </div>
             </div>
-            <p className="text-sm text-gray-600">בחר עמוד לניווט</p>
           </>
         ) : (
           <div className="text-center">
