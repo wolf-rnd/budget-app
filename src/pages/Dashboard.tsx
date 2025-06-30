@@ -492,7 +492,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-screen-xl mx-auto space-y-6">
         {/* כפתורי פעולה עליונים */}
         <div className="dashboard-section">
           <TopActions
