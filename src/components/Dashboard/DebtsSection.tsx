@@ -141,12 +141,11 @@ const DebtsModal: React.FC<DebtsModalProps> = ({ isOpen, onClose, debts, onDelet
 };
 
 // רשימת חובות עם bullets
-const DebtsList = ({ debts, type, emptyMessage, onDeleteDebt, maxItems = 3 }: { 
+const DebtsList = ({ debts, type, emptyMessage, onDeleteDebt }: { 
   debts: Debt[], 
   type: 'owed_to_me' | 'i_owe',
   emptyMessage: string,
   onDeleteDebt: (id: string) => void,
-  maxItems?: number
 }) => {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('he-IL', {
@@ -157,13 +156,12 @@ const DebtsList = ({ debts, type, emptyMessage, onDeleteDebt, maxItems = 3 }: {
     }).format(amount);
   };
 
-  const displayDebts = debts.slice(0, maxItems);
 
   return (
     <div className="space-y-1">
-      {displayDebts.length > 0 ? (
+      {debts.length > 0 ? (
         <ul className="space-y-1">
-          {displayDebts.map(debt => (
+          {debts.map(debt => (
             <li key={debt.id} className="group flex items-start gap-2 py-1">
               {/* Bullet point - אדום לאני חייבת, ירוק לחייבים לי */}
               <div className={`w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 ${
@@ -274,6 +272,28 @@ const AddDebtForm = ({
   );
 };
 
+  /**
+   * Renders a section that shows debts owed to and by the user.
+   * 
+   * The component renders two columns: one for debts owed to the user,
+   * and one for debts owed by the user. Each column contains a list
+   * of debts, and a form to add a new debt. The form includes fields
+   * for the debt amount, description, and an optional note.
+   * 
+   * When the user submits the form, the `onAddDebt` callback is called
+   * with the debt amount, description, note, and type (either
+   * "owed_to_me" or "i_owe").
+   * 
+   * The component also renders a button to view all debts, which opens
+   * a modal with a list of all debts. The user can delete debts from
+   * this modal.
+   * 
+   * @param {DebtsSectionProps} props - The component props.
+   * @param {Debt[]} props.debts - The list of debts to render.
+   * @param {(amount: number, description: string, note: string, type: 'owed_to_me' | 'i_owe') => void} props.onAddDebt - The callback to call when the user submits the debt form.
+   * @param {(debtId: string) => void} props.onDeleteDebt - The callback to call when the user deletes a debt.
+   * @returns {React.ReactElement} The rendered component.
+   */
 const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteDebt }) => {
   // State נפרד לכל סוג חוב
   const [owedToMeForm, setOwedToMeForm] = useState({
@@ -360,13 +380,12 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
             </div>
   
             <div className="flex-1 flex flex-col overflow-hidden">
-              <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+              <div style={{ maxHeight: '430px', overflowY: 'auto' }}>
                 <DebtsList 
                   debts={debtsOwedToMe} 
                   type="owed_to_me"
                   emptyMessage="אין חובות שחייבים לי"
                   onDeleteDebt={onDeleteDebt}
-                  maxItems={3}
                 />
               </div>
   
@@ -390,13 +409,12 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
             </div>
   
             <div className="flex-1 flex flex-col overflow-hidden">
-              <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+              <div style={{ maxHeight: '430px', overflowY: 'auto' }}>
                 <DebtsList 
                   debts={debtsIOwe} 
                   type="i_owe"
                   emptyMessage="אין חובות שאני חייבת"
                   onDeleteDebt={onDeleteDebt}
-                  maxItems={3}
                 />
               </div>
   
