@@ -43,7 +43,7 @@ function App() {
             <Route path="/income" element={<Income />} />
             <Route path="/charity" element={<Charity />} />
             <Route path="/funds" element={<Funds />} />
-            <Route path="/excel" element={<Excel />} />
+            {/* <Route path="/excel" element={<Excel />} /> */}
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </Layout>
