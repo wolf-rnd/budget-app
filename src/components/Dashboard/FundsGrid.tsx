@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Fund } from '../../types';
+import { GetFundRequest } from '../../services/fundsService';
 import { PlusCircle, Calendar, Wallet, TrendingUp, Gift, Coins, DollarSign, Target, Check, X } from 'lucide-react';
+import ColorBadge from '../UI/ColorBadge';
 
 interface FundsGridProps {
-  funds: Fund[];
+  funds: GetFundRequest[];
   currentDisplayMonth: number;
   onCloseDailyFund: (remainingAmount: number) => void;
   onAddMoneyToEnvelope: (amount: number) => void;
@@ -19,6 +20,7 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onClo
   const level1Funds = funds.filter(fund => fund.level === 1);
   const level2Funds = funds.filter(fund => fund.level === 2);
   const level3Funds = funds.filter(fund => fund.level === 3);
+  
   const formatCurrency = (amount: number | undefined | null): string => {
     if (amount === undefined || amount === null) return '0.00';
     return amount.toLocaleString('he-IL');
@@ -215,7 +217,14 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onClo
           <div key={fund.id} className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-200 hover:shadow-xl hover:border-indigo-300 transition-all duration-300">
             <div className="flex items-center gap-3 mb-6 pb-3 border-b border-gray-100">
               {getFundIcon(fund.name)}
-              <h3 className="text-lg font-bold text-gray-800">{fund.name}</h3>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-800">{fund.name}</h3>
+                {fund.color_class && (
+                  <ColorBadge color={fund.color_class} size="sm" className="mt-1">
+                    {fund.type === 'monthly' ? 'חודשי' : fund.type === 'annual' ? 'שנתי' : 'חיסכון'}
+                  </ColorBadge>
+                )}
+              </div>
             </div>
             
             <div className="grid grid-cols-3 gap-4">
@@ -256,7 +265,14 @@ const FundsGrid: React.FC<FundsGridProps> = ({ funds, currentDisplayMonth, onClo
           <div key={fund.id} className="bg-white rounded-xl shadow-lg p-6 border-2 border-gray-200 hover:shadow-xl hover:border-yellow-300 transition-all duration-300">
             <div className="flex items-center gap-3 mb-3">
               {getFundIcon(fund.name)}
-              <h3 className="text-lg font-bold text-gray-800">{fund.name}</h3>
+              <div className="flex-1">
+                <h3 className="text-lg font-bold text-gray-800">{fund.name}</h3>
+                {fund.color_class && (
+                  <ColorBadge color={fund.color_class} size="sm" className="mt-1">
+                    {fund.type === 'monthly' ? 'חודשי' : fund.type === 'annual' ? 'שנתי' : 'חיסכון'}
+                  </ColorBadge>
+                )}
+              </div>
             </div>
             <div className="flex items-center justify-center gap-2">
               <DollarSign size={20} className="text-yellow-600" />

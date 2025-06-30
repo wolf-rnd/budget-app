@@ -3,30 +3,31 @@ import { apiClient } from './apiClient';
 
 export interface GetCategoryRequest {
   fund: string;
-  color_class: string;
+  color_class: string | null; // צבע HEX שמגיע מהשרת
   created_at: string;
   fund_id: string;
   funds: {
     name: string;
     type: string;
-    color_class: string;
+    color_class: string | null;
   };
   id: string;
   is_active: boolean;
   name: string;
   updated_at: string;
   user_id: string;
-
 }
 
 export interface CreateCategoryRequest {
   name: string;
   fund_id: string;
+  color_class?: string | null; // צבע HEX אופציונלי
 }
 
 export interface UpdateCategoryRequest {
   name?: string;
   fund_id?: string;
+  color_class?: string | null;
 }
 
 class CategoriesService {

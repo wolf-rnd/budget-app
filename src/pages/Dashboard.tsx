@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Fund, Income, Expense, TitheGiven, Debt, Task, AssetSnapshot, Category, BudgetYear, FundBudget } from '../types';
 import TopActions from '../components/Dashboard/TopActions';
 
@@ -8,7 +8,7 @@ import TitheSection from '../components/Dashboard/TitheSection';
 import DebtsSection from '../components/Dashboard/DebtsSection';
 import TasksSection from '../components/Dashboard/TasksSection';
 import AssetsSection from '../components/Dashboard/AssetsSection';
-import QuickAddButtons from '../components/Dashboard/QuickAddButtons';
+import NotesSection, { Note } from '../components/Dashboard/NotesSection';
 import IncomeModal from '../components/Modals/IncomeModal';
 import ExpenseModal from '../components/Modals/ExpenseModal';
 import { useNotifications } from '../components/Notifications/NotificationSystem';
@@ -34,14 +34,14 @@ import { debtsService } from '../services/debtsService';
 import { tasksService } from '../services/tasksService';
 import { assetsService } from '../services/assetsService';
 import { categoriesService, GetCategoryRequest } from '../services/categoriesService';
-import { fundsService } from '../services/fundsService';
+import { fundsService, GetFundRequest } from '../services/fundsService';
 import { apiClient } from '../services/apiClient';
 
 const Dashboard: React.FC = () => {
   // State management
   const [budgetYears, setBudgetYears] = useState<BudgetYear[]>([]);
   const [selectedBudgetYear, setSelectedBudgetYear] = useState<BudgetYear | null>(null);
-  const [funds, setFunds] = useState<Fund[]>([]);
+  const [funds, setFunds] = useState<GetFundRequest[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [titheGiven, setTitheGiven] = useState<TitheGiven[]>([]);
@@ -49,25 +49,31 @@ const Dashboard: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [assetSnapshots, setAssetSnapshots] = useState<AssetSnapshot[]>([]);
   const [categories, setCategories] = useState<GetCategoryRequest[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   const [isIncomeModalOpen, setIsIncomeModalOpen] = useState(false);
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false);
   const [currentDisplayMonth, setCurrentDisplayMonth] = useState<number>(new Date().getMonth() + 1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dataLoaded, setDataLoaded] = useState(false);
+  const [expenseId, setExpenseId] = useState<string>("");
 
   const { addNotification } = useNotifications();
 
-  // Setup API client notification callback
+  // Setup API client notification callback - רק פעם אחת
   useEffect(() => {
     apiClient.setNotificationCallback(addNotification);
   }, [addNotification]);
 
-  // טעינת כל הדאטה הראשונית (כולל בחירת שנת תקציב)
+  // טעינת כל הדאטה הראשונית - עם מניעת קריאות כפולות
   useEffect(() => {
+    if (dataLoaded) return; // מניעת טעינה כפולה
+    
     const loadInitialData = async () => {
       setLoading(true);
       setError(null);
       try {
+        // טעינה מקבילה של כל הנתונים הבסיסיים
         const [
           budgetYearsData,
           incomesData,
@@ -87,6 +93,8 @@ const Dashboard: React.FC = () => {
           assetsService.getAllAssetSnapshots(),
           categoriesService.getAllCategories()
         ]);
+
+        // עדכון State בבת אחת
         setBudgetYears(budgetYearsData);
         setIncomes(incomesData);
         setExpenses(expensesData);
@@ -96,78 +104,119 @@ const Dashboard: React.FC = () => {
         setAssetSnapshots(assetsData);
         setCategories(categoriesData);
 
+        // טעינת פתקים (mock data לעת עתה)
+        setNotes([
+          {
+            id: '1',
+            title: 'חישובים',
+            content: '1000 + 500 = 1500\nתקציב חודשי: 3000\nנותר: 1500',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        ]);
+
         // הגדרת שנת תקציב ראשונית
         const savedBudgetYearId = localStorage.getItem('selectedBudgetYearId');
         let initialBudgetYear: BudgetYear | null = null;
         initialBudgetYear = budgetYearsData.find(year => year.id === savedBudgetYearId) || null;
         initialBudgetYear = initialBudgetYear || getActiveBudgetYear(budgetYearsData) || getLatestBudgetYear(budgetYearsData);
         setSelectedBudgetYear(initialBudgetYear);
+
+        setDataLoaded(true); // סימון שהנתונים נטענו
       } catch (err) {
         setError('שגיאה בטעינת נתוני הדשבורד');
+        console.error('Dashboard data loading error:', err);
       } finally {
         setLoading(false);
       }
     };
-    loadInitialData();
-  }, []);
 
-  // טען רק funds בכל החלפת שנת תקציב
+    loadInitialData();
+  }, [dataLoaded]); // תלות ב-dataLoaded למניעת קריאות כפולות
+
+  // טען רק funds בכל החלפת שנת תקציב - עם מניעת קריאות כפולות
   useEffect(() => {
+    if (!selectedBudgetYear || !dataLoaded) return;
+    
+    let isMounted = true; // מניעת race conditions
+    
     const loadFunds = async () => {
-      if (!selectedBudgetYear) return;
-      setLoading(true);
-      setError(null);
       try {
         const fundsData = await fundsService.getAllFunds(selectedBudgetYear.id);
-        setFunds(fundsData);
+        if (isMounted) {
+          setFunds(fundsData);
+        }
       } catch (err) {
-        setError('שגיאה בטעינת קופות');
-      } finally {
-        setLoading(false);
+        if (isMounted) {
+          setError('שגיאה בטעינת קופות');
+          console.error('Funds loading error:', err);
+        }
       }
     };
-    loadFunds();
-  }, [selectedBudgetYear]);
 
-  // Save selected budget year to localStorage
+    loadFunds();
+    
+    return () => {
+      isMounted = false; // cleanup
+    };
+  }, [selectedBudgetYear?.id, dataLoaded]);
+
+  // Save selected budget year to localStorage - עם מניעת עדכונים מיותרים
   useEffect(() => {
-    if (selectedBudgetYear) {
+    if (selectedBudgetYear && dataLoaded) {
       localStorage.setItem('selectedBudgetYearId', selectedBudgetYear.id);
     }
-  }, [selectedBudgetYear]);
+  }, [selectedBudgetYear?.id, dataLoaded]);
 
-  // Calculate data based on selected budget year
-  const currentBudgetYearIncomes = selectedBudgetYear ? filterIncomesByBudgetYear(incomes, selectedBudgetYear) : [];
-  const currentBudgetYearExpenses = selectedBudgetYear ? filterExpensesByBudgetYear(expenses, selectedBudgetYear) : [];
-  const allIncomesForTithe = getAllIncomesForTithe(incomes);
+  // Calculate data based on selected budget year - מחושב רק כשצריך
+  const currentBudgetYearIncomes = React.useMemo(() => 
+    selectedBudgetYear ? filterIncomesByBudgetYear(incomes, selectedBudgetYear) : []
+  , [incomes, selectedBudgetYear]);
 
-  // Calculate totals
-  const totalBudget = funds
-    .filter(fund => fund.include_in_budget)
-    .reduce((sum, fund) => {
-      return sum + (fund.type === 'monthly' ? fund.amount * 12 : fund.amount);
-    }, 0);
+  const currentBudgetYearExpenses = React.useMemo(() => 
+    selectedBudgetYear ? filterExpensesByBudgetYear(expenses, selectedBudgetYear) : []
+  , [expenses, selectedBudgetYear]);
 
-  const totalIncome = currentBudgetYearIncomes.reduce((sum, income) => sum + income.amount, 0);
-  const totalExpenses = currentBudgetYearExpenses.reduce((sum, expense) => sum + expense.amount, 0);
-  const totalIncomesForTithe = allIncomesForTithe.reduce((sum, income) => sum + income.amount, 0);
+  const allIncomesForTithe = React.useMemo(() => 
+    getAllIncomesForTithe(incomes)
+  , [incomes]);
 
-  // Handlers
-  const handleBudgetYearChange = (year: BudgetYear) => {
+  // Calculate totals - מחושב רק כשצריך
+  const totalBudget = React.useMemo(() => 
+    funds
+      .filter(fund => fund.include_in_budget)
+      .reduce((sum, fund) => {
+        return sum + (fund.type === 'monthly' ? fund.amount * 12 : fund.amount);
+      }, 0)
+  , [funds]);
+
+  const totalIncome = React.useMemo(() => 
+    currentBudgetYearIncomes.reduce((sum, income) => sum + income.amount, 0)
+  , [currentBudgetYearIncomes]);
+
+  const totalExpenses = React.useMemo(() => 
+    currentBudgetYearExpenses.reduce((sum, expense) => sum + expense.amount, 0)
+  , [currentBudgetYearExpenses]);
+
+  const totalIncomesForTithe = React.useMemo(() => 
+    allIncomesForTithe.reduce((sum, income) => sum + income.amount, 0)
+  , [allIncomesForTithe]);
+
+  // Handlers - עם useCallback למניעת re-renders מיותרים
+  const handleBudgetYearChange = useCallback((year: BudgetYear) => {
     const selectedYear = budgetYears.find(y => y.id === year.id) || null;
     setSelectedBudgetYear(selectedYear);
-    // טעינת קופות תתבצע אוטומטית דרך useEffect
-  };
+  }, [budgetYears]);
 
-  const handleAddExpense = () => {
+  const handleAddExpense = useCallback(() => {
     setIsExpenseModalOpen(true);
-  };
+  }, []);
 
-  const handleAddIncome = () => {
+  const handleAddIncome = useCallback(() => {
     setIsIncomeModalOpen(true);
-  };
+  }, []);
 
-  const handleIncomeModalSubmit = async (newIncome: {
+  const handleIncomeModalSubmit = useCallback(async (newIncome: {
     name: string;
     amount: number;
     date: string;
@@ -186,7 +235,7 @@ const Dashboard: React.FC = () => {
       };
 
       const createdIncome = await incomesService.createIncome(incomeData);
-      setIncomes([...incomes, createdIncome]);
+      setIncomes(prev => [...prev, createdIncome]);
 
       if (ENV.DEV_MODE) {
         console.log('הכנסה חדשה נוספה:', createdIncome);
@@ -196,12 +245,12 @@ const Dashboard: React.FC = () => {
         console.error('Failed to create income:', error);
       }
     }
-  };
+  }, []);
 
-  const handleExpenseModalSubmit = async (newExpense: CreateExpenseRequest) => {
+  const handleExpenseModalSubmit = useCallback(async (newExpense: CreateExpenseRequest) => {
     try {
       const createdExpense = await expensesService.createExpense(newExpense);
-      setExpenses([...expenses, createdExpense]);
+      setExpenses(prev => [...prev, createdExpense]);
 
       if (ENV.DEV_MODE) {
         console.log('הוצאה חדשה נוספה:', createdExpense);
@@ -211,13 +260,12 @@ const Dashboard: React.FC = () => {
         console.error('Failed to create expense:', error);
       }
     }
-  };
+  }, []);
 
-  const handleCloseDailyFund = async (remainingAmount: number) => {
+  const handleCloseDailyFund = useCallback(async (remainingAmount: number) => {
     if (!selectedBudgetYear) return;
 
     try {
-      // כאן נוכל להוסיף קריאה ל-API לעדכון הקופות
       if (ENV.DEV_MODE) {
         console.log(`סגירת חודש: ${remainingAmount} ש"ח נותר במעטפה`);
       }
@@ -226,13 +274,12 @@ const Dashboard: React.FC = () => {
         console.error('Failed to close daily fund:', error);
       }
     }
-  };
+  }, [selectedBudgetYear]);
 
-  const handleAddMoneyToEnvelope = async (amount: number) => {
+  const handleAddMoneyToEnvelope = useCallback(async (amount: number) => {
     if (!selectedBudgetYear) return;
 
     try {
-      // כאן נוכל להוסיף קריאה ל-API לעדכון הקופות
       if (ENV.DEV_MODE) {
         console.log(`נוסף ${amount} ש"ח למעטפה בחודש ${getMonthName(currentDisplayMonth)}`);
       }
@@ -241,9 +288,9 @@ const Dashboard: React.FC = () => {
         console.error('Failed to add money to envelope:', error);
       }
     }
-  };
+  }, [selectedBudgetYear, currentDisplayMonth]);
 
-  const handleAddTithe = async (amount: number, description: string) => {
+  const handleAddTithe = useCallback(async (amount: number, description: string) => {
     try {
       const titheData = {
         description,
@@ -253,15 +300,15 @@ const Dashboard: React.FC = () => {
       };
 
       const createdTithe = await titheService.createTithe(titheData);
-      setTitheGiven([...titheGiven, createdTithe]);
+      setTitheGiven(prev => [...prev, createdTithe]);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create tithe:', error);
       }
     }
-  };
+  }, []);
 
-  const handleAddDebt = async (amount: number, description: string, note: string = '', type: 'owed_to_me' | 'i_owe' = 'i_owe') => {
+  const handleAddDebt = useCallback(async (amount: number, description: string, note: string = '', type: 'owed_to_me' | 'i_owe' = 'i_owe') => {
     try {
       const debtData = {
         description,
@@ -271,65 +318,65 @@ const Dashboard: React.FC = () => {
       };
 
       const createdDebt = await debtsService.createDebt(debtData);
-      setDebts([...debts, createdDebt]);
+      setDebts(prev => [...prev, createdDebt]);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create debt:', error);
       }
     }
-  };
+  }, []);
 
-  const handleDeleteDebt = async (id: string) => {
+  const handleDeleteDebt = useCallback(async (id: string) => {
     try {
       await debtsService.deleteDebt(id);
-      setDebts(debts.filter(debt => debt.id !== id));
+      setDebts(prev => prev.filter(debt => debt.id !== id));
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to delete debt:', error);
       }
     }
-  };
+  }, []);
 
-  const handleAddTask = async (description: string, important: boolean = false) => {
+  const handleAddTask = useCallback(async (title: string, important: boolean = false) => {
     try {
       const taskData = {
-        description,
+        title,
         important,
         completed: false
       };
 
       const createdTask = await tasksService.createTask(taskData);
-      setTasks([...tasks, createdTask]);
+      setTasks(prev => [...prev, createdTask]);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create task:', error);
       }
     }
-  };
+  }, []);
 
-  const handleUpdateTask = async (id: string, updates: Partial<Task>) => {
+  const handleUpdateTask = useCallback(async (id: string, updates: Partial<Task>) => {
     try {
       const updatedTask = await tasksService.updateTask(id, updates);
-      setTasks(tasks.map(task => task.id === id ? updatedTask : task));
+      setTasks(prev => prev.map(task => task.id === id ? updatedTask : task));
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to update task:', error);
       }
     }
-  };
+  }, []);
 
-  const handleDeleteTask = async (id: string) => {
+  const handleDeleteTask = useCallback(async (id: string) => {
     try {
       await tasksService.deleteTask(id);
-      setTasks(tasks.filter(task => task.id !== id));
+      setTasks(prev => prev.filter(task => task.id !== id));
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to delete task:', error);
       }
     }
-  };
+  }, []);
 
-  const handleAddAssetSnapshot = async (assets: Record<string, number>, liabilities: Record<string, number>, note: string) => {
+  const handleAddAssetSnapshot = useCallback(async (assets: Record<string, number>, liabilities: Record<string, number>, note: string) => {
     try {
       const snapshotData = {
         assets,
@@ -339,21 +386,66 @@ const Dashboard: React.FC = () => {
       };
 
       const createdSnapshot = await assetsService.createAssetSnapshot(snapshotData);
-      setAssetSnapshots([createdSnapshot, ...assetSnapshots]);
+      setAssetSnapshots(prev => [createdSnapshot, ...prev]);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create asset snapshot:', error);
       }
     }
-  };
+  }, []);
 
-  const getMonthName = (monthNumber: number) => {
+  // Notes handlers
+  const handleAddNote = useCallback(async (title: string, content: string) => {
+    try {
+      // TODO: Replace with API call when notes service is ready
+      const newNote: Note = {
+        id: Date.now().toString(),
+        title,
+        content,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      setNotes(prev => [...prev, newNote]);
+    } catch (error) {
+      if (ENV.DEV_MODE) {
+        console.error('Failed to create note:', error);
+      }
+    }
+  }, []);
+
+  const handleUpdateNote = useCallback(async (id: string, title: string, content: string) => {
+    try {
+      // TODO: Replace with API call when notes service is ready
+      setNotes(prev => prev.map(note => 
+        note.id === id 
+          ? { ...note, title, content, updated_at: new Date().toISOString() }
+          : note
+      ));
+    } catch (error) {
+      if (ENV.DEV_MODE) {
+        console.error('Failed to update note:', error);
+      }
+    }
+  }, []);
+
+  const handleDeleteNote = useCallback(async (id: string) => {
+    try {
+      // TODO: Replace with API call when notes service is ready
+      setNotes(prev => prev.filter(note => note.id !== id));
+    } catch (error) {
+      if (ENV.DEV_MODE) {
+        console.error('Failed to delete note:', error);
+      }
+    }
+  }, []);
+
+  const getMonthName = useCallback((monthNumber: number) => {
     const months = [
       'ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני',
       'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'
     ];
     return months[monthNumber - 1] || '';
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -400,75 +492,111 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
-      <div className="max-w-7xl mx-auto">
-        <TopActions
-          selectedBudgetYear={selectedBudgetYear}
-          budgetYears={budgetYears}
-          onBudgetYearChange={handleBudgetYearChange}
-          onAddExpense={handleAddExpense}
-          onAddIncome={handleAddIncome}
-        />
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-          <TitheSection
-            totalIncome={totalIncomesForTithe}
-            tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
-            titheGiven={titheGiven}
-            onAddTithe={handleAddTithe}
-          />
-
-          <DebtsSection
-            debts={debts}
-            onAddDebt={handleAddDebt}
-            onDeleteDebt={handleDeleteDebt}
-          />
-
-          <TasksSection
-            tasks={tasks}
-            onAddTask={handleAddTask}
-            onUpdateTask={handleUpdateTask}
-            onDeleteTask={handleDeleteTask}
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* כפתורי פעולה עליונים */}
+        <div className="dashboard-section">
+          <TopActions
+            selectedBudgetYear={selectedBudgetYear}
+            budgetYears={budgetYears}
+            onBudgetYearChange={handleBudgetYearChange}
+            onAddExpense={handleAddExpense}
+            onAddIncome={handleAddIncome}
           />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
-              מצב קופות - {selectedBudgetYear?.name}
-            </h2>
-            {/* to do print to screen the funds */}
-            <FundsGrid
-              funds={funds}
-              onCloseDailyFund={handleCloseDailyFund}
-              onAddMoneyToEnvelope={handleAddMoneyToEnvelope}
-              currentDisplayMonth={currentDisplayMonth}
-              onMonthChange={setCurrentDisplayMonth}
+        {/* שורה ראשונה: תזכורות, מעשרות+פתקים, חובות */}
+        <div className="dashboard-section">
+          <div className="grid grid-cols-12 gap-6">
+            {/* עמודה שמאלית: תזכורות (צרה) */}
+            <div className="col-span-12 lg:col-span-4">
+              <div className="h-full">
+                <TasksSection
+                  tasks={tasks}
+                  onAddTask={handleAddTask}
+                  onUpdateTask={handleUpdateTask}
+                  onDeleteTask={handleDeleteTask}
+                />
+              </div>
+            </div>
+
+          
+            {/* עמודה ימנית: חובות (רחבה) */}
+            <div className="col-span-12 lg:col-span-4">
+              <div className="h-full">
+                <DebtsSection
+                  debts={debts}
+                  onAddDebt={handleAddDebt}
+                  onDeleteDebt={handleDeleteDebt}
+                />
+              </div>
+            </div>
+  {/* עמודה אמצעית: מעשרות ופתקים (מחולקת ל-2 שורות) */}
+            <div className="col-span-12 lg:col-span-4">
+              <div className="grid grid-rows-2 grid-rows-[255px_420px] gap-6 h-full">
+                {/* שורה עליונה: מעשרות */}
+                <div className="row-span-1 " >
+                  <TitheSection
+                    totalIncome={totalIncomesForTithe}
+                    tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
+                    titheGiven={titheGiven}
+                    onAddTithe={handleAddTithe}
+                  />
+                </div>
+
+                {/* שורה תחתונה: פתקים */}
+                <div className="row-span-1 " >
+                  <NotesSection
+                    notes={notes}
+                    onAddNote={handleAddNote}
+                    onUpdateNote={handleUpdateNote}
+                    onDeleteNote={handleDeleteNote}
+                  />
+                </div>
+              </div>
+            </div>
+
+
+          </div>
+        </div>
+
+        {/* שורה שנייה: קופות ותרשים */}
+        <div className="dashboard-section">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-800 mb-6 text-center">
+                מצב קופות - {selectedBudgetYear?.name}
+              </h2>
+              <FundsGrid
+                funds={funds}
+                onCloseDailyFund={handleCloseDailyFund}
+                onAddMoneyToEnvelope={handleAddMoneyToEnvelope}
+                currentDisplayMonth={currentDisplayMonth}
+                onMonthChange={setCurrentDisplayMonth}
+              />
+            </div>
+
+            <div>
+              <BudgetChart
+                totalBudget={totalBudget}
+                totalIncome={totalIncome}
+                totalExpenses={totalExpenses}
+                budgetYearMonths={selectedBudgetYear ? calculateBudgetYearMonths(selectedBudgetYear) : 12}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* שורה שלישית: נכסים */}
+        <div className="dashboard-section">
+          <div className="flex justify-center">
+            <AssetsSection
+              snapshots={assetSnapshots}
+              onAddSnapshot={handleAddAssetSnapshot}
             />
           </div>
-
-          <div>
-            <BudgetChart
-              totalBudget={totalBudget}
-              totalIncome={totalIncome}
-              totalExpenses={totalExpenses}
-              budgetYearMonths={selectedBudgetYear ? calculateBudgetYearMonths(selectedBudgetYear) : 12}
-            />
-          </div>
         </div>
 
-        <div className="flex justify-center">
-          <AssetsSection
-            snapshots={assetSnapshots}
-            onAddSnapshot={handleAddAssetSnapshot}
-          />
-        </div>
-
-        <QuickAddButtons
-          onAddTithe={handleAddTithe}
-          onAddDebt={handleAddDebt}
-          onAddTask={handleAddTask}
-        />
-
+        {/* מודלים */}
         <IncomeModal
           isOpen={isIncomeModalOpen}
           onClose={() => setIsIncomeModalOpen(false)}
@@ -479,6 +607,7 @@ const Dashboard: React.FC = () => {
           onClose={() => setIsExpenseModalOpen(false)}
           onAddExpense={handleExpenseModalSubmit}
           categories={categories}
+          expenseId={expenseId}
         />
       </div>
     </div>

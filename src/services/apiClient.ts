@@ -24,6 +24,7 @@ export class ApiClient {
   private retryAttempts: number = 2;
   private retryDelay: number = 1000;
   private notificationCallback?: (notification: any) => void;
+  private pendingRequests = new Map<string, Promise<any>>(); // מניעת קריאות כפולות
 
   constructor() {
     this.baseURL = ENV.API_BASE_URL;
@@ -47,14 +48,48 @@ export class ApiClient {
         title,
         message,
         status,
-        endpoint,
-        autoHide: type === 'success',
-        duration: type === 'error' ? 0 : 6000
+        endpoint
       });
     }
   }
 
+  private createRequestKey(endpoint: string, options: RequestInit): string {
+    const method = options.method || 'GET';
+    const body = options.body ? JSON.stringify(options.body) : '';
+    return `${method}:${endpoint}:${body}`;
+  }
+
   private async makeRequest<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    attempt: number = 1
+  ): Promise<ApiResponse<T>> {
+    const method = options.method || 'GET';
+    
+    // מניעת קריאות כפולות לבקשות POST/PUT/DELETE
+    if (['POST', 'PUT', 'DELETE'].includes(method)) {
+      const requestKey = this.createRequestKey(endpoint, options);
+      
+      if (this.pendingRequests.has(requestKey)) {
+        console.log(`Preventing duplicate ${method} request to ${endpoint}`);
+        return this.pendingRequests.get(requestKey);
+      }
+      
+      const requestPromise = this.executeRequest<T>(endpoint, options, attempt);
+      this.pendingRequests.set(requestKey, requestPromise);
+      
+      try {
+        const result = await requestPromise;
+        return result;
+      } finally {
+        this.pendingRequests.delete(requestKey);
+      }
+    }
+    
+    return this.executeRequest<T>(endpoint, options, attempt);
+  }
+
+  private async executeRequest<T>(
     endpoint: string,
     options: RequestInit = {},
     attempt: number = 1
@@ -109,17 +144,13 @@ export class ApiClient {
 
       const result = await response.json();
 
-      if (['POST', 'PUT', 'DELETE'].includes(options.method || 'GET')) {
-        const operationNames = {
-          'POST': 'נוצר',
-          'PUT': 'עודכן',
-          'DELETE': 'נמחק'
-        };
-
+      // הצגת נוטיפיקציית הצלחה רק לפעולות שינוי (לא לקריאה ולא ל-OPTIONS)
+      const method = options.method || 'GET';
+      if (['POST', 'PUT', 'DELETE'].includes(method) && method !== 'OPTIONS') {
         this.showNotification(
           'success',
           'פעולה הושלמה בהצלחה',
-          `הנתונים ${operationNames[options.method as keyof typeof operationNames]} בהצלחה`,
+          '',
           response.status,
           endpoint
         );

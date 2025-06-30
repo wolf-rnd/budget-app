@@ -36,7 +36,6 @@ export interface CreateExpenseRequest {
 
 
 export interface UpdateExpenseRequest {
-  id: string;
   name: string;
   amount: number;
   category_id: string;
@@ -57,6 +56,16 @@ export interface ExpenseFilters {
   search?: string;
   page?: number;
   limit?: number;
+  sort_field?: 'date' | 'name' | 'amount' | 'category' | 'fund';
+  sort_direction?: 'asc' | 'desc';
+}
+
+export interface ExpenseResponse {
+  data: Expense[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
 }
 
 export interface ExpenseSummary {
@@ -70,7 +79,7 @@ export interface ExpenseSummary {
 }
 
 class ExpensesService {
-  // GET /expenses - קבלת כל ההוצאות (עם פילטרים)
+  // GET /expenses - קבלת כל ההוצאות (עם פילטרים ו-pagination)
   async getAllExpenses(filters?: ExpenseFilters): Promise<Expense[]> {
     const params = new URLSearchParams();
 
@@ -84,6 +93,8 @@ class ExpensesService {
     if (filters?.search) params.append('search', filters.search);
     if (filters?.page) params.append('page', filters.page.toString());
     if (filters?.limit) params.append('limit', filters.limit.toString());
+    if (filters?.sort_field) params.append('sort_field', filters.sort_field);
+    if (filters?.sort_direction) params.append('sort_direction', filters.sort_direction);
 
     const queryString = params.toString();
     const endpoint = queryString ? `/expenses?${queryString}` : '/expenses';
@@ -117,6 +128,7 @@ class ExpensesService {
 
   // PUT /expenses/:id - עדכון הוצאה
   async updateExpense(id: string, data: UpdateExpenseRequest): Promise<Expense> {
+    console.log(`🔄 Updating expense ${id} with data:`, data);
     const response = await apiClient.put<Expense>(`/expenses/${id}`, data);
     return response.data;
   }

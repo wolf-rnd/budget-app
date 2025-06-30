@@ -12,6 +12,7 @@ interface ExpenseModalProps {
   onEditExpense?: (id: string, expense: UpdateExpenseRequest) => void;
   categories: GetCategoryRequest[];
   editingExpense?: UpdateExpenseRequest | null;
+  expenseId: string| null;
 }
 
 const ExpenseModal: React.FC<ExpenseModalProps> = ({
@@ -21,6 +22,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
   onEditExpense,
   categories,
   editingExpense,
+  expenseId
 }) => {
   const [name, setName] = useState(editingExpense?.name || '');
   const [amount, setAmount] = useState(editingExpense?.amount.toString() || '');
@@ -71,56 +73,40 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ודא ש-selectedBudgetYear קיים ב-props
-    // if (!selectedBudgetYear) {
-    //   alert('יש לבחור שנת תקציב');
-    //   return;
-    // }
-
-    // // הגנה נוספת: ודא של-selectedBudgetYear יש id
-    // if (!selectedBudgetYear.id) {
-    //   alert('שנת התקציב שנבחרה אינה תקינה');
-    //   return;
-    // }
-    const selectedCategoryObj = categories.find(cat => cat.name === selectedCategory);
-    const categoryId = selectedCategoryObj ? selectedCategoryObj.id : "";
-
-
     // שליפת מזהה שנת התקציב הנבחרת בצורה ריאקטיבית
-    // (הקומפוננטה תתעדכן אוטומטית אם הערך משתנה)
-  const selectedBudgetYearId = useBudgetYearStore(state => state.selectedBudgetYearId);
+    const selectedBudgetYearId = useBudgetYearStore(state => state.selectedBudgetYearId);
 
-    // יצירת אובייקט להוספה
-    const createExpenseData: CreateExpenseRequest = {
-      name: name.trim(),
-      amount: Number(cleanNumber(amount)),
-      budget_year_id: selectedBudgetYearId || "",
-      category_id: categoryId,
-      fund_id: selectedCategoryObj?.fund_id || "",
-      date,
-      note: note.trim() || undefined
-    };
+    if (editingExpense && onEditExpense) {
+      // עדכון הוצאה קיימת
+      const updateExpenseData: UpdateExpenseRequest = {
+        // ❌ הסרת ID מה-payload - הוא נשלח ב-URL
+        name: name.trim(),
+        amount: Number(cleanNumber(amount)),
+        category_id: selectedCategory,
+        fund_id: selectedFund,
+        date,
+        note: note.trim() || undefined,
+        budget_year_id: selectedBudgetYearId || undefined
+      };
 
-    // יצירת אובייקט לעדכון (כולל id)
-    const updateExpenseData: UpdateExpenseRequest | undefined = editingExpense ? {
-      id: editingExpense.id,
-      name: name.trim(),
-      amount: Number(cleanNumber(amount)),
-      budget_year_id: selectedBudgetYearId || "",
-      category_id: categoryId,
-      fund_id: selectedCategoryObj?.fund_id || "",
-      date,
-      note: note.trim() || undefined
-    } : undefined;
-
-    if (editingExpense && onEditExpense && updateExpenseData) {
-      onEditExpense(editingExpense.id, updateExpenseData);
+      console.log('🔄 Modal update data:', updateExpenseData);
+      onEditExpense(expenseId!, updateExpenseData);
     } else if (onAddExpense) {
+      // יצירת הוצאה חדשה
+      const createExpenseData: CreateExpenseRequest = {
+        name: name.trim(),
+        amount: Number(cleanNumber(amount)),
+        budget_year_id: selectedBudgetYearId || "",
+        category_id: selectedCategory,
+        fund_id: selectedFund,
+        date,
+        note: note.trim() || undefined
+      };
+
       onAddExpense(createExpenseData);
     }
     onClose();
   };
-
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
@@ -212,8 +198,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                   setSelectedCategory(e.target.value);
                   if (e.target.value) {
                     // אם בוחרים קטגוריה, קופה תתמלא אוטומטית
-                    const cat = categories.find(cat => cat.name === e.target.value);
-                    if (cat) setSelectedFund(cat.funds?.name || cat.fund || '');
+                    const cat = categories.find(cat => cat.id === e.target.value);
+                    if (cat) setSelectedFund(cat.fund_id);
                   }
                 }}
                 className="w-full p-3 border-2 border-amber-200 rounded-lg text-sm focus:border-amber-400 focus:ring-2 focus:ring-amber-200"
@@ -221,7 +207,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
               >
                 <option value="">בחר קטגוריה (לא חובה)</option>
                 {categories.map(category => (
-                  <option key={category.name} value={category.name}>
+                  <option key={category.id} value={category.id}>
                     {category.name} (מקופת: {category.funds?.name || category.fund})
                   </option>
                 ))}
@@ -238,8 +224,8 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 disabled={!!selectedCategory} // אם בחרו קטגוריה, הקופה נבחרת אוטומטית
               >
                 <option value="">בחר קופה</option>
-                {[...new Set(categories.map(cat => cat.funds?.name || cat.fund))].map(fundName => (
-                  <option key={fundName} value={fundName}>{fundName}</option>
+                {[...new Set(categories.map(cat => ({ id: cat.fund_id, name: cat.funds?.name || cat.fund })))].map(fund => (
+                  <option key={fund.id} value={fund.id}>{fund.name}</option>
                 ))}
               </select>
             </div>
@@ -272,16 +258,16 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             />
           </div>
 
-          {selectedCategory && (
+          {/* {selectedCategory && (
             <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
               <div className="flex items-center gap-2 mb-2">
                 <Tag size={16} className="text-amber-600" />
                 <span className="text-sm font-medium text-amber-800">
-                  הסכום יחוסר מקופת: {categories.find(cat => cat.name === selectedCategory)?.fund}
+                  הסכום יחוסר מקופת: {categories.find(cat => cat.id === selectedCategory)?.funds?.name || categories.find(cat => cat.id === selectedCategory)?.fund}
                 </span>
               </div>
             </div>
-          )}
+          )} */}
 
           <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
             <label className="flex items-center gap-2">

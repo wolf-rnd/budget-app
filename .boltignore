@@ -1,0 +1,59 @@
+# Node modules - תיקיית התלויות הכבדה
+node_modules/
+node_modules/**/*
+
+# Package lock files - קבצים כבדים של ניהול תלויות
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs - תוצרי בנייה
+dist/
+build/
+.next/
+.nuxt/
+
+# Environment files - קבצי סביבה
+.env
+.env.local
+.env.production.local
+
+# OnlyOffice Excel config - קובץ התצורה של Excel
+src/config/excelConfig.ts
+
+# Cache directories - תיקיות מטמון
+.cache/
+.vite/
+.turbo/
+
+# IDE files - קבצי עורכי קוד
+.vscode/
+.idea/
+*.swp
+
+# OS generated files - קבצי מערכת הפעלה
+.DS_Store
+Thumbs.db
+
+# Logs - קבצי לוג
+*.log
+npm-debug.log*
+
+# Large binary files - קבצים בינאריים כבדים
+*.exe
+*.zip
+*.tar.gz
+*.rar
+
+# Media files - קבצי מדיה כבדים
+*.mp4
+*.mp3
+*.wav
+
+# Database files - קבצי מסד נתונים
+*.db
+*.sqlite
+
+# Backup files - קבצי גיבוי
+*.bak
+*.backup

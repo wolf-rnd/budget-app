@@ -1,19 +1,22 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { X, TrendingUp, Plus, DollarSign, FileText, Building, ChevronDown, Calendar } from 'lucide-react';
+import { CreateIncomeRequest, UpdateIncomeRequest } from '../../services/incomesService';
 
 interface IncomeModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddIncome: (income: {
-    name: string;
-    amount: number;
-    date: string;
-    source?: string;
-    note?: string;
-  }) => void;
+  onAddIncome?: (income: CreateIncomeRequest) => void;
+  onEditIncome?: (id: string, income: UpdateIncomeRequest) => void;
+  editingIncome?: UpdateIncomeRequest | null;
 }
 
-const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome }) => {
+const IncomeModal: React.FC<IncomeModalProps> = ({
+  isOpen,
+  onClose,
+  onAddIncome,
+  onEditIncome,
+  editingIncome,
+}) => {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -48,6 +51,23 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
     }
   }, []);
 
+  // עדכון הטופס כשנפתח במצב עריכה
+  useEffect(() => {
+    if (editingIncome) {
+      setName(editingIncome.name || '');
+      setAmount(formatNumber(editingIncome.amount?.toString() || ''));
+      setDate(editingIncome.date || new Date().toISOString().split('T')[0]);
+      setSource(editingIncome.source || '');
+      setNote(editingIncome.note || '');
+    } else {
+      setName('');
+      setAmount('');
+      setDate(new Date().toISOString().split('T')[0]);
+      setSource('');
+      setNote('');
+    }
+  }, [editingIncome, isOpen]);
+
   // שמירת מקורות ב-localStorage
   const saveSource = (newSource: string) => {
     if (newSource.trim() && !savedSources.includes(newSource.trim())) {
@@ -74,18 +94,11 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
 
   // עיצוב מספרים עם פסיקים
   const formatNumber = (value: string) => {
-    // הסרת כל מה שאינו ספרה או נקודה
     const cleanValue = value.replace(/[^\d.]/g, '');
-    
-    // פיצול לחלק שלם ועשרוני
     const parts = cleanValue.split('.');
     const integerPart = parts[0];
     const decimalPart = parts[1];
-    
-    // הוספת פסיקים לחלק השלם
     const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-    
-    // החזרת המספר המעוצב
     return decimalPart !== undefined ? `${formattedInteger}.${decimalPart}` : formattedInteger;
   };
 
@@ -114,7 +127,6 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
   };
 
   const handleSourceBlur = (e: React.FocusEvent) => {
-    // עיכוב קטן כדי לאפשר לחיצה על הצעה
     setTimeout(() => {
       if (!suggestionsRef.current?.contains(e.relatedTarget as Node)) {
         setShowSuggestions(false);
@@ -129,14 +141,23 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
       if (source.trim()) {
         saveSource(source.trim());
       }
-      
-      onAddIncome({
+
+      const incomeDate = new Date(date);
+      const incomeData = {
         name: name.trim(),
         amount: Number(cleanNumber(amount)),
+        month: incomeDate.getMonth() + 1,
+        year: incomeDate.getFullYear(),
         date,
         source: source.trim() || undefined,
         note: note.trim() || undefined
-      });
+      };
+
+      if (editingIncome && onEditIncome) {
+        onEditIncome(editingIncome.id!, incomeData);
+      } else if (onAddIncome) {
+        onAddIncome(incomeData);
+      }
       
       // איפוס הטופס
       setName('');
@@ -156,7 +177,6 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
     }
   };
 
-  // סגירה בלחיצה על overlay
   const handleOverlayClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
       onClose();
@@ -164,6 +184,8 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
   };
 
   if (!isOpen) return null;
+
+  const isEditing = !!editingIncome;
 
   return (
     <div 
@@ -177,7 +199,9 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-3">
               <TrendingUp size={24} className="text-white" />
-              <h2 className="text-xl font-bold text-white">הוספת הכנסה חדשה</h2>
+              <h2 className="text-xl font-bold text-white">
+                {isEditing ? 'עריכת הכנסה' : 'הוספת הכנסה חדשה'}
+              </h2>
             </div>
             <button
               onClick={onClose}
@@ -322,7 +346,7 @@ const IncomeModal: React.FC<IncomeModalProps> = ({ isOpen, onClose, onAddIncome 
               className="bg-emerald-600 text-white px-6 py-2 rounded-lg text-sm hover:bg-emerald-700 transition-colors flex items-center gap-2 shadow-md"
             >
               <Plus size={16} />
-              הוספת הכנסה
+              {isEditing ? 'עדכון הכנסה' : 'הוספת הכנסה'}
             </button>
           </div>
         </form>

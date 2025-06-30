@@ -16,6 +16,7 @@ export interface Fund {
   spent?: number;
   categories: string[];
   budget_year_id?: string; // קישור לשנת תקציב
+  color_class?: string | null; // צבע HEX שמגיע מהשרת
 }
 
 export interface Income {
@@ -66,7 +67,7 @@ export interface Debt {
 
 export interface Task {
   id: string;
-  description: string;
+  title: string; // שונה מ-description ל-title
   completed: boolean;
   important: boolean;
 }
@@ -84,6 +85,7 @@ export interface AssetSnapshot {
 export interface Category {
   name: string;
   fund: string;
+  color_class?: string | null; // צבע HEX שמגיע מהשרת
 }
 
 export interface BudgetYear {
@@ -103,3 +105,12 @@ export interface FundBudget {
   spent?: number;
 }
 
+// הוספת interface לפתקים
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+  user_id: string;
+}

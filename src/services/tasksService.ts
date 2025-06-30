@@ -3,13 +3,13 @@ import { ENV } from '../config/env';
 import { apiClient } from './apiClient';
 
 export interface CreateTaskRequest {
-  description: string;
+  title: string;
   important?: boolean;
   completed?: boolean;
 }
 
 export interface UpdateTaskRequest {
-  description?: string;
+  title?: string;
   important?: boolean;
   completed?: boolean;
 }

@@ -8,7 +8,8 @@ import {
   Settings,
   ChevronRight,
   ChevronLeft,
-  Calculator
+  Calculator,
+  FileSpreadsheet
 } from 'lucide-react';
 import { ENV } from '../../config/env';
 import { NavLink, useLocation } from 'react-router-dom';
@@ -50,6 +51,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggleCollapse }) => {
       name: 'קופות',
       icon: Wallet,
       description: 'ניהול קופות ותקציבים'
+    },
+    {
+      id: 'excel',
+      name: 'Excel',
+      icon: FileSpreadsheet,
+      description: 'גיליון אלקטרוני לחישובים'
     },
     {
       id: 'settings',

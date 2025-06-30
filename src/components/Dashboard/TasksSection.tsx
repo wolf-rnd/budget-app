@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Plus, Check, Star, X, CheckCircle2, Undo2 } from 'lucide-react';
 import { Task } from '../../types';
 import { tasksService } from '../../services/tasksService';
 
 interface TasksSectionProps {
   tasks: Task[];
-  onAddTask: (description: string, important: boolean) => void;
+  onAddTask: (title: string, important: boolean) => void;
   onUpdateTask: (id: string, updates: Partial<Task>) => void;
   onDeleteTask: (id: string) => void;
 }
 
 interface UndoNotification {
   taskId: string;
-  taskDescription: string;
+  taskTitle: string;
   timeoutId: ReturnType<typeof setTimeout>;
 }
 
@@ -22,77 +22,85 @@ const TasksSection: React.FC<TasksSectionProps> = ({
   onUpdateTask: onUpdateTaskProp, 
   onDeleteTask: onDeleteTaskProp 
 }) => {
-  const [newTask, setNewTask] = useState('');
+  const [newTitle, setNewTitle] = useState('');
   const [undoNotification, setUndoNotification] = useState<UndoNotification | null>(null);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [loading, setLoading] = useState(false);
+  
+  // מניעת קריאות כפולות
+  const loadedRef = useRef(false);
+  const isCreatingRef = useRef(false);
 
-  // טעינת משימות מה-API בטעינה ראשונית
+  // טעינת משימות מה-API בטעינה ראשונית - רק פעם אחת
   useEffect(() => {
-    loadTasks();
-  }, []);
-
-  const loadTasks = async () => {
-    try {
-      setLoading(true);
-      const apiTasks = await tasksService.getAllTasks({ completed: false });
-      setTasks(apiTasks);
-    } catch (error) {
-      console.error('Failed to load tasks:', error);
-      // במקרה של שגיאה, נשתמש במשימות הראשוניות
-      setTasks(initialTasks);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddTask = async () => {
-    if (newTask.trim()) {
+    if (loadedRef.current) return;
+    
+    const loadTasks = async () => {
       try {
         setLoading(true);
-        const createdTask = await tasksService.createTask({
-          description: newTask.trim(),
-          important: false,
-          completed: false
-        });
-        
-        setTasks(prevTasks => [...prevTasks, createdTask]);
-        setNewTask('');
-        
-        // קריאה לפונקציה המקורית גם כן (לתאימות לאחור)
-        onAddTaskProp(newTask.trim(), false);
+        const apiTasks = await tasksService.getAllTasks({ completed: false });
+        setTasks(apiTasks);
+        loadedRef.current = true;
       } catch (error) {
-        console.error('Failed to create task:', error);
-        // במקרה של שגיאה, נשתמש בפונקציה המקורית
-        onAddTaskProp(newTask.trim(), false);
-        setNewTask('');
+        console.error('Failed to load tasks:', error);
+        setTasks(initialTasks);
       } finally {
         setLoading(false);
       }
-    }
-  };
+    };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+    loadTasks();
+  }, []); // ללא תלויות
+
+  // עדכון tasks כשמגיעים נתונים חדשים מהרכיב האב
+  useEffect(() => {
+    if (loadedRef.current) {
+      setTasks(initialTasks);
+    }
+  }, [initialTasks]);
+
+  const handleAddTask = useCallback(async () => {
+    if (!newTitle.trim() || isCreatingRef.current) return;
+    
+    isCreatingRef.current = true; // מניעת קריאות כפולות
+    
+    try {
+      setLoading(true);
+      const createdTask = await tasksService.createTask({
+        title: newTitle.trim(),
+        important: false,
+        completed: false
+      });
+      
+      setTasks(prevTasks => [...prevTasks, createdTask]);
+      setNewTitle('');
+      onAddTaskProp(newTitle.trim(), false);
+    } catch (error) {
+      console.error('Failed to create task:', error);
+      onAddTaskProp(newTitle.trim(), false);
+      setNewTitle('');
+    } finally {
+      setLoading(false);
+      isCreatingRef.current = false; // איפוס הדגל
+    }
+  }, [newTitle, onAddTaskProp]);
+
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       handleAddTask();
     }
-  };
+  }, [handleAddTask]);
 
-  const handleTaskCompletion = async (task: Task) => {
+  const handleTaskCompletion = useCallback(async (task: Task) => {
     if (!task.completed) {
       try {
         setLoading(true);
-        
-        // עדכון המשימה ל-completed = true
         const updatedTask = await tasksService.updateTask(task.id, { completed: true });
-        
-        // עדכון המצב המקומי
         setTasks(prevTasks => 
           prevTasks.map(t => t.id === task.id ? updatedTask : t)
         );
         
-        // יצירת טיימר של 3 שניות - אחרי זה המשימה נמחקת
         const timeoutId = setTimeout(async () => {
           try {
             await tasksService.deleteTask(task.id);
@@ -105,15 +113,13 @@ const TasksSection: React.FC<TasksSectionProps> = ({
 
         setUndoNotification({
           taskId: task.id,
-          taskDescription: task.description,
+          taskTitle: task.title,
           timeoutId
         });
 
-        // קריאה לפונקציה המקורית גם כן
         onUpdateTaskProp(task.id, { completed: true });
       } catch (error) {
         console.error('Failed to update task:', error);
-        // במקרה של שגיאה, נשתמש בפונקציה המקורית
         onUpdateTaskProp(task.id, { completed: true });
       } finally {
         setLoading(false);
@@ -133,9 +139,9 @@ const TasksSection: React.FC<TasksSectionProps> = ({
         setLoading(false);
       }
     }
-  };
+  }, [onUpdateTaskProp]);
 
-  const handleUpdateTask = async (id: string, updates: Partial<Task>) => {
+  const handleUpdateTask = useCallback(async (id: string, updates: Partial<Task>) => {
     try {
       setLoading(true);
       const updatedTask = await tasksService.updateTask(id, updates);
@@ -149,9 +155,9 @@ const TasksSection: React.FC<TasksSectionProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [onUpdateTaskProp]);
 
-  const handleDeleteTask = async (id: string) => {
+  const handleDeleteTask = useCallback(async (id: string) => {
     try {
       setLoading(true);
       await tasksService.deleteTask(id);
@@ -163,24 +169,19 @@ const TasksSection: React.FC<TasksSectionProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [onDeleteTaskProp]);
 
-  const handleUndo = async () => {
+  const handleUndo = useCallback(async () => {
     if (undoNotification) {
       try {
         setLoading(true);
-        // ביטול הסימון כבוצע
         const updatedTask = await tasksService.updateTask(undoNotification.taskId, { completed: false });
         setTasks(prevTasks => 
           prevTasks.map(t => t.id === undoNotification.taskId ? updatedTask : t)
         );
         
-        // ביטול הטיימר
         clearTimeout(undoNotification.timeoutId);
-        
-        // הסתרת הנוטיפיקציה
         setUndoNotification(null);
-        
         onUpdateTaskProp(undoNotification.taskId, { completed: false });
       } catch (error) {
         console.error('Failed to undo task completion:', error);
@@ -188,16 +189,15 @@ const TasksSection: React.FC<TasksSectionProps> = ({
         setLoading(false);
       }
     }
-  };
+  }, [undoNotification, onUpdateTaskProp]);
 
-  const handleCloseNotification = () => {
+  const handleCloseNotification = useCallback(() => {
     if (undoNotification) {
       clearTimeout(undoNotification.timeoutId);
       setUndoNotification(null);
     }
-  };
+  }, [undoNotification]);
 
-  // ניקוי טיימר בעת unmount
   useEffect(() => {
     return () => {
       if (undoNotification) {
@@ -206,169 +206,162 @@ const TasksSection: React.FC<TasksSectionProps> = ({
     };
   }, [undoNotification]);
 
-  // סינון המשימות - הסתרת משימות שמסומנות כבוצעות ויש להן נוטיפיקציה פעילה
   const visibleTasks = tasks.filter(task => {
     if (task.completed && undoNotification && undoNotification.taskId === task.id) {
-      return false; // הסתרת המשימה בזמן הנוטיפיקציה
+      return false;
     }
-    return !task.completed; // הצגת רק משימות שלא בוצעו
+    return !task.completed;
   });
 
   return (
-    <div className="relative bg-white rounded-xl shadow-lg p-4 border-r-4 border-purple-500 hover:shadow-xl transition-all duration-300 overflow-hidden">
-      {/* דגש עיצובי - פסים אלכסוניים עדינים */}
-      <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-purple-100/60 to-transparent rounded-bl-full"></div>
-      <div className="absolute top-0 right-0 w-10 h-10 bg-gradient-to-bl from-purple-200/40 to-transparent rounded-bl-full"></div>
+    <div 
+      className="relative bg-white rounded-xl  flex flex-col shadow-sm p-5 border-r-4 border-purple-400 hover:shadow-md transition-all duration-300"
+      style={{ height: '700px', overflow: 'hidden' }}
+    >
+      <div className="flex items-center justify-center gap-2 mb-5">
+        <CheckCircle2 size={18} className="text-violet-400" />
+        <h3 className="text-lg font-semibold text-gray-700">תזכורות</h3>
+        {loading && (
+          <div className="w-4 h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin"></div>
+        )}
+      </div>
       
-      <div className="relative z-10">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <CheckCircle2 size={18} className="text-purple-600" />
-          <h3 className="text-lg font-bold text-gray-800">תזכורות</h3>
-          {loading && (
-            <div className="w-4 h-4 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-          )}
-        </div>
-        
-        {/* רשימת המשימות - עיצוב משופר ללא רקע */}
-        <div className="space-y-2 max-h-32 overflow-y-auto mb-4">
-          {visibleTasks.length > 0 ? (
-            visibleTasks.map(task => (
-              <div 
-                key={task.id} 
-                className={`flex items-center gap-2 p-3 rounded-lg transition-all duration-300 min-w-0 ${
+      {/* רשימת המשימות */}
+      <div className="flex-1 overflow-y-auto" >
+        {visibleTasks.length > 0 ? (
+          visibleTasks.map(task => (
+            <div 
+              key={task.id} 
+              className={`group flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 ${
+                task.important
+                  ? 'bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200 shadow-sm'
+                  : 'bg-gray-50 border-gray-100 hover:bg-gray-100 hover:border-gray-200'
+              }`}
+            >
+              <button
+                onClick={() => handleTaskCompletion(task)}
+                disabled={loading}
+                className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
                   task.completed 
-                    ? 'bg-green-100 border-2 border-green-300' 
-                    : task.important
-                      ? 'bg-gradient-to-r from-yellow-200 via-amber-100 to-yellow-200 border-2 border-yellow-500 shadow-lg ring-2 ring-yellow-300/50 hover:ring-4 hover:ring-yellow-300/70 hover:shadow-xl'
-                      : 'bg-white border border-gray-200 hover:shadow-md hover:border-purple-300'
+                    ? 'bg-emerald-500 border-emerald-500 text-white' 
+                    : 'border-gray-300 hover:border-emerald-400 hover:bg-emerald-50'
+                } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                {task.completed && <Check size={12} />}
+              </button>
+              
+              <button
+                onClick={() => handleUpdateTask(task.id, { important: !task.important })}
+                disabled={loading}
+                className={`flex-shrink-0 transition-all duration-200 ${
+                  task.important 
+                    ? 'text-amber-500 scale-110' 
+                    : 'text-gray-300 hover:text-amber-400 hover:scale-105'
+                } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <Star 
+                  size={task.important ? 16 : 14} 
+                  fill={task.important ? 'currentColor' : 'none'} 
+                />
+              </button>
+              
+              <span className={`flex-1 transition-all break-words min-w-0 ${
+                task.completed 
+                  ? 'line-through text-gray-500 text-sm' 
+                  : task.important
+                    ? 'text-amber-800 font-semibold text-sm'
+                    : 'text-gray-700 text-sm'
+              }`}>
+                {task.title}
+              </span>
+              
+              <button
+                onClick={() => handleDeleteTask(task.id)}
+                disabled={loading}
+                className={`flex-shrink-0 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 p-1 rounded transition-all ${
+                  loading ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
-                <button
-                  onClick={() => handleTaskCompletion(task)}
-                  disabled={loading}
-                  className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${
-                    task.completed 
-                      ? 'bg-green-500 border-green-500 text-white' 
-                      : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
-                  } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {task.completed && <Check size={10} />}
-                </button>
-                
-                <button
-                  onClick={() => handleUpdateTask(task.id, { important: !task.important })}
-                  disabled={loading}
-                  className={`flex-shrink-0 transition-all duration-200 ${
-                    task.important 
-                      ? 'text-yellow-600 scale-125 drop-shadow-lg animate-pulse' 
-                      : 'text-gray-300 hover:text-yellow-500 hover:scale-110'
-                  } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  <Star 
-                    size={task.important ? 16 : 12} 
-                    fill={task.important ? 'currentColor' : 'none'} 
-                    className={task.important ? 'filter drop-shadow-md' : ''}
-                  />
-                </button>
-                
-                <span className={`flex-1 transition-all break-words min-w-0 ${
-                  task.completed 
-                    ? 'line-through text-gray-500 text-xs' 
-                    : task.important
-                      ? 'text-amber-900 font-black text-sm tracking-wide'
-                      : 'text-gray-800 text-xs'
-                }`}>
-                  {task.important && '⚡ '}
-                  {task.description}
-                  {task.important && ' ⚡'}
-                </span>
-                
-                <button
-                  onClick={() => handleDeleteTask(task.id)}
-                  disabled={loading}
-                  className={`flex-shrink-0 text-gray-400 hover:text-red-500 p-1 rounded-md hover:bg-red-50 transition-colors ${
-                    loading ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  <X size={12} />
-                </button>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-3 text-gray-600 bg-gray-50 rounded-lg border border-gray-200">
-              <CheckCircle2 size={14} className="mx-auto mb-1 opacity-50 text-purple-500" />
-              <p className="text-xs font-medium text-gray-600">אין משימות רשומות</p>
+                <X size={12} />
+              </button>
             </div>
-          )}
-        </div>
-
-        {/* שדה הוספה */}
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newTask}
-            onChange={(e) => setNewTask(e.target.value)}
-            onKeyDown={handleKeyPress}
-            disabled={loading}
-            placeholder="תיאור המשימה..."
-            className={`flex-1 p-2 border-2 border-gray-200 rounded-lg text-xs focus:border-purple-400 focus:ring-1 focus:ring-purple-200 transition-all bg-white ${
-              loading ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
-          />
-          
-          <button
-            onClick={handleAddTask}
-            disabled={!newTask.trim() || loading}
-            className={`flex-shrink-0 px-3 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center ${
-              newTask.trim() && !loading
-                ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-md hover:shadow-lg'
-                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            <Plus size={14} />
-          </button>
-        </div>
-
-        {/* נוטיפיקציה של ביטול */}
-        {undoNotification && (
-          <div className="absolute bottom-4 left-4 right-4 bg-green-600 text-white p-3 rounded-lg shadow-lg border-2 border-green-500 animate-slide-up">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <CheckCircle2 size={16} className="flex-shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium">המשימה הושלמה!</p>
-                  <p className="text-xs opacity-90 break-words">"{undoNotification.taskDescription}"</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <button
-                  onClick={handleUndo}
-                  disabled={loading}
-                  className={`bg-white text-green-600 px-2 py-1 rounded-md text-xs font-medium hover:bg-gray-100 transition-colors flex items-center gap-1 ${
-                    loading ? 'opacity-50 cursor-not-allowed' : ''
-                  }`}
-                >
-                  <Undo2 size={12} />
-                  ביטול
-                </button>
-                
-                <button
-                  onClick={handleCloseNotification}
-                  className="text-white hover:text-green-200 transition-colors"
-                >
-                  <X size={14} />
-                </button>
-              </div>
+          ))
+        ) : (
+          <div className="text-center py-6 text-gray-400">
+            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+              <CheckCircle2 size={14} className="text-gray-400" />
             </div>
-            
-            {/* פס התקדמות */}
-            <div className="mt-2 w-full bg-green-500 rounded-full h-1">
-              <div className="bg-white h-1 rounded-full animate-progress-bar"></div>
-            </div>
+            <p className="text-xs font-medium">אין משימות רשומות</p>
           </div>
         )}
       </div>
+
+      {/* טופס הוספה */}
+      <div className="space-y-3 p-3 bg-white border border-gray-100 rounded-lg mt-auto">
+        <textarea
+          value={newTitle}
+          onChange={(e) => setNewTitle(e.target.value)}
+          onKeyDown={handleKeyPress}
+          disabled={loading}
+          placeholder="תיאור המשימה..."
+          rows={2}
+          className={`w-full p-2 border border-gray-200 rounded-md text-sm bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all resize-none ${
+            loading ? 'opacity-50 cursor-not-allowed' : ''
+          }`}
+        />
+        
+        <button
+          onClick={handleAddTask}
+          disabled={!newTitle.trim() || loading}
+          className={`w-full py-2 rounded-md text-sm font-medium transition-all flex items-center justify-center gap-2 ${
+            newTitle.trim() && !loading
+              ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-sm hover:shadow-md'
+              : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+          }`}
+        >
+          <Plus size={14} />
+          הוספה
+        </button>
+      </div>
+
+      {/* נוטיפיקציה של ביטול */}
+      {undoNotification && (
+        <div className="absolute bottom-4 left-4 right-4 bg-emerald-500 text-white p-3 rounded-lg shadow-lg animate-slide-up">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <CheckCircle2 size={16} className="flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">המשימה הושלמה!</p>
+                <p className="text-xs opacity-90 break-words">"{undoNotification.taskTitle}"</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={handleUndo}
+                disabled={loading}
+                className={`bg-white text-emerald-600 px-2 py-1 rounded text-xs font-medium hover:bg-gray-100 transition-colors flex items-center gap-1 ${
+                  loading ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                <Undo2 size={12} />
+                ביטול
+              </button>
+              
+              <button
+                onClick={handleCloseNotification}
+                className="text-white hover:text-emerald-200 transition-colors"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+          
+          <div className="mt-2 w-full bg-emerald-400 rounded-full h-1">
+            <div className="bg-white h-1 rounded-full animate-progress-bar"></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
