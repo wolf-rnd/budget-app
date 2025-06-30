@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check, X } from 'lucide-react';
-import { TitheGiven, InlineEditState } from './types';
+import { InlineEditState } from './types';
+import { TitheGiven } from '../../services/titheService';
 
 interface InlineEditCellProps {
   tithe: TitheGiven;

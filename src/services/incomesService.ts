@@ -66,9 +66,9 @@ export interface IncomeSummary {
 
 class IncomesService {
   // GET /incomes - קבלת כל ההכנסות (עם פילטרים ו-pagination)
-  async getAllIncomes(filters?: IncomeFilters): Promise<IncomeResponse | Income[]> {
+  async getAllIncomes(filters?: IncomeFilters): Promise<Income[]> {
     const params = new URLSearchParams();
-    
+
     if (filters?.budget_year_id) params.append('budgetYearId', filters.budget_year_id);
     if (filters?.month) params.append('month', filters.month.toString());
     if (filters?.year) params.append('year', filters.year.toString());
@@ -79,8 +79,8 @@ class IncomesService {
 
     const queryString = params.toString();
     const endpoint = queryString ? `/incomes?${queryString}` : '/incomes';
-    
-    const response = await apiClient.get<IncomeResponse | Income[]>(endpoint);
+
+    const response = await apiClient.get<Income[]>(endpoint);
     return response.data;
   }
 

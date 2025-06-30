@@ -331,7 +331,7 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
     <>
       <div 
         className="bg-white rounded-xl shadow-sm p-4 border-r-4 border-orange-400 hover:shadow-md transition-all duration-300" 
-        style={{ height: '500px', overflow: 'hidden' }}
+        style={{ height: '700px', overflow: 'hidden' }}
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -349,7 +349,7 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
             </button>
           )}
         </div>
-
+  
         {/* שתי עמודות של חובות */}
         <div className="grid grid-cols-2 gap-3 h-full">
           {/* עמודה שמאלית - חייבים לי */}
@@ -358,54 +358,62 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
               <div className="w-2 h-2 bg-emerald-400 rounded-full"></div>
               <h4 className="text-xs font-medium text-gray-600">חייבים לי</h4>
             </div>
-            <div className="mb-3 flex-1" style={{ maxHeight: '150px', overflowY: 'auto' }}>
-              <DebtsList 
-                debts={debtsOwedToMe} 
-                type="owed_to_me"
-                emptyMessage="אין חובות שחייבים לי"
-                onDeleteDebt={onDeleteDebt}
-                maxItems={3}
-              />
-            </div>
-            <div className="mt-auto">
-              <AddDebtForm 
-                type="owed_to_me" 
-                form={owedToMeForm}
-                onUpdateForm={updateOwedToMeForm}
-                onAddDebt={() => handleAddDebt('owed_to_me')}
-                onKeyPress={(e) => handleKeyPress(e, 'owed_to_me')}
-              />
+  
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                <DebtsList 
+                  debts={debtsOwedToMe} 
+                  type="owed_to_me"
+                  emptyMessage="אין חובות שחייבים לי"
+                  onDeleteDebt={onDeleteDebt}
+                  maxItems={3}
+                />
+              </div>
+  
+              <div className="mt-auto pt-2">
+                <AddDebtForm 
+                  type="owed_to_me" 
+                  form={owedToMeForm}
+                  onUpdateForm={updateOwedToMeForm}
+                  onAddDebt={() => handleAddDebt('owed_to_me')}
+                  onKeyPress={(e) => handleKeyPress(e, 'owed_to_me')}
+                />
+              </div>
             </div>
           </div>
-
+  
           {/* עמודה ימנית - אני חייבת */}
           <div className="flex flex-col h-full">
             <div className="flex items-center gap-2 mb-2 pb-1 border-b border-gray-100">
               <div className="w-2 h-2 bg-red-400 rounded-full"></div>
               <h4 className="text-xs font-medium text-gray-600">אני חייבת</h4>
             </div>
-            <div className="mb-3 flex-1" style={{ maxHeight: '150px', overflowY: 'auto' }}>
-              <DebtsList 
-                debts={debtsIOwe} 
-                type="i_owe"
-                emptyMessage="אין חובות שאני חייבת"
-                onDeleteDebt={onDeleteDebt}
-                maxItems={3}
-              />
-            </div>
-            <div className="mt-auto">
-              <AddDebtForm 
-                type="i_owe" 
-                form={iOweForm}
-                onUpdateForm={updateIOweForm}
-                onAddDebt={() => handleAddDebt('i_owe')}
-                onKeyPress={(e) => handleKeyPress(e, 'i_owe')}
-              />
+  
+            <div className="flex-1 flex flex-col overflow-hidden">
+              <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                <DebtsList 
+                  debts={debtsIOwe} 
+                  type="i_owe"
+                  emptyMessage="אין חובות שאני חייבת"
+                  onDeleteDebt={onDeleteDebt}
+                  maxItems={3}
+                />
+              </div>
+  
+              <div className="mt-auto pt-2">
+                <AddDebtForm 
+                  type="i_owe" 
+                  form={iOweForm}
+                  onUpdateForm={updateIOweForm}
+                  onAddDebt={() => handleAddDebt('i_owe')}
+                  onKeyPress={(e) => handleKeyPress(e, 'i_owe')}
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
-
+  
       {/* Modal לכל החובות */}
       <DebtsModal
         isOpen={showAllModal}
@@ -415,6 +423,7 @@ const DebtsSection: React.FC<DebtsSectionProps> = ({ debts, onAddDebt, onDeleteD
       />
     </>
   );
+  
 };
 
 export default DebtsSection;

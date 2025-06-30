@@ -77,7 +77,7 @@ export const useExpenseData = () => {
 
       setCategories(categoriesData);
       setBudgetYears(budgetYearsData);
-      
+
       await loadExpensesPage(1, true);
       setDataLoaded(true);
     } catch (err) {
@@ -97,7 +97,7 @@ export const useExpenseData = () => {
     }
 
     console.log(`📥 Loading expenses page ${page}, reset: ${reset}`);
-    
+
     if (!reset) {
       isLoadingMoreRef.current = true;
     }
@@ -121,23 +121,24 @@ export const useExpenseData = () => {
       };
 
       const response = await expensesService.getAllExpenses(expenseFilters);
-      
+
       let expensesData: GetExpenseRequest[];
       let hasMoreData = false;
       let totalCount = 0;
 
-      if (response && typeof response === 'object' && 'data' in response) {
-        expensesData = response.data || [];
-        hasMoreData = response.hasMore || expensesData.length === ITEMS_PER_PAGE;
-        totalCount = response.total || 0;
-      } else {
-        expensesData = Array.isArray(response) ? response : [];
-        hasMoreData = expensesData.length === ITEMS_PER_PAGE;
-        totalCount = expensesData.length;
-      }
+      // if (response && typeof response === 'object' && 'data' in response) {
+      //   expensesData = response.data || [];
+      //   hasMoreData = response.hasMore || expensesData.length === ITEMS_PER_PAGE;
+      //   totalCount = response.total || 0;
+      // } else {
+      expensesData = Array.isArray(response) ? response : [];
+      hasMoreData = expensesData.length === ITEMS_PER_PAGE;
+      totalCount = expensesData.length;
+      // }
+
 
       console.log(`📊 Received ${expensesData.length} expenses, hasMore: ${hasMoreData}`);
-      
+
       if (reset) {
         setExpenses(expensesData);
       } else {
@@ -237,7 +238,7 @@ export const useExpenseData = () => {
 
     try {
       let updatedValue: any = inlineEdit.value;
-      
+
       if (inlineEdit.field === 'amount') {
         updatedValue = Number(inlineEdit.value);
         if (isNaN(updatedValue) || updatedValue <= 0) {
@@ -272,7 +273,7 @@ export const useExpenseData = () => {
 
       const updated = await expensesService.updateExpense(expense.id, updateData);
       setExpenses(expenses.map(exp => exp.id === expense.id ? updated : exp));
-      
+
       cancelInlineEdit();
       console.log('✅ הוצאה עודכנה:', updated);
     } catch (error) {
@@ -314,13 +315,12 @@ export const useExpenseData = () => {
   const getEditingExpense = useCallback((id: string): UpdateExpenseRequest | null => {
     const expense = expenses.find(exp => exp.id === id);
     if (!expense) return null;
-    
+
     // 🔧 תיקון: המרת שמות לIDים גם כאן
     const categoryId = findCategoryIdByName(expense.categories?.name || '');
     const fundId = findFundIdByName(expense.funds?.name || '');
-    
+
     return {
-      id: expense.id,
       name: expense.name,
       amount: expense.amount,
       category_id: categoryId, // 🔧 ID במקום שם
@@ -354,10 +354,10 @@ export const useExpenseData = () => {
     sort,
     pagination,
     inlineEdit,
-    
+
     // Computed
     uniqueFunds: Array.from(new Set(categories.map(cat => cat.fund))),
-    
+
     // Actions
     loadMoreData,
     handleFilterChange,
@@ -371,7 +371,7 @@ export const useExpenseData = () => {
     deleteExpense,
     getEditingExpense,
     resetAndLoadData,
-    
+
     // Handlers for inline edit
     handleInlineEditChange: (value: string) => setInlineEdit(prev => ({ ...prev, value })),
     handleInlineEditKeyPress: (e: React.KeyboardEvent) => {

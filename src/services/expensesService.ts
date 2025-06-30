@@ -36,7 +36,6 @@ export interface CreateExpenseRequest {
 
 
 export interface UpdateExpenseRequest {
-  // ❌ הסרת id מכאן - הוא נשלח ב-URL
   name: string;
   amount: number;
   category_id: string;
@@ -81,7 +80,7 @@ export interface ExpenseSummary {
 
 class ExpensesService {
   // GET /expenses - קבלת כל ההוצאות (עם פילטרים ו-pagination)
-  async getAllExpenses(filters?: ExpenseFilters): Promise<ExpenseResponse | Expense[]> {
+  async getAllExpenses(filters?: ExpenseFilters): Promise<Expense[]> {
     const params = new URLSearchParams();
 
     if (filters?.budget_year_id) params.append('budget_year_id', filters.budget_year_id);
@@ -100,7 +99,7 @@ class ExpensesService {
     const queryString = params.toString();
     const endpoint = queryString ? `/expenses?${queryString}` : '/expenses';
 
-    const response = await apiClient.get<ExpenseResponse | Expense[]>(endpoint);
+    const response = await apiClient.get<Expense[]>(endpoint);
     return response.data;
   }
 

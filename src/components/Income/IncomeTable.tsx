@@ -1,8 +1,9 @@
 import React from 'react';
 import { TrendingUp, ChevronDown, ChevronUp, Loader } from 'lucide-react';
-import { Income, GroupBy, PaginationState, InlineEditState, SortState } from './types';
+import { GroupBy, PaginationState, InlineEditState, SortState } from './types';
 import IncomeTableHeader from './IncomeTableHeader';
 import IncomeRow from './IncomeRow';
+import { Income } from '../../services/incomesService';
 
 interface IncomeTableProps {
   incomes: Income[];

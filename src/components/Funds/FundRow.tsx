@@ -61,7 +61,6 @@ const FundRow: React.FC<FundRowProps> = ({
     fund.categories?.includes(cat.id) || fund.categories?.includes(cat.name)
   );
 
-  const isActive = fund.is_active !== false;
 
   const handleBudgetEdit = (budgetYearId: string, currentAmount: number) => {
     setBudgetEdit({
@@ -97,7 +96,7 @@ const FundRow: React.FC<FundRowProps> = ({
   const isEditingBudget = budgetEdit.fundId === fund.id;
 
   return (
-    <tr className={`hover:bg-gray-50 ${!isActive ? 'opacity-60 bg-gray-50' : ''}`}>
+    <tr className={`hover:bg-gray-50`}>
       {/* שם קופה */}
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center gap-2">
@@ -201,21 +200,21 @@ const FundRow: React.FC<FundRowProps> = ({
         </div>
       </td>
 
-      {/* סטטוס */}
+      {/* סטטוס
       <td className="px-6 py-4 whitespace-nowrap">
         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-          isActive 
+          false 
             ? 'bg-green-100 text-green-800' 
             : 'bg-gray-100 text-gray-800'
         }`}>
-          {isActive ? 'פעיל' : 'לא פעיל'}
+          {false ? 'פעיל' : 'לא פעיל'}
         </span>
-      </td>
+      </td> */}
 
       {/* פעולות */}
       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
         <div className="flex gap-2">
-          {isActive ? (
+          {/* {false ? (
             <button
               onClick={() => onDeactivate(fund.id)}
               className="text-orange-600 hover:text-orange-900 p-1 rounded-md hover:bg-orange-50 transition-colors"
@@ -231,7 +230,7 @@ const FundRow: React.FC<FundRowProps> = ({
             >
               <Power size={16} />
             </button>
-          )}
+          )} */}
           
           <button
             onClick={() => onEdit(fund.id)}

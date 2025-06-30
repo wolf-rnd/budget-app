@@ -54,9 +54,9 @@ export interface TitheSummary {
 
 class TitheService {
   // GET /tithe - קבלת כל המעשרות (עם פילטרים ו-pagination)
-  async getAllTithes(filters?: TitheFilters): Promise<TitheResponse | TitheGiven[]> {
+  async getAllTithes(filters?: TitheFilters): Promise<TitheGiven[]> {
     const params = new URLSearchParams();
-    
+
     if (filters?.startDate) params.append('startDate', filters.startDate);
     if (filters?.endDate) params.append('endDate', filters.endDate);
     if (filters?.search) params.append('search', filters.search);
@@ -65,8 +65,8 @@ class TitheService {
 
     const queryString = params.toString();
     const endpoint = queryString ? `/tithe?${queryString}` : '/tithe';
-    
-    const response = await apiClient.get<TitheResponse | TitheGiven[]>(endpoint);
+
+    const response = await apiClient.get<TitheGiven[]>(endpoint);
     return response.data;
   }
 

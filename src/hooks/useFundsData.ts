@@ -135,7 +135,6 @@ export const useFundsData = () => {
     if (!fund) return null;
     
     return {
-      id: fund.id,
       name: fund.name,
       type: fund.type,
       level: fund.level,

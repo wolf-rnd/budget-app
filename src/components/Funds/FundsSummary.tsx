@@ -18,7 +18,6 @@ const FundsSummary: React.FC<FundsSummaryProps> = ({ funds }) => {
 
   // חישוב סטטיסטיקות
   const totalFunds = funds.length;
-  const activeFunds = funds.filter(fund => fund.is_active !== false).length;
   const totalBudget = funds
     .filter(fund => fund.include_in_budget)
     .reduce((sum, fund) => sum + (fund.amount || 0), 0);
@@ -46,7 +45,6 @@ const FundsSummary: React.FC<FundsSummaryProps> = ({ funds }) => {
             <div>
               <p className="text-sm text-gray-500">סה״כ קופות</p>
               <p className="text-xl font-bold text-blue-600">{totalFunds}</p>
-              <p className="text-xs text-gray-400">{activeFunds} פעילות</p>
             </div>
             <Wallet className="text-blue-500" size={24} />
           </div>

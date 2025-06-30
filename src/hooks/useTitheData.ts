@@ -53,7 +53,7 @@ export const useTitheData = () => {
       ]);
 
       setSummary(summaryData);
-      
+
       await loadTithesPage(1, true);
       setDataLoaded(true);
     } catch (err) {
@@ -73,7 +73,7 @@ export const useTitheData = () => {
     }
 
     console.log(`📥 Loading tithes page ${page}, reset: ${reset}`);
-    
+
     if (!reset) {
       isLoadingMoreRef.current = true;
     }
@@ -90,23 +90,23 @@ export const useTitheData = () => {
       };
 
       const response = await titheService.getAllTithes(titheFilters);
-      
+
       let tithesData: TitheGiven[];
       let hasMoreData = false;
       let totalCount = 0;
 
-      if (response && typeof response === 'object' && 'data' in response) {
-        tithesData = response.data || [];
-        hasMoreData = response.hasMore || tithesData.length === ITEMS_PER_PAGE;
-        totalCount = response.total || 0;
-      } else {
-        tithesData = Array.isArray(response) ? response : [];
-        hasMoreData = tithesData.length === ITEMS_PER_PAGE;
-        totalCount = tithesData.length;
-      }
+      // if (response && typeof response === 'object' && 'data' in response) {
+      //   tithesData = response.data || [];
+      //   hasMoreData = response.hasMore || tithesData.length === ITEMS_PER_PAGE;
+      //   totalCount = response.total || 0;
+      // } else {
+      tithesData = Array.isArray(response) ? response : [];
+      hasMoreData = tithesData.length === ITEMS_PER_PAGE;
+      totalCount = tithesData.length;
+      // }
 
       console.log(`📊 Received ${tithesData.length} tithes, hasMore: ${hasMoreData}`);
-      
+
       if (reset) {
         setTithes(tithesData);
       } else {
@@ -204,7 +204,7 @@ export const useTitheData = () => {
 
     try {
       let updatedValue: any = inlineEdit.value;
-      
+
       if (inlineEdit.field === 'amount') {
         updatedValue = Number(inlineEdit.value);
         if (isNaN(updatedValue) || updatedValue <= 0) {
@@ -222,7 +222,7 @@ export const useTitheData = () => {
 
       const updated = await titheService.updateTithe(tithe.id, updateData);
       setTithes(tithes.map(t => t.id === tithe.id ? updated : t));
-      
+
       cancelInlineEdit();
       console.log('✅ מעשר עודכן:', updated);
     } catch (error) {
@@ -264,7 +264,7 @@ export const useTitheData = () => {
   const getEditingTithe = useCallback((id: string): UpdateTitheRequest | null => {
     const tithe = tithes.find(t => t.id === id);
     if (!tithe) return null;
-    
+
     return {
       id: tithe.id,
       description: tithe.description,
@@ -296,7 +296,7 @@ export const useTitheData = () => {
     sort,
     pagination,
     inlineEdit,
-    
+
     // Actions
     loadMoreData,
     handleFilterChange,
@@ -310,7 +310,7 @@ export const useTitheData = () => {
     deleteTithe,
     getEditingTithe,
     resetAndLoadData,
-    
+
     // Handlers for inline edit
     handleInlineEditChange: (value: string) => setInlineEdit(prev => ({ ...prev, value })),
     handleInlineEditKeyPress: (e: React.KeyboardEvent) => {

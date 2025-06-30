@@ -11,11 +11,13 @@ interface FundModalProps {
   onAddFund?: (fund: CreateFundRequest) => void;
   onEditFund?: (id: string, fund: UpdateFundRequest) => void;
   editingFund?: UpdateFundRequest | null;
+  fundId: string,
   categories: GetCategoryRequest[];
 }
 
 const FundModal: React.FC<FundModalProps> = ({
   isOpen,
+  fundId,
   onClose,
   onAddFund,
   onEditFund,
@@ -79,7 +81,7 @@ const FundModal: React.FC<FundModalProps> = ({
     };
 
     if (editingFund && onEditFund) {
-      onEditFund(editingFund.id!, fundData);
+      onEditFund(fundId, fundData);
     } else if (onAddFund) {
       onAddFund(fundData);
     }
@@ -101,7 +103,7 @@ const FundModal: React.FC<FundModalProps> = ({
       return;
     }
 
-    if (!editingFund?.id) {
+    if (!fundId) {
       alert('יש לשמור את הקופה תחילה לפני הוספת קטגוריות');
       return;
     }
@@ -111,7 +113,7 @@ const FundModal: React.FC<FundModalProps> = ({
     try {
       const categoryData: CreateCategoryRequest = {
         name: newCategoryName.trim(),
-        fund_id: editingFund.id,
+        fund_id: fundId,
         color_class: newCategoryColor
       };
 

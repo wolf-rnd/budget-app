@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check, X } from 'lucide-react';
-import { GetExpenseRequest, InlineEditState } from './types';
+import { InlineEditState } from './types';
+import { GetExpenseRequest } from '../../services/expensesService';
 
 interface InlineEditCellProps {
   expense: GetExpenseRequest;

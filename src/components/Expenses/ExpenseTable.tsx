@@ -1,8 +1,9 @@
 import React from 'react';
 import { TrendingDown, ChevronDown, ChevronUp, Loader } from 'lucide-react';
-import { GetExpenseRequest, GroupBy, PaginationState, InlineEditState, SortState } from './types';
+import { GroupBy, PaginationState, InlineEditState, SortState } from './types';
 import ExpenseTableHeader from './ExpenseTableHeader';
 import ExpenseRow from './ExpenseRow';
+import { GetExpenseRequest } from '../../services/expensesService';
 
 interface ExpenseTableProps {
   expenses: GetExpenseRequest[];

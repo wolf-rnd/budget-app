@@ -1,6 +1,7 @@
 import React from 'react';
 import { Check, X } from 'lucide-react';
-import { Income, InlineEditState } from './types';
+import { InlineEditState } from './types';
+import { Income } from '../../services/incomesService';
 
 interface InlineEditCellProps {
   income: Income;

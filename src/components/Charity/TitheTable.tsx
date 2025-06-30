@@ -1,8 +1,9 @@
 import React from 'react';
 import { Heart, ChevronDown, ChevronUp, Loader } from 'lucide-react';
-import { TitheGiven, GroupBy, PaginationState, InlineEditState, SortState } from './types';
+import { GroupBy, PaginationState, InlineEditState, SortState } from './types';
 import TitheTableHeader from './TitheTableHeader';
 import TitheRow from './TitheRow';
+import { TitheGiven } from '../../services/titheService';
 
 interface TitheTableProps {
   tithes: TitheGiven[];

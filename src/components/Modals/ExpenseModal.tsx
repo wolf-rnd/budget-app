@@ -12,6 +12,7 @@ interface ExpenseModalProps {
   onEditExpense?: (id: string, expense: UpdateExpenseRequest) => void;
   categories: GetCategoryRequest[];
   editingExpense?: UpdateExpenseRequest | null;
+  expenseId: string| null;
 }
 
 const ExpenseModal: React.FC<ExpenseModalProps> = ({
@@ -21,6 +22,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
   onEditExpense,
   categories,
   editingExpense,
+  expenseId
 }) => {
   const [name, setName] = useState(editingExpense?.name || '');
   const [amount, setAmount] = useState(editingExpense?.amount.toString() || '');
@@ -88,7 +90,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       };
 
       console.log('🔄 Modal update data:', updateExpenseData);
-      onEditExpense(editingExpense.id, updateExpenseData);
+      onEditExpense(expenseId!, updateExpenseData);
     } else if (onAddExpense) {
       // יצירת הוצאה חדשה
       const createExpenseData: CreateExpenseRequest = {
@@ -256,7 +258,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
             />
           </div>
 
-          {selectedCategory && (
+          {/* {selectedCategory && (
             <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
               <div className="flex items-center gap-2 mb-2">
                 <Tag size={16} className="text-amber-600" />
@@ -265,7 +267,7 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
                 </span>
               </div>
             </div>
-          )}
+          )} */}
 
           <div className="flex items-center gap-4 pt-4 border-t border-gray-200">
             <label className="flex items-center gap-2">

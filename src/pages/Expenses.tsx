@@ -45,6 +45,7 @@ const Expenses: React.FC = () => {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [showFilters, setShowFilters] = useState(false);
   const [showGroupBy, setShowGroupBy] = useState(false);
+  const [expenseId, setExpenseId] = useState<string | null>(null);
 
   // Refs
   const observerRef = useRef<IntersectionObserver | null>(null);
@@ -145,6 +146,7 @@ const Expenses: React.FC = () => {
     const expense = getEditingExpense(id);
     if (expense) {
       setEditingExpense(expense);
+      setExpenseId(id);
       setIsExpenseModalOpen(true);
     }
   };
@@ -281,7 +283,8 @@ const Expenses: React.FC = () => {
           onEditExpense={updateExpense}
           categories={categories}
           editingExpense={editingExpense}
-        />
+          expenseId={expenseId}
+        />  
 
         {/* נוטיפיקציית ביטול */}
         <UndoNotification

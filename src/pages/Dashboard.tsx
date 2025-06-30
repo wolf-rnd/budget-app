@@ -56,6 +56,7 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
+  const [expenseId, setExpenseId] = useState<string>("");
 
   const { addNotification } = useNotifications();
 
@@ -507,7 +508,7 @@ const Dashboard: React.FC = () => {
         <div className="dashboard-section">
           <div className="grid grid-cols-12 gap-6">
             {/* עמודה שמאלית: תזכורות (צרה) */}
-            <div className="col-span-12 lg:col-span-3">
+            <div className="col-span-12 lg:col-span-4">
               <div className="h-full">
                 <TasksSection
                   tasks={tasks}
@@ -518,11 +519,22 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* עמודה אמצעית: מעשרות ופתקים (מחולקת ל-2 שורות) */}
+          
+            {/* עמודה ימנית: חובות (רחבה) */}
             <div className="col-span-12 lg:col-span-4">
-              <div className="grid grid-rows-2 gap-6 h-full">
+              <div className="h-full">
+                <DebtsSection
+                  debts={debts}
+                  onAddDebt={handleAddDebt}
+                  onDeleteDebt={handleDeleteDebt}
+                />
+              </div>
+            </div>
+  {/* עמודה אמצעית: מעשרות ופתקים (מחולקת ל-2 שורות) */}
+            <div className="col-span-12 lg:col-span-4">
+              <div className="grid grid-rows-2 grid-rows-[255px_420px] gap-6 h-full">
                 {/* שורה עליונה: מעשרות */}
-                <div className="row-span-1">
+                <div className="row-span-1 " >
                   <TitheSection
                     totalIncome={totalIncomesForTithe}
                     tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
@@ -532,7 +544,7 @@ const Dashboard: React.FC = () => {
                 </div>
 
                 {/* שורה תחתונה: פתקים */}
-                <div className="row-span-1">
+                <div className="row-span-1 " >
                   <NotesSection
                     notes={notes}
                     onAddNote={handleAddNote}
@@ -543,16 +555,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-            {/* עמודה ימנית: חובות (רחבה) */}
-            <div className="col-span-12 lg:col-span-5">
-              <div className="h-full">
-                <DebtsSection
-                  debts={debts}
-                  onAddDebt={handleAddDebt}
-                  onDeleteDebt={handleDeleteDebt}
-                />
-              </div>
-            </div>
+
           </div>
         </div>
 
@@ -604,6 +607,7 @@ const Dashboard: React.FC = () => {
           onClose={() => setIsExpenseModalOpen(false)}
           onAddExpense={handleExpenseModalSubmit}
           categories={categories}
+          expenseId={expenseId}
         />
       </div>
     </div>

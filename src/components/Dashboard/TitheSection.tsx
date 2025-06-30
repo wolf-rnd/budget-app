@@ -117,16 +117,16 @@ const TitheSection: React.FC<TitheSectionProps> = ({ totalIncome, tithePercentag
 
   return (
     <>
-      <div 
-        className="bg-white rounded-xl shadow-sm p-4 border-r-4 border-pink-400 hover:shadow-md transition-all duration-300" 
-        style={{ height: '382px', overflow: 'hidden' }}
+      <div
+        className="bg-white rounded-xl shadow-sm p-4 border-r-4 border-pink-400 hover:shadow-md transition-all duration-300"
+        style={{ overflow: 'hidden' }}
       >
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Heart size={16} className="text-rose-400" />
             <h3 className="text-base font-semibold text-gray-700">מעשרות</h3>
           </div>
-          
+
           {showViewAllButton && (
             <button
               onClick={() => setShowAllModal(true)}
@@ -137,7 +137,7 @@ const TitheSection: React.FC<TitheSectionProps> = ({ totalIncome, tithePercentag
             </button>
           )}
         </div>
-        
+
         {/* כרטיסי סיכום */}
         <div className="grid grid-cols-3 gap-2 mb-4">
           <div className="text-center p-2 bg-gray-50 rounded-lg border border-gray-100">
@@ -147,7 +147,7 @@ const TitheSection: React.FC<TitheSectionProps> = ({ totalIncome, tithePercentag
             </div>
             <p className="text-xs font-semibold text-gray-700">{formatCurrency(totalIncome)}</p>
           </div>
-          
+
           <div className="text-center p-2 bg-gray-50 rounded-lg border border-gray-100">
             <div className="flex items-center justify-center gap-1 mb-1">
               <Target size={10} className="text-gray-500" />
@@ -155,7 +155,7 @@ const TitheSection: React.FC<TitheSectionProps> = ({ totalIncome, tithePercentag
             </div>
             <p className="text-xs font-semibold text-amber-600">{formatCurrency(requiredTithe)}</p>
           </div>
-          
+
           <div className="text-center p-2 bg-gray-50 rounded-lg border border-gray-100">
             <div className="flex items-center justify-center gap-1 mb-1">
               <TrendingUp size={10} className="text-gray-500" />
@@ -166,49 +166,57 @@ const TitheSection: React.FC<TitheSectionProps> = ({ totalIncome, tithePercentag
         </div>
 
         {/* חוב למעשרות */}
-        <div className="mb-4 text-center p-3 bg-gradient-to-r from-rose-50 to-pink-50 rounded-lg border border-rose-100">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <Heart size={14} className="text-rose-400" />
-            <p className="text-xs font-medium text-rose-700">חוב למעשרות</p>
+        {/* חוב למעשרות - גרסה מוקטנת לגובה כולל 255px */}
+        <div className="mb-4 p-2 bg-gradient-to-r from-rose-50 to-pink-50 rounded-lg border border-rose-100">
+          <div className="flex items-center justify-between text-rose-700 text-xs font-medium">
+            <div className="flex items-center gap-1">
+              <Heart size={12} className="text-rose-400" />
+              <span>חוב למעשרות</span>
+            </div>
+            <span className={`font-bold text-sm ${remainingTithe > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+              {formatCurrency(Math.max(0, remainingTithe))}
+            </span>
           </div>
-          <p className={`text-lg font-bold ${remainingTithe > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-            {formatCurrency(Math.max(0, remainingTithe))}
-          </p>
         </div>
 
+
         {/* טופס הוספה */}
-        <div className="space-y-2 p-2 bg-white border border-gray-100 rounded-lg">
-          <input
-            type="number"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            onKeyDown={handleKeyPress}
-            placeholder="סכום"
-            className="w-full p-2 border border-gray-200 rounded-md text-xs bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all"
-          />
-          
-          <input
-            type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onKeyDown={handleKeyPress}
-            placeholder="תיאור"
-            className="w-full p-2 border border-gray-200 rounded-md text-xs bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all"
-          />
-          
-          <button
-            onClick={handleAddTithe}
-            disabled={!amount || !description.trim()}
-            className={`w-full py-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-2 ${
-              amount && description.trim()
+        <div className="p-2 bg-white border border-gray-100 rounded-lg">
+          <div className="flex items-center gap-2">
+            {/* שדה סכום */}
+            <input
+              type="number"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="סכום"
+              className="w-24 p-2 border border-gray-200 rounded-md text-xs bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all"
+            />
+
+            {/* שדה תיאור */}
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              onKeyDown={handleKeyPress}
+              placeholder="תיאור"
+              className="flex-1 p-2 border border-gray-200 rounded-md text-xs bg-white focus:border-gray-300 focus:ring-1 focus:ring-gray-200 transition-all"
+            />
+
+            {/* כפתור הוספה קטן */}
+            <button
+              onClick={handleAddTithe}
+              disabled={!amount || !description.trim()}
+              className={`p-2 rounded-md text-xs transition-all flex items-center justify-center ${amount && description.trim()
                 ? 'bg-gray-600 text-white hover:bg-gray-700 shadow-sm hover:shadow-md'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-            }`}
-          >
-            <Plus size={12} />
-            הוספה
-          </button>
+                }`}
+            >
+              <Plus size={14} />
+            </button>
+          </div>
         </div>
+
       </div>
 
       {/* Modal לכל המעשרות */}

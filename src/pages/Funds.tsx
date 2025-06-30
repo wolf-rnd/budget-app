@@ -32,7 +32,7 @@ const Funds: React.FC = () => {
   const [isFundModalOpen, setIsFundModalOpen] = useState(false);
   const [editingFund, setEditingFund] = useState<UpdateFundRequest | null>(null);
   const [undoNotification, setUndoNotification] = useState<UndoNotificationType | null>(null);
-
+  const [fundId, setFundId] = useState<string>('');
   // Cleanup undo notification
   useEffect(() => {
     return () => {
@@ -52,6 +52,7 @@ const Funds: React.FC = () => {
     const fund = getEditingFund(id);
     if (fund) {
       setEditingFund(fund);
+      setFundId(id);
       setIsFundModalOpen(true);
     }
   };
@@ -193,6 +194,7 @@ const Funds: React.FC = () => {
           onAddFund={createFund}
           onEditFund={updateFund}
           editingFund={editingFund}
+          fundId={fundId}
           categories={categories}
         />
 

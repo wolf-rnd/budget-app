@@ -63,7 +63,7 @@ export const useIncomeData = () => {
 
       setBudgetYears(budgetYearsData);
       setSummary(summaryData);
-      
+
       await loadIncomesPage(1, true);
       setDataLoaded(true);
     } catch (err) {
@@ -83,7 +83,7 @@ export const useIncomeData = () => {
     }
 
     console.log(`📥 Loading incomes page ${page}, reset: ${reset}`);
-    
+
     if (!reset) {
       isLoadingMoreRef.current = true;
     }
@@ -102,23 +102,23 @@ export const useIncomeData = () => {
       };
 
       const response = await incomesService.getAllIncomes(incomeFilters);
-      
+
       let incomesData: Income[];
       let hasMoreData = false;
       let totalCount = 0;
 
-      if (response && typeof response === 'object' && 'data' in response) {
-        incomesData = response.data || [];
-        hasMoreData = response.hasMore || incomesData.length === ITEMS_PER_PAGE;
-        totalCount = response.total || 0;
-      } else {
-        incomesData = Array.isArray(response) ? response : [];
-        hasMoreData = incomesData.length === ITEMS_PER_PAGE;
-        totalCount = incomesData.length;
-      }
+      // if (response && typeof response === 'object' && 'data' in response) {
+      //   incomesData = response.data || [];
+      //   hasMoreData = response.hasMore || incomesData.length === ITEMS_PER_PAGE;
+      //   totalCount = response.total || 0;
+      // } else {
+      incomesData = Array.isArray(response) ? response : [];
+      hasMoreData = incomesData.length === ITEMS_PER_PAGE;
+      totalCount = incomesData.length;
+      // }
 
       console.log(`📊 Received ${incomesData.length} incomes, hasMore: ${hasMoreData}`);
-      
+
       if (reset) {
         setIncomes(incomesData);
       } else {
@@ -219,7 +219,7 @@ export const useIncomeData = () => {
 
     try {
       let updatedValue: any = inlineEdit.value;
-      
+
       if (inlineEdit.field === 'amount') {
         updatedValue = Number(inlineEdit.value);
         if (isNaN(updatedValue) || updatedValue <= 0) {
@@ -240,7 +240,7 @@ export const useIncomeData = () => {
 
       const updated = await incomesService.updateIncome(income.id, updateData);
       setIncomes(incomes.map(inc => inc.id === income.id ? updated : inc));
-      
+
       cancelInlineEdit();
       console.log('✅ הכנסה עודכנה:', updated);
     } catch (error) {
@@ -282,7 +282,7 @@ export const useIncomeData = () => {
   const getEditingIncome = useCallback((id: string): UpdateIncomeRequest | null => {
     const income = incomes.find(inc => inc.id === id);
     if (!income) return null;
-    
+
     return {
       id: income.id,
       name: income.name,
@@ -318,10 +318,10 @@ export const useIncomeData = () => {
     sort,
     pagination,
     inlineEdit,
-    
+
     // Computed
     uniqueSources: Array.from(new Set(incomes.map(inc => inc.source).filter(Boolean))),
-    
+
     // Actions
     loadMoreData,
     handleFilterChange,
@@ -335,7 +335,7 @@ export const useIncomeData = () => {
     deleteIncome,
     getEditingIncome,
     resetAndLoadData,
-    
+
     // Handlers for inline edit
     handleInlineEditChange: (value: string) => setInlineEdit(prev => ({ ...prev, value })),
     handleInlineEditKeyPress: (e: React.KeyboardEvent) => {

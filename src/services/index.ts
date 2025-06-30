@@ -1,7 +1,7 @@
 // Export all services for easy importing
 export { authService } from './authService';
 export { budgetYearsService } from './budgetYearsService';
-export { GetFundRequest, fundsService } from './fundsService';
+export { fundsService } from './fundsService';
 export { categoriesService } from './categoriesService';
 export { incomesService } from './incomesService';
 export { expensesService } from './expensesService';

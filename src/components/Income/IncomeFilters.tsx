@@ -8,7 +8,7 @@ interface IncomeFiltersProps {
   groupBy: GroupBy;
   showFilters: boolean;
   showGroupBy: boolean;
-  uniqueSources: string[];
+  uniqueSources: (string | undefined)[];
   onFilterChange: (field: keyof FilterState, value: string) => void;
   onGroupByChange: (groupBy: GroupBy) => void;
   onToggleFilters: () => void;

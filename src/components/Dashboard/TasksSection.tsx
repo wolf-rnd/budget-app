@@ -215,8 +215,8 @@ const TasksSection: React.FC<TasksSectionProps> = ({
 
   return (
     <div 
-      className="relative bg-white rounded-xl shadow-sm p-5 border-r-4 border-purple-400 hover:shadow-md transition-all duration-300"
-      style={{ height: '500px', overflow: 'hidden' }}
+      className="relative bg-white rounded-xl  flex flex-col shadow-sm p-5 border-r-4 border-purple-400 hover:shadow-md transition-all duration-300"
+      style={{ height: '700px', overflow: 'hidden' }}
     >
       <div className="flex items-center justify-center gap-2 mb-5">
         <CheckCircle2 size={18} className="text-violet-400" />
@@ -227,7 +227,7 @@ const TasksSection: React.FC<TasksSectionProps> = ({
       </div>
       
       {/* רשימת המשימות */}
-      <div className="space-y-2 mb-5 flex-1" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+      <div className="flex-1 overflow-y-auto" >
         {visibleTasks.length > 0 ? (
           visibleTasks.map(task => (
             <div 
