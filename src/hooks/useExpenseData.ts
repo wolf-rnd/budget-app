@@ -242,7 +242,6 @@ export const useExpenseData = () => {
       if (inlineEdit.field === 'amount') {
         updatedValue = Number(inlineEdit.value);
         if (isNaN(updatedValue) || updatedValue <= 0) {
-          alert('סכום חייב להיות מספר חיובי');
           return;
         }
       }
@@ -252,14 +251,12 @@ export const useExpenseData = () => {
       const fundId = findFundIdByName(expense.funds?.name || '');
 
       const updateData: UpdateExpenseRequest = {
-        // ❌ הסרת ID מה-payload - הוא נשלח ב-URL
         name: inlineEdit.field === 'name' ? updatedValue : expense.name,
         amount: inlineEdit.field === 'amount' ? updatedValue : expense.amount,
         category_id: categoryId, // 🔧 שליחת ID במקום שם
         fund_id: fundId, // 🔧 שליחת ID במקום שם
         date: expense.date,
         note: inlineEdit.field === 'note' ? updatedValue : expense.note,
-        budget_year_id: expense.budget_year_id
       };
 
       console.log('🔍 Update data being sent:', {
@@ -278,7 +275,6 @@ export const useExpenseData = () => {
       console.log('✅ הוצאה עודכנה:', updated);
     } catch (error) {
       console.error('❌ Failed to update expense:', error);
-      alert('שגיאה בעדכון ההוצאה');
     }
   }, [inlineEdit, expenses, cancelInlineEdit, findCategoryIdByName, findFundIdByName]);
 

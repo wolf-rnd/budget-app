@@ -19,8 +19,6 @@ export interface Income {
 export interface CreateIncomeRequest {
   name: string;
   amount: number;
-  month: number;
-  year: number;
   date: string;
   source?: string;
   note?: string;

@@ -27,7 +27,7 @@ import { ENV } from '../config/env';
 
 // Import services instead of JSON data
 import { budgetYearsService } from '../services/budgetYearsService';
-import { incomesService } from '../services/incomesService';
+import { CreateIncomeRequest, incomesService } from '../services/incomesService';
 import { CreateExpenseRequest, expensesService } from '../services/expensesService';
 import { titheService } from '../services/titheService';
 import { debtsService } from '../services/debtsService';
@@ -216,13 +216,7 @@ const Dashboard: React.FC = () => {
     setIsIncomeModalOpen(true);
   }, []);
 
-  const handleIncomeModalSubmit = useCallback(async (newIncome: {
-    name: string;
-    amount: number;
-    date: string;
-    source?: string;
-    note?: string;
-  }) => {
+  const handleIncomeModalSubmit = useCallback(async (newIncome: CreateIncomeRequest) => {
     try {
       const incomeData = {
         name: newIncome.name,

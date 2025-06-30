@@ -208,7 +208,6 @@ export const useTitheData = () => {
       if (inlineEdit.field === 'amount') {
         updatedValue = Number(inlineEdit.value);
         if (isNaN(updatedValue) || updatedValue <= 0) {
-          alert('סכום חייב להיות מספר חיובי');
           return;
         }
       }
@@ -227,7 +226,6 @@ export const useTitheData = () => {
       console.log('✅ מעשר עודכן:', updated);
     } catch (error) {
       console.error('❌ Failed to update tithe:', error);
-      alert('שגיאה בעדכון המעשר');
     }
   }, [inlineEdit, tithes, cancelInlineEdit]);
 

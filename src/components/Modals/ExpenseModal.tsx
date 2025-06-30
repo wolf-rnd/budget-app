@@ -3,7 +3,6 @@ import { X, TrendingDown, Plus, DollarSign, FileText, Tag, Calendar } from 'luci
 
 import {  CreateExpenseRequest, UpdateExpenseRequest } from '../../services';
 import { GetCategoryRequest } from '../../services/categoriesService';
-import { useBudgetYearStore } from '../../store/budgetYearStore';
 
 interface ExpenseModalProps {
   isOpen: boolean;
@@ -72,21 +71,17 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // שליפת מזהה שנת התקציב הנבחרת בצורה ריאקטיבית
-    const selectedBudgetYearId = useBudgetYearStore(state => state.selectedBudgetYearId);
+    
 
     if (editingExpense && onEditExpense) {
       // עדכון הוצאה קיימת
       const updateExpenseData: UpdateExpenseRequest = {
-        // ❌ הסרת ID מה-payload - הוא נשלח ב-URL
         name: name.trim(),
         amount: Number(cleanNumber(amount)),
         category_id: selectedCategory,
         fund_id: selectedFund,
         date,
         note: note.trim() || undefined,
-        budget_year_id: selectedBudgetYearId || undefined
       };
 
       console.log('🔄 Modal update data:', updateExpenseData);
@@ -96,7 +91,6 @@ const ExpenseModal: React.FC<ExpenseModalProps> = ({
       const createExpenseData: CreateExpenseRequest = {
         name: name.trim(),
         amount: Number(cleanNumber(amount)),
-        budget_year_id: selectedBudgetYearId || "",
         category_id: selectedCategory,
         fund_id: selectedFund,
         date,
