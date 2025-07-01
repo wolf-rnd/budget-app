@@ -126,7 +126,6 @@ class ExpensesService {
 
   // PUT /expenses/:id - עדכון הוצאה
   async updateExpense(id: string, data: UpdateExpenseRequest): Promise<Expense> {
-    debugger
     console.log(`🔄 Updating expense ${id} with data:`, data);
     const response = await apiClient.put<Expense>(`/expenses/${id}`, data);
     return response.data;

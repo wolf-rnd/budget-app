@@ -36,6 +36,7 @@ import { assetsService } from '../services/assetsService';
 import { categoriesService, GetCategoryRequest } from '../services/categoriesService';
 import { fundsService, GetFundRequest } from '../services/fundsService';
 import { apiClient } from '../services/apiClient';
+import { systemSettingsService } from '../services';
 
 const Dashboard: React.FC = () => {
   // State management
@@ -57,7 +58,7 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [expenseId, setExpenseId] = useState<string>("");
-
+  const [tithePercentage, setTithePercentage] = useState<number>();
   const { addNotification } = useNotifications();
 
   // Setup API client notification callback - רק פעם אחת
@@ -68,7 +69,7 @@ const Dashboard: React.FC = () => {
   // טעינת כל הדאטה הראשונית - עם מניעת קריאות כפולות
   useEffect(() => {
     if (dataLoaded) return; // מניעת טעינה כפולה
-    
+
     const loadInitialData = async () => {
       setLoading(true);
       setError(null);
@@ -82,7 +83,8 @@ const Dashboard: React.FC = () => {
           debtsData,
           tasksData,
           assetsData,
-          categoriesData
+          categoriesData,
+          tithePercentageData
         ] = await Promise.all([
           budgetYearsService.getAllBudgetYears(),
           incomesService.getAllIncomes(),
@@ -91,7 +93,8 @@ const Dashboard: React.FC = () => {
           debtsService.getAllDebts(),
           tasksService.getAllTasks(),
           assetsService.getAllAssetSnapshots(),
-          categoriesService.getAllCategories()
+          categoriesService.getAllCategories(),
+          systemSettingsService.getSettingByKey('tithe_percentage')
         ]);
 
         // עדכון State בבת אחת
@@ -103,7 +106,9 @@ const Dashboard: React.FC = () => {
         setTasks(tasksData);
         setAssetSnapshots(assetsData);
         setCategories(categoriesData);
-
+        const tithePercentage = parseInt(tithePercentageData?.setting_value || '0');
+        setTithePercentage(tithePercentage);
+  
         // טעינת פתקים (mock data לעת עתה)
         setNotes([
           {
@@ -137,9 +142,9 @@ const Dashboard: React.FC = () => {
   // טען רק funds בכל החלפת שנת תקציב - עם מניעת קריאות כפולות
   useEffect(() => {
     if (!selectedBudgetYear || !dataLoaded) return;
-    
+
     let isMounted = true; // מניעת race conditions
-    
+
     const loadFunds = async () => {
       try {
         const fundsData = await fundsService.getAllFunds(selectedBudgetYear.id);
@@ -155,7 +160,7 @@ const Dashboard: React.FC = () => {
     };
 
     loadFunds();
-    
+
     return () => {
       isMounted = false; // cleanup
     };
@@ -169,38 +174,38 @@ const Dashboard: React.FC = () => {
   }, [selectedBudgetYear?.id, dataLoaded]);
 
   // Calculate data based on selected budget year - מחושב רק כשצריך
-  const currentBudgetYearIncomes = React.useMemo(() => 
+  const currentBudgetYearIncomes = React.useMemo(() =>
     selectedBudgetYear ? filterIncomesByBudgetYear(incomes, selectedBudgetYear) : []
-  , [incomes, selectedBudgetYear]);
+    , [incomes, selectedBudgetYear]);
 
-  const currentBudgetYearExpenses = React.useMemo(() => 
+  const currentBudgetYearExpenses = React.useMemo(() =>
     selectedBudgetYear ? filterExpensesByBudgetYear(expenses, selectedBudgetYear) : []
-  , [expenses, selectedBudgetYear]);
+    , [expenses, selectedBudgetYear]);
 
-  const allIncomesForTithe = React.useMemo(() => 
+  const allIncomesForTithe = React.useMemo(() =>
     getAllIncomesForTithe(incomes)
-  , [incomes]);
+    , [incomes]);
 
   // Calculate totals - מחושב רק כשצריך
-  const totalBudget = React.useMemo(() => 
+  const totalBudget = React.useMemo(() =>
     funds
       .filter(fund => fund.include_in_budget)
       .reduce((sum, fund) => {
         return sum + (fund.type === 'monthly' ? fund.amount * 12 : fund.amount);
       }, 0)
-  , [funds]);
+    , [funds]);
 
-  const totalIncome = React.useMemo(() => 
+  const totalIncome = React.useMemo(() =>
     currentBudgetYearIncomes.reduce((sum, income) => sum + income.amount, 0)
-  , [currentBudgetYearIncomes]);
+    , [currentBudgetYearIncomes]);
 
-  const totalExpenses = React.useMemo(() => 
+  const totalExpenses = React.useMemo(() =>
     currentBudgetYearExpenses.reduce((sum, expense) => sum + expense.amount, 0)
-  , [currentBudgetYearExpenses]);
+    , [currentBudgetYearExpenses]);
 
-  const totalIncomesForTithe = React.useMemo(() => 
+  const totalIncomesForTithe = React.useMemo(() =>
     allIncomesForTithe.reduce((sum, income) => sum + income.amount, 0)
-  , [allIncomesForTithe]);
+    , [allIncomesForTithe]);
 
   // Handlers - עם useCallback למניעת re-renders מיותרים
   const handleBudgetYearChange = useCallback((year: BudgetYear) => {
@@ -410,8 +415,8 @@ const Dashboard: React.FC = () => {
   const handleUpdateNote = useCallback(async (id: string, title: string, content: string) => {
     try {
       // TODO: Replace with API call when notes service is ready
-      setNotes(prev => prev.map(note => 
-        note.id === id 
+      setNotes(prev => prev.map(note =>
+        note.id === id
           ? { ...note, title, content, updated_at: new Date().toISOString() }
           : note
       ));
@@ -513,7 +518,7 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
 
-          
+
             {/* עמודה ימנית: חובות (רחבה) */}
             <div className="col-span-12 lg:col-span-4">
               <div className="h-full">
@@ -524,14 +529,14 @@ const Dashboard: React.FC = () => {
                 />
               </div>
             </div>
-  {/* עמודה אמצעית: מעשרות ופתקים (מחולקת ל-2 שורות) */}
+            {/* עמודה אמצעית: מעשרות ופתקים (מחולקת ל-2 שורות) */}
             <div className="col-span-12 lg:col-span-4">
               <div className="grid grid-rows-2 grid-rows-[255px_420px] gap-6 h-full">
                 {/* שורה עליונה: מעשרות */}
                 <div className="row-span-1 " >
                   <TitheSection
                     totalIncome={totalIncomesForTithe}
-                    tithePercentage={ENV.DEFAULT_TITHE_PERCENTAGE}
+                    tithePercentage={tithePercentage}
                     titheGiven={titheGiven}
                     onAddTithe={handleAddTithe}
                   />

@@ -323,7 +323,6 @@ export const useExpenseData = () => {
       fund_id: fundId, // 🔧 ID במקום שם
       date: expense.date,
       note: expense.note,
-      budget_year_id: expense.budget_year_id
     };
   }, [expenses, findCategoryIdByName, findFundIdByName]);
 
