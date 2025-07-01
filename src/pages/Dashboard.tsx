@@ -58,7 +58,7 @@ const Dashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [expenseId, setExpenseId] = useState<string>("");
-  const [tithePercentage, setTithePercentage] = useState<number>();
+  const [tithePercentage, setTithePercentage] = useState<number>(0);
   const { addNotification } = useNotifications();
 
   // Setup API client notification callback - רק פעם אחת
