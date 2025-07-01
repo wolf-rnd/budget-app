@@ -4,7 +4,7 @@ import { TitheGiven } from '../../types';
 
 interface TitheSectionProps {
   totalIncome: number;
-  tithePercentage: number;
+  tithePercentage: number | undefined;
   titheGiven: TitheGiven[];
   onAddTithe: (amount: number, description: string) => void;
 }
