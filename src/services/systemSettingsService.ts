@@ -53,7 +53,6 @@ class SystemSettingsService {
 
     const queryString = params.toString();
     const endpoint = queryString ? `/system-settings?${queryString}` : '/system-settings';
-    
     const response = await apiClient.get<SystemSettingsResponse | SystemSetting[]>(endpoint);
     return response.data;
   }
@@ -118,6 +117,8 @@ class SystemSettingsService {
   async deleteSettingByKey(settingKey: string): Promise<void> {
     await apiClient.delete<void>(`/system-settings/key/${settingKey}`);
   }
+
+
 }
 
 export const systemSettingsService = new SystemSettingsService();

@@ -223,7 +223,6 @@ export const useIncomeData = () => {
       if (inlineEdit.field === 'amount') {
         updatedValue = Number(inlineEdit.value);
         if (isNaN(updatedValue) || updatedValue <= 0) {
-          alert('סכום חייב להיות מספר חיובי');
           return;
         }
       }
@@ -245,7 +244,6 @@ export const useIncomeData = () => {
       console.log('✅ הכנסה עודכנה:', updated);
     } catch (error) {
       console.error('❌ Failed to update income:', error);
-      alert('שגיאה בעדכון ההכנסה');
     }
   }, [inlineEdit, incomes, cancelInlineEdit]);
 

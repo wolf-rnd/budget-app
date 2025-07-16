@@ -142,12 +142,9 @@ const IncomeModal: React.FC<IncomeModalProps> = ({
         saveSource(source.trim());
       }
 
-      const incomeDate = new Date(date);
-      const incomeData = {
+      const incomeData: CreateIncomeRequest = {
         name: name.trim(),
         amount: Number(cleanNumber(amount)),
-        month: incomeDate.getMonth() + 1,
-        year: incomeDate.getFullYear(),
         date,
         source: source.trim() || undefined,
         note: note.trim() || undefined

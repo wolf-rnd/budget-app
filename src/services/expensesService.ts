@@ -27,7 +27,6 @@ export interface GetExpenseRequest {
 export interface CreateExpenseRequest {
   name: string;
   amount: number;
-  budget_year_id: string;
   category_id: string;
   fund_id: string;
   date: string;
@@ -42,7 +41,6 @@ export interface UpdateExpenseRequest {
   fund_id: string;
   date: string;
   note?: string;
-  budget_year_id?: string; // קישור לשנת תקציב
 }
 
 export interface ExpenseFilters {

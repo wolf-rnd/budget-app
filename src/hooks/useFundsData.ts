@@ -71,7 +71,6 @@ export const useFundsData = () => {
       console.log('קופה חדשה נוספה:', createdFund);
     } catch (error) {
       console.error('Failed to create fund:', error);
-      alert('שגיאה ביצירת הקופה');
     }
   }, []);
 
@@ -82,7 +81,6 @@ export const useFundsData = () => {
       console.log('קופה עודכנה:', updated);
     } catch (error) {
       console.error('Failed to update fund:', error);
-      alert('שגיאה בעדכון הקופה');
     }
   }, []);
 
@@ -93,7 +91,6 @@ export const useFundsData = () => {
       console.log('קופה נמחקה:', id);
     } catch (error) {
       console.error('Failed to delete fund:', error);
-      alert('שגיאה במחיקת הקופה');
     }
   }, []);
 
@@ -104,7 +101,6 @@ export const useFundsData = () => {
       console.log('תקציב קופה עודכן:', updated);
     } catch (error) {
       console.error('Failed to update fund budget:', error);
-      alert('שגיאה בעדכון תקציב הקופה');
     }
   }, []);
 
@@ -115,7 +111,6 @@ export const useFundsData = () => {
       console.log('קופה הופעלה:', updated);
     } catch (error) {
       console.error('Failed to activate fund:', error);
-      alert('שגיאה בהפעלת הקופה');
     }
   }, []);
 
@@ -126,7 +121,6 @@ export const useFundsData = () => {
       console.log('קופה הושבתה:', updated);
     } catch (error) {
       console.error('Failed to deactivate fund:', error);
-      alert('שגיאה בהשבתת הקופה');
     }
   }, []);
 

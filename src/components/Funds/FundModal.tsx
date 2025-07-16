@@ -133,7 +133,6 @@ const FundModal: React.FC<FundModalProps> = ({
       console.log('✅ קטגוריה חדשה נוצרה:', newCategory);
     } catch (error) {
       console.error('❌ Failed to create category:', error);
-      alert('שגיאה ביצירת הקטגוריה. נסה שוב.');
     } finally {
       setIsCreatingCategory(false);
     }
