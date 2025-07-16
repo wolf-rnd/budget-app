@@ -37,6 +37,7 @@ import { categoriesService, GetCategoryRequest } from '../services/categoriesSer
 import { fundsService, GetFundRequest } from '../services/fundsService';
 import { apiClient } from '../services/apiClient';
 import { systemSettingsService } from '../services';
+import { notesService } from '../services/notesService';
 
 const Dashboard: React.FC = () => {
   // State management
@@ -109,16 +110,9 @@ const Dashboard: React.FC = () => {
         const tithePercentage = parseInt(tithePercentageData?.setting_value || '0');
         setTithePercentage(tithePercentage);
   
-        // טעינת פתקים (mock data לעת עתה)
-        setNotes([
-          {
-            id: '1',
-            title: 'חישובים',
-            content: '1000 + 500 = 1500\nתקציב חודשי: 3000\nנותר: 1500',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          }
-        ]);
+        // טעינת פתקים מה-DB
+        const notesData = await notesService.getAllNotes();
+        setNotes(notesData);
 
         // הגדרת שנת תקציב ראשונית
         const savedBudgetYearId = localStorage.getItem('selectedBudgetYearId');
@@ -396,15 +390,8 @@ const Dashboard: React.FC = () => {
   // Notes handlers
   const handleAddNote = useCallback(async (title: string, content: string) => {
     try {
-      // TODO: Replace with API call when notes service is ready
-      const newNote: Note = {
-        id: Date.now().toString(),
-        title,
-        content,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      setNotes(prev => [...prev, newNote]);
+      const createdNote = await notesService.createNote({ title, content });
+      setNotes(prev => [...prev, createdNote]);
     } catch (error) {
       if (ENV.DEV_MODE) {
         console.error('Failed to create note:', error);
@@ -414,11 +401,9 @@ const Dashboard: React.FC = () => {
 
   const handleUpdateNote = useCallback(async (id: string, title: string, content: string) => {
     try {
-      // TODO: Replace with API call when notes service is ready
+      const updatedNote = await notesService.updateNote(id, { title, content });
       setNotes(prev => prev.map(note =>
-        note.id === id
-          ? { ...note, title, content, updated_at: new Date().toISOString() }
-          : note
+        note.id === id ? updatedNote : note
       ));
     } catch (error) {
       if (ENV.DEV_MODE) {
@@ -429,7 +414,7 @@ const Dashboard: React.FC = () => {
 
   const handleDeleteNote = useCallback(async (id: string) => {
     try {
-      // TODO: Replace with API call when notes service is ready
+      await notesService.deleteNote(id);
       setNotes(prev => prev.filter(note => note.id !== id));
     } catch (error) {
       if (ENV.DEV_MODE) {
